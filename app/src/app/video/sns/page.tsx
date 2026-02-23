@@ -25,6 +25,9 @@ import {
   ChevronUp,
   RotateCcw,
   Loader2,
+  Type,
+  Link2,
+  Search,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -56,6 +59,14 @@ interface TimelineClip {
   outPoint: number;
   thumbnailUrl: string;
   objectUrl: string;
+}
+
+interface TextOverlay {
+  id: string;
+  text: string;
+  position: "top" | "center" | "bottom";
+  size: "s" | "m" | "l";
+  color: string;
 }
 
 /* ================================================================
@@ -93,6 +104,15 @@ const CLIP_COLORS = [
 ];
 
 const TIMELINE_PX_PER_SEC = 8;
+
+const TEXT_SIZES: Record<string, number> = { s: 36, m: 52, l: 72 };
+
+const TEXT_COLORS = [
+  { label: "白", value: "#ffffff" },
+  { label: "黒", value: "#000000" },
+  { label: "黄", value: "#ffff00" },
+  { label: "赤", value: "#ff3333" },
+];
 
 /* ================================================================
    Helpers
@@ -158,6 +178,57 @@ async function loadClipMeta(file: File): Promise<{ duration: number; thumb: stri
       }
     }, 5000);
   });
+}
+
+/** Render text to a transparent PNG using Canvas (supports Japanese via browser fonts) */
+async function renderTextPng(
+  text: string,
+  fontSize: number,
+  color: string,
+  canvasWidth: number,
+): Promise<{ bytes: Uint8Array; height: number }> {
+  const canvas = document.createElement("canvas");
+  canvas.width = canvasWidth;
+
+  const font = `bold ${fontSize}px "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Meiryo", sans-serif`;
+
+  const tmpCtx = canvas.getContext("2d")!;
+  tmpCtx.font = font;
+
+  const lines = text.split("\n").filter((l) => l.length > 0);
+  if (lines.length === 0) return { bytes: new Uint8Array(0), height: 0 };
+
+  const lineH = fontSize * 1.5;
+  const pad = fontSize * 0.5;
+  canvas.height = Math.ceil(lines.length * lineH + pad * 2);
+
+  const ctx = canvas.getContext("2d")!;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.font = font;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+
+  // Outline for readability
+  const outlineColor = color === "#000000" || color === "#000" ? "#ffffff" : "#000000";
+  ctx.strokeStyle = outlineColor;
+  ctx.lineWidth = Math.max(fontSize / 5, 3);
+  ctx.lineJoin = "round";
+  ctx.miterLimit = 2;
+
+  for (let i = 0; i < lines.length; i++) {
+    ctx.strokeText(lines[i], canvas.width / 2, pad + i * lineH);
+  }
+
+  ctx.fillStyle = color;
+  for (let i = 0; i < lines.length; i++) {
+    ctx.fillText(lines[i], canvas.width / 2, pad + i * lineH);
+  }
+
+  const blob = await new Promise<Blob>((res) =>
+    canvas.toBlob((b) => res(b!), "image/png"),
+  );
+  const buf = await blob.arrayBuffer();
+  return { bytes: new Uint8Array(buf), height: canvas.height };
 }
 
 /* ================================================================
@@ -250,6 +321,13 @@ export default function SnsCreatorPage() {
   const [quality, setQuality] = useState("standard");
   const [origVol, setOrigVol] = useState(30);
   const [bgmVol, setBgmVol] = useState(70);
+
+  /* ── TikTok BGM ─────────────────────────────── */
+  const [tiktokUrl, setTiktokUrl] = useState("");
+  const [tiktokLoading, setTiktokLoading] = useState(false);
+
+  /* ── Text overlays (テロップ) ────────────────── */
+  const [overlays, setOverlays] = useState<TextOverlay[]>([]);
 
   /* ── Preview ───────────────────────────────── */
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -374,8 +452,63 @@ export default function SnsCreatorPage() {
     if (bgmInputRef.current) bgmInputRef.current.value = "";
   }, []);
 
+  /* ── TikTok BGM handler ─────────────────────── */
+  const handleTikTokBgm = async () => {
+    const url = tiktokUrl.trim();
+    if (!url) return;
+    setTiktokLoading(true);
+    try {
+      const infoRes = await fetch("/api/tiktok", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      const info = await infoRes.json();
+      if (!infoRes.ok) throw new Error(info.error || "音源情報の取得に失敗");
+
+      const dlRes = await fetch("/api/tiktok/download", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: info.music.playUrl, filename: info.music.title }),
+      });
+      if (!dlRes.ok) throw new Error("音源のダウンロードに失敗しました");
+
+      const blob = await dlRes.blob();
+      const file = new File([blob], `${info.music.title}.mp3`, { type: "audio/mpeg" });
+
+      setBgmFile(file);
+      setBgmName(`${info.music.title} - ${info.music.author}`);
+      setTiktokUrl("");
+
+      if (audioMode === "keep" || audioMode === "mute") {
+        setAudioMode("replace");
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "TikTok音源の取得に失敗しました";
+      alert(msg);
+    } finally {
+      setTiktokLoading(false);
+    }
+  };
+
+  /* ── Text overlay handlers ──────────────────── */
+  const addOverlay = () => {
+    setOverlays((prev) => [
+      ...prev,
+      { id: uid(), text: "", position: "bottom", size: "m", color: "#ffffff" },
+    ]);
+  };
+
+  const updateOverlay = (id: string, patch: Partial<TextOverlay>) => {
+    setOverlays((prev) => prev.map((o) => (o.id === id ? { ...o, ...patch } : o)));
+  };
+
+  const removeOverlay = (id: string) => {
+    setOverlays((prev) => prev.filter((o) => o.id !== id));
+  };
+
   /* ================================================================
-     FFmpeg Processing — Multi-clip with proper encoding
+     FFmpeg Processing — Multi-clip with proper encoding + overlays
      ================================================================ */
 
   const handleExport = async () => {
@@ -389,9 +522,28 @@ export default function SnsCreatorPage() {
       const H = plat.h;
       const cropY =
         crop === "top" ? "0" : crop === "bottom" ? "in_h-out_h" : "(in_h-out_h)/2";
-      const vFilter = `scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H}:(in_w-out_w)/2:${cropY},format=yuv420p,setsar=1`;
+      const scaleAndCrop = `scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H}:(in_w-out_w)/2:${cropY}`;
 
       const keepAudio = audioMode === "keep" || audioMode === "mix";
+
+      /* ── Step 0: Render text overlay PNGs ────── */
+      const activeOverlays = overlays.filter((o) => o.text.trim().length > 0);
+      const overlayMeta: { position: string; height: number }[] = [];
+
+      if (activeOverlays.length > 0) {
+        setProcessStep("テロップを生成中...");
+        for (let j = 0; j < activeOverlays.length; j++) {
+          const o = activeOverlays[j];
+          const fontSize = TEXT_SIZES[o.size] || 52;
+          const { bytes, height } = await renderTextPng(o.text, fontSize, o.color, W);
+          if (bytes.length > 0) {
+            await ff.writeFile(`overlay${j}.png`, bytes);
+            overlayMeta.push({ position: o.position, height });
+          }
+        }
+      }
+
+      const numOverlays = overlayMeta.length;
 
       /* ── Step 1: Encode each clip ─────────────── */
       for (let i = 0; i < clips.length; i++) {
@@ -409,8 +561,43 @@ export default function SnsCreatorPage() {
 
         args.push("-i", inputName);
 
-        // Video
-        args.push("-vf", vFilter);
+        // Add overlay PNG inputs
+        for (let j = 0; j < numOverlays; j++) {
+          args.push("-i", `overlay${j}.png`);
+        }
+
+        // Video filter
+        if (numOverlays > 0) {
+          // Build filter_complex with overlay chain
+          let fc = `[0:v]${scaleAndCrop}[base]`;
+          let prev = "base";
+
+          for (let j = 0; j < numOverlays; j++) {
+            const next = `t${j}`;
+            const { position } = overlayMeta[j];
+            const yExpr =
+              position === "top" ? "80" :
+              position === "bottom" ? "main_h-overlay_h-80" :
+              "(main_h-overlay_h)/2";
+
+            fc += `; [${prev}][${j + 1}:v]overlay=x=(main_w-overlay_w)/2:y=${yExpr}[${next}]`;
+            prev = next;
+          }
+
+          // Final format conversion
+          fc += `; [${prev}]format=yuv420p,setsar=1[outv]`;
+
+          args.push("-filter_complex", fc);
+          args.push("-map", "[outv]");
+
+          if (keepAudio) {
+            args.push("-map", "0:a?");
+          }
+        } else {
+          args.push("-vf", `${scaleAndCrop},format=yuv420p,setsar=1`);
+        }
+
+        // Encoding params
         args.push(
           "-c:v", "libx264",
           "-profile:v", "high",
@@ -426,7 +613,11 @@ export default function SnsCreatorPage() {
         if (keepAudio) {
           args.push("-c:a", "aac", "-b:a", qual.aBit, "-ar", "44100", "-ac", "2");
         } else {
-          args.push("-an");
+          if (numOverlays === 0) {
+            args.push("-an");
+          } else {
+            args.push("-an");
+          }
         }
 
         args.push("-movflags", "+faststart", "-y", `temp${i}.mp4`);
@@ -526,6 +717,8 @@ export default function SnsCreatorPage() {
     setSelectedId(null);
     setResult(null);
     setPlaying(false);
+    setOverlays([]);
+    setTiktokUrl("");
   };
 
   /* ================================================================
@@ -611,7 +804,7 @@ export default function SnsCreatorPage() {
                 )}
 
                 {/* Video clips */}
-                {clips.map((clip, i) => (
+                {clips.map((clip) => (
                   <div
                     key={clip.id}
                     onClick={() => setSelectedId(clip.id)}
@@ -692,12 +885,50 @@ export default function SnsCreatorPage() {
                     </Button>
                   </div>
                 ) : (
-                  <button
-                    onClick={() => bgmInputRef.current?.click()}
-                    className="w-full flex items-center justify-center gap-1 py-1.5 rounded-md text-[10px] text-muted-foreground hover:bg-muted/50 transition-colors"
-                  >
-                    <Music className="h-3 w-3" /> BGMを追加
-                  </button>
+                  <div className="space-y-1.5">
+                    <button
+                      onClick={() => bgmInputRef.current?.click()}
+                      className="w-full flex items-center justify-center gap-1 py-1.5 rounded-md text-[10px] text-muted-foreground hover:bg-muted/50 transition-colors"
+                    >
+                      <Music className="h-3 w-3" /> ファイルからBGMを追加
+                    </button>
+
+                    {/* TikTok BGM input */}
+                    <div className="rounded-md border border-border/60 p-2 space-y-1.5">
+                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                        <Link2 className="h-3 w-3" />
+                        <span>TikTokから音源を取得</span>
+                      </div>
+                      <div className="flex gap-1">
+                        <input
+                          type="text"
+                          placeholder="TikTokのURLを貼り付け"
+                          value={tiktokUrl}
+                          onChange={(e) => setTiktokUrl(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleTikTokBgm();
+                          }}
+                          className="flex-1 min-w-0 rounded border bg-background px-2 py-1 text-[11px] placeholder:text-muted-foreground/50"
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          onClick={handleTikTokBgm}
+                          disabled={tiktokLoading || !tiktokUrl.trim()}
+                          title="音源を取得"
+                        >
+                          {tiktokLoading ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Search className="h-3 w-3" />
+                          )}
+                        </Button>
+                      </div>
+                      <p className="text-[9px] text-muted-foreground/60">
+                        短縮URL (vm.tiktok.com) にも対応
+                      </p>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
@@ -875,6 +1106,110 @@ export default function SnsCreatorPage() {
                   </div>
                 </div>
 
+                {/* ── Text Overlays (テロップ) ─────────── */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-[11px] font-medium text-muted-foreground flex items-center gap-1">
+                      <Type className="h-3 w-3" /> テロップ
+                    </label>
+                    <Button variant="ghost" size="icon-xs" onClick={addOverlay} title="テロップを追加">
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                  </div>
+
+                  {overlays.length === 0 && (
+                    <button
+                      onClick={addOverlay}
+                      className="w-full flex items-center justify-center gap-1 py-2 rounded-md border border-dashed border-border/60 text-[10px] text-muted-foreground hover:bg-muted/30 transition-colors"
+                    >
+                      <Plus className="h-3 w-3" /> テキストを追加
+                    </button>
+                  )}
+
+                  <div className="space-y-2">
+                    {overlays.map((o) => (
+                      <div key={o.id} className="rounded-md border p-2 space-y-1.5">
+                        <div className="flex items-start gap-1">
+                          <textarea
+                            rows={2}
+                            placeholder="テキストを入力..."
+                            value={o.text}
+                            onChange={(e) => updateOverlay(o.id, { text: e.target.value })}
+                            className="flex-1 min-w-0 rounded border bg-background px-2 py-1 text-[11px] resize-none placeholder:text-muted-foreground/50"
+                          />
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            onClick={() => removeOverlay(o.id)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+
+                        {/* Position */}
+                        <div className="flex items-center gap-1">
+                          <span className="text-[9px] text-muted-foreground w-6 shrink-0">位置</span>
+                          <div className="flex gap-0.5 flex-1">
+                            {(["top", "center", "bottom"] as const).map((pos) => (
+                              <button
+                                key={pos}
+                                onClick={() => updateOverlay(o.id, { position: pos })}
+                                className={`flex-1 rounded px-1 py-0.5 text-[9px] font-medium transition-colors ${
+                                  o.position === pos
+                                    ? "bg-primary text-primary-foreground"
+                                    : "bg-muted/50 hover:bg-muted text-muted-foreground"
+                                }`}
+                              >
+                                {pos === "top" ? "上" : pos === "center" ? "中央" : "下"}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Size */}
+                        <div className="flex items-center gap-1">
+                          <span className="text-[9px] text-muted-foreground w-6 shrink-0">大小</span>
+                          <div className="flex gap-0.5 flex-1">
+                            {(["s", "m", "l"] as const).map((sz) => (
+                              <button
+                                key={sz}
+                                onClick={() => updateOverlay(o.id, { size: sz })}
+                                className={`flex-1 rounded px-1 py-0.5 text-[9px] font-medium transition-colors ${
+                                  o.size === sz
+                                    ? "bg-primary text-primary-foreground"
+                                    : "bg-muted/50 hover:bg-muted text-muted-foreground"
+                                }`}
+                              >
+                                {sz === "s" ? "小" : sz === "m" ? "中" : "大"}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Color */}
+                        <div className="flex items-center gap-1">
+                          <span className="text-[9px] text-muted-foreground w-6 shrink-0">色</span>
+                          <div className="flex gap-1 flex-1">
+                            {TEXT_COLORS.map((tc) => (
+                              <button
+                                key={tc.value}
+                                onClick={() => updateOverlay(o.id, { color: tc.value })}
+                                className={`w-5 h-5 rounded-full border-2 transition-colors ${
+                                  o.color === tc.value
+                                    ? "border-primary ring-1 ring-primary/30"
+                                    : "border-border/60 hover:border-border"
+                                }`}
+                                style={{ backgroundColor: tc.value }}
+                                title={tc.label}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Selected clip trim */}
                 {selectedClip && (
                   <div className="space-y-2 rounded-md border p-2.5">
@@ -1024,6 +1359,24 @@ export default function SnsCreatorPage() {
                   ) : null}
                 </div>
               </div>
+
+              {/* Text overlay indicator on timeline */}
+              {overlays.filter((o) => o.text.trim()).length > 0 && (
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-[10px] font-semibold text-muted-foreground w-6 shrink-0">T</span>
+                  <div
+                    className="h-6 rounded-md bg-amber-500/20 border border-amber-500/30 flex items-center px-2"
+                    style={{
+                      width: `${Math.max(totalDuration * TIMELINE_PX_PER_SEC, 64)}px`,
+                    }}
+                  >
+                    <Type className="h-3 w-3 text-amber-400 shrink-0 mr-1" />
+                    <span className="text-[10px] text-amber-400 truncate">
+                      テロップ ×{overlays.filter((o) => o.text.trim()).length}
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {/* Time ruler */}
               {totalDuration > 0 && (
