@@ -2,7 +2,6 @@
 
 import { useState, useRef, useCallback } from "react";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
-import { toBlobURL } from "@ffmpeg/util";
 
 export function useFFmpeg() {
   const ffmpegRef = useRef<FFmpeg | null>(null);
@@ -31,13 +30,15 @@ export function useFFmpeg() {
         setLogMessages((prev) => [...prev.slice(-50), message]);
       });
 
-      // Load from local public/ffmpeg/ (same-origin, no CORS issues)
-      const coreURL = await toBlobURL("/ffmpeg/ffmpeg-core.js", "text/javascript");
-      setLoadProgress(50);
-      const wasmURL = await toBlobURL("/ffmpeg/ffmpeg-core.wasm", "application/wasm");
-      setLoadProgress(90);
+      setLoadProgress(10);
 
-      await ffmpeg.load({ coreURL, wasmURL });
+      // classWorkerURL: standalone worker in public/ (bypasses Turbopack bundling)
+      // coreURL/wasmURL: local files in public/ffmpeg/ (same-origin, no CORS)
+      await ffmpeg.load({
+        classWorkerURL: "/ffmpeg/worker.js",
+        coreURL: "/ffmpeg/ffmpeg-core.js",
+        wasmURL: "/ffmpeg/ffmpeg-core.wasm",
+      });
       setLoadProgress(100);
       setLoaded(true);
     } catch (err) {

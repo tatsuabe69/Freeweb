@@ -37,7 +37,7 @@ yarn-error.log*
 .vercel
 
 # ffmpeg core files (copied from node_modules at build time)
-/public/ffmpeg
+/public/ffmpeg/ffmpeg-core.*
 
 # typescript
 *.tsbuildinfo
