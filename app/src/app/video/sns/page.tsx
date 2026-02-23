@@ -519,26 +519,32 @@ export default function SnsCreatorPage() {
     if (!url) return;
     setTiktokLoading(true);
     try {
-      const infoRes = await fetch("/api/tiktok", {
+      // 1リクエストでページ取得→音源抽出→ダウンロードを完結させる
+      const res = await fetch("/api/tiktok/extract", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url }),
       });
-      const info = await infoRes.json();
-      if (!infoRes.ok) throw new Error(info.error || "音源情報の取得に失敗");
 
-      const dlRes = await fetch("/api/tiktok/download", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: info.music.playUrl, filename: info.music.title, cookies: info.cookies || "" }),
-      });
-      if (!dlRes.ok) throw new Error("音源のダウンロードに失敗しました");
+      if (!res.ok) {
+        // エラー時はJSONレスポンス
+        let msg = "TikTok音源の取得に失敗しました";
+        try {
+          const data = await res.json();
+          msg = data.error || msg;
+        } catch { /* non-JSON error body */ }
+        throw new Error(msg);
+      }
 
-      const blob = await dlRes.blob();
-      const file = new File([blob], `${info.music.title}.mp3`, { type: "audio/mpeg" });
+      // 成功時はaudio/mpegバイナリ + ヘッダにメタデータ
+      const title = decodeURIComponent(res.headers.get("X-Music-Title") || "TikTok音源");
+      const author = decodeURIComponent(res.headers.get("X-Music-Author") || "不明");
+
+      const blob = await res.blob();
+      const file = new File([blob], `${title}.mp3`, { type: "audio/mpeg" });
 
       setBgmFile(file);
-      setBgmName(`${info.music.title} - ${info.music.author}`);
+      setBgmName(`${title} - ${author}`);
       setTiktokUrl("");
 
       if (audioMode === "keep" || audioMode === "mute") {
