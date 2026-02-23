@@ -12,6 +12,7 @@ import {
   Music,
   Smartphone,
   Volume2,
+  ExternalLink,
 } from "lucide-react";
 
 const tools = [
@@ -112,6 +113,13 @@ const tools = [
     icon: Volume2,
     color: "from-purple-500 to-indigo-600",
     bg: "group-hover:bg-purple-500",
+  },
+  {
+    title: "TikTok音源取得",
+    href: "/video/tiktok-sound",
+    icon: ExternalLink,
+    color: "from-cyan-500 to-teal-500",
+    bg: "group-hover:bg-cyan-500",
   },
 ];
 
