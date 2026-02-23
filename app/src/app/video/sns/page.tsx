@@ -520,10 +520,10 @@ export default function SnsCreatorPage() {
     setTiktokLoading(true);
     try {
       // 1リクエストでページ取得→音源抽出→ダウンロードを完結させる
-      const res = await fetch("/api/tiktok/extract", {
+      const res = await fetch("/api/tiktok/download", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ tiktokVideoUrl: url }),
       });
 
       if (!res.ok) {
