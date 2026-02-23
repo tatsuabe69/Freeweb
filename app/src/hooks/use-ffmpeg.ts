@@ -32,12 +32,13 @@ export function useFFmpeg() {
 
       setLoadProgress(10);
 
-      // classWorkerURL: standalone worker in public/ (bypasses Turbopack bundling)
-      // coreURL/wasmURL: local files in public/ffmpeg/ (same-origin, no CORS)
+      // classWorkerURL needs absolute URL because import.meta.url is file:// in bundled code
+      // Using origin ensures it resolves to https://host/ffmpeg/worker.js
+      const origin = window.location.origin;
       await ffmpeg.load({
-        classWorkerURL: "/ffmpeg/worker.js",
-        coreURL: "/ffmpeg/ffmpeg-core.js",
-        wasmURL: "/ffmpeg/ffmpeg-core.wasm",
+        classWorkerURL: `${origin}/ffmpeg/worker.js`,
+        coreURL: `${origin}/ffmpeg/ffmpeg-core.js`,
+        wasmURL: `${origin}/ffmpeg/ffmpeg-core.wasm`,
       });
       setLoadProgress(100);
       setLoaded(true);
