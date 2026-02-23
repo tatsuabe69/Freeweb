@@ -87,12 +87,12 @@ export function FileDropzone({
         onClick={() => inputRef.current?.click()}
         className={`
           relative flex flex-col items-center justify-center
-          min-h-[200px] rounded-xl border-2 border-dashed
+          min-h-[160px] rounded-lg border border-dashed
           cursor-pointer transition-all duration-200
           ${
             isDragOver
-              ? "border-primary bg-primary/5 scale-[1.02]"
-              : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50"
+              ? "border-primary bg-primary/5"
+              : "border-border hover:border-primary/40 hover:bg-muted/30"
           }
         `}
         role="button"
@@ -106,12 +106,12 @@ export function FileDropzone({
         }}
       >
         <Upload
-          className={`h-10 w-10 mb-3 transition-colors ${
-            isDragOver ? "text-primary" : "text-muted-foreground"
+          className={`h-6 w-6 mb-2 transition-colors ${
+            isDragOver ? "text-primary" : "text-muted-foreground/50"
           }`}
         />
-        <p className="text-lg font-medium">{label}</p>
-        <p className="text-sm text-muted-foreground">{description}</p>
+        <p className="text-sm font-medium">{label}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
         <input
           ref={inputRef}
           type="file"

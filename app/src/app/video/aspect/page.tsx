@@ -89,21 +89,19 @@ export default function VideoAspectPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-3xl">
+    <div className="mx-auto max-w-screen-xl px-6 lg:px-10 py-8">
       <Link
         href="/"
-        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6"
+        className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-8"
       >
-        <ArrowLeft className="h-4 w-4" /> ツール一覧に戻る
+        <ArrowLeft className="h-3.5 w-3.5" /> ツール一覧
       </Link>
 
-      <div className="flex items-center gap-3 mb-2">
-        <div className="rounded-lg bg-primary/10 p-2">
-          <Ratio className="h-6 w-6 text-primary" />
-        </div>
-        <h1 className="text-3xl font-bold">SNSアスペクト比</h1>
+      <div className="flex items-center gap-3 mb-1">
+        <Ratio className="h-5 w-5 text-primary" />
+        <h1 className="text-xl font-semibold tracking-tight">SNSアスペクト比</h1>
       </div>
-      <p className="text-muted-foreground mb-8">
+      <p className="text-sm text-muted-foreground mb-8">
         TikTok・Instagram・YouTube・Twitter向けに動画をリサイズします。すべての処理はブラウザ内で完結します。
       </p>
 

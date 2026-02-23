@@ -20,26 +20,26 @@ export function FFmpegLoader({
   if (loaded) return null;
 
   return (
-    <div className="rounded-xl border bg-card p-6 text-center space-y-4">
-      <div className="inline-flex items-center justify-center rounded-full bg-primary/10 p-3">
-        <Download className="h-6 w-6 text-primary" />
-      </div>
-      <div>
-        <h3 className="font-semibold mb-1">動画処理エンジン</h3>
-        <p className="text-sm text-muted-foreground">
-          FFmpegがブラウザ内で動作します。初回のみダウンロード（約25 MB）が必要です。
-        </p>
+    <div className="rounded-lg border border-border/60 bg-card p-5 space-y-3">
+      <div className="flex items-center gap-3">
+        <Download className="h-4 w-4 text-primary/70" />
+        <div>
+          <h3 className="text-sm font-medium">動画処理エンジン</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            FFmpegをブラウザに読み込みます（初回のみ 約25 MB）
+          </p>
+        </div>
       </div>
       {loading ? (
-        <div className="space-y-2">
-          <Progress value={loadProgress} />
-          <p className="text-sm text-muted-foreground">
-            エンジン読み込み中... {loadProgress}%
+        <div className="space-y-1.5">
+          <Progress value={loadProgress} className="h-1.5" />
+          <p className="text-xs text-muted-foreground">
+            読み込み中... {loadProgress}%
           </p>
         </div>
       ) : (
-        <Button onClick={onLoad} size="lg">
-          動画エンジンを読み込む
+        <Button onClick={onLoad} size="sm">
+          エンジンを読み込む
         </Button>
       )}
     </div>

@@ -5,7 +5,7 @@ import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 
 export const metadata: Metadata = {
-  title: "LocalTools - 無料ブラウザ完結型ファイル処理ツール",
+  title: "FreeWEB - 無料ブラウザ完結型ファイル処理ツール",
   description:
     "無料・プライベート・無制限のファイル処理ツール。ファイルはブラウザから出ません。広告なし・登録不要・アップロード不要。",
 };

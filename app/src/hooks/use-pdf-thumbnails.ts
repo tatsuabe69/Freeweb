@@ -10,7 +10,7 @@ interface ThumbnailResult {
 
 export function usePdfThumbnails(
   file: File | null,
-  maxWidth = 150
+  maxWidth = 120
 ): ThumbnailResult {
   const [thumbnails, setThumbnails] = useState<string[]>([]);
   const [pageCount, setPageCount] = useState(0);
@@ -20,7 +20,7 @@ export function usePdfThumbnails(
   const loadPdfjs = useCallback(async () => {
     if (pdfjsRef.current) return pdfjsRef.current;
     const pdfjs = await import("pdfjs-dist");
-    pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`;
+    pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
     pdfjsRef.current = pdfjs;
     return pdfjs;
   }, []);
@@ -36,6 +36,7 @@ export function usePdfThumbnails(
 
     const generateThumbnails = async () => {
       setLoading(true);
+      setThumbnails([]);
       try {
         const pdfjs = await loadPdfjs();
         const arrayBuffer = await file.arrayBuffer();
@@ -43,7 +44,6 @@ export function usePdfThumbnails(
         const count = pdf.numPages;
         setPageCount(count);
 
-        const results: string[] = [];
         for (let i = 1; i <= count; i++) {
           if (cancelled) return;
           const page = await pdf.getPage(i);
@@ -62,11 +62,14 @@ export function usePdfThumbnails(
             canvas,
           } as Parameters<typeof page.render>[0]).promise;
 
-          results.push(canvas.toDataURL("image/jpeg", 0.7));
-        }
-
-        if (!cancelled) {
-          setThumbnails(results);
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.5);
+          if (!cancelled) {
+            setThumbnails((prev) => {
+              const next = [...prev];
+              next[i - 1] = dataUrl;
+              return next;
+            });
+          }
         }
       } catch (error) {
         console.error("Failed to generate thumbnails:", error);

@@ -127,20 +127,20 @@ interface Tool {
 
 function ToolGrid({ tools }: { tools: Tool[] }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-w-6xl mx-auto">
+    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
       {tools.map((tool) => (
         <Link key={tool.href} href={tool.href}>
-          <Card className="h-full transition-all duration-200 hover:shadow-md hover:border-primary/50 hover:-translate-y-0.5 cursor-pointer">
-            <CardHeader>
+          <Card className="group h-full border-border/60 transition-all duration-200 hover:border-primary/30 hover:shadow-sm cursor-pointer">
+            <CardHeader className="p-4">
               <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-primary/10 p-2">
-                  <tool.icon className="h-5 w-5 text-primary" />
+                <div className="rounded-md bg-primary/8 p-2 transition-colors group-hover:bg-primary/12">
+                  <tool.icon className="h-4 w-4 text-primary" />
                 </div>
-                <div>
-                  <CardTitle className="text-base">
+                <div className="min-w-0">
+                  <CardTitle className="text-sm font-medium">
                     {tool.title}
                   </CardTitle>
-                  <CardDescription className="text-xs">
+                  <CardDescription className="text-xs mt-0.5">
                     {tool.description}
                   </CardDescription>
                 </div>
@@ -155,30 +155,30 @@ function ToolGrid({ tools }: { tools: Tool[] }) {
 
 export default function HomePage() {
   return (
-    <div>
+    <div className="mx-auto max-w-screen-2xl px-6 lg:px-10">
       {/* Hero */}
-      <section className="py-16 md:py-24">
-        <div className="container mx-auto px-4 text-center">
-          <Badge variant="secondary" className="mb-4">
+      <section className="py-16 lg:py-24">
+        <div className="max-w-3xl">
+          <Badge variant="secondary" className="mb-4 font-normal">
             アップロード不要
           </Badge>
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-4">
+          <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-4 leading-[1.1]">
             ファイルは、あなたの
             <br />
             <span className="text-primary">ブラウザから出ません。</span>
           </h1>
-          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
+          <p className="text-base md:text-lg text-muted-foreground max-w-xl mb-8 leading-relaxed">
             無料・プライベート・無制限のファイル処理ツール。
             <br />
             広告なし。登録不要。アップロード不要。
           </p>
-          <div className="flex flex-wrap justify-center gap-3">
+          <div className="flex flex-wrap gap-2">
             {features.map((feature) => (
               <div
                 key={feature.title}
-                className="flex items-center gap-2 rounded-full border px-4 py-2 text-sm"
+                className="flex items-center gap-1.5 rounded-full border border-border/60 bg-card px-3 py-1.5 text-xs text-muted-foreground"
               >
-                <feature.icon className="h-4 w-4 text-primary" />
+                <feature.icon className="h-3.5 w-3.5 text-primary/70" />
                 <span>{feature.title}</span>
               </div>
             ))}
@@ -186,44 +186,38 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* PDF Tools Grid */}
-      <section className="pb-12 md:pb-16">
-        <div className="container mx-auto px-4">
-          <h2 className="text-2xl font-bold text-center mb-2">PDFツール</h2>
-          <p className="text-muted-foreground text-center mb-8">
-            すべての処理はブラウザ内で完結します
-          </p>
-          <ToolGrid tools={pdfTools} />
+      {/* PDF Tools */}
+      <section className="pb-12 lg:pb-16">
+        <div className="flex items-baseline gap-3 mb-5">
+          <h2 className="text-lg font-semibold tracking-tight">PDFツール</h2>
+          <span className="text-xs text-muted-foreground">ブラウザ内で完結</span>
         </div>
+        <ToolGrid tools={pdfTools} />
       </section>
 
-      {/* Video Tools Grid */}
-      <section className="pb-16 md:pb-24">
-        <div className="container mx-auto px-4">
-          <h2 className="text-2xl font-bold text-center mb-2">動画ツール</h2>
-          <p className="text-muted-foreground text-center mb-8">
-            FFmpeg搭載 — すべてブラウザ内で処理
-          </p>
-          <ToolGrid tools={videoTools} />
+      {/* Video Tools */}
+      <section className="pb-16 lg:pb-24">
+        <div className="flex items-baseline gap-3 mb-5">
+          <h2 className="text-lg font-semibold tracking-tight">動画ツール</h2>
+          <span className="text-xs text-muted-foreground">FFmpeg搭載</span>
         </div>
+        <ToolGrid tools={videoTools} />
       </section>
 
-      {/* Trust Section */}
-      <section className="border-t py-12">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            {features.map((feature) => (
-              <div key={feature.title} className="text-center">
-                <div className="inline-flex items-center justify-center rounded-full bg-primary/10 p-3 mb-3">
-                  <feature.icon className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="font-semibold mb-1">{feature.title}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {feature.description}
-                </p>
+      {/* Trust */}
+      <section className="border-t border-border/50 py-12 lg:py-16">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl">
+          {features.map((feature) => (
+            <div key={feature.title}>
+              <div className="flex items-center gap-2 mb-2">
+                <feature.icon className="h-4 w-4 text-primary/70" />
+                <h3 className="text-sm font-medium">{feature.title}</h3>
               </div>
-            ))}
-          </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {feature.description}
+              </p>
+            </div>
+          ))}
         </div>
       </section>
     </div>

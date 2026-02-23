@@ -9,7 +9,7 @@ interface FirstPageResult {
 
 export function usePdfFirstPages(
   files: File[],
-  maxWidth = 120
+  maxWidth = 100
 ): FirstPageResult {
   const [thumbnails, setThumbnails] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(false);
@@ -18,7 +18,7 @@ export function usePdfFirstPages(
   const loadPdfjs = useCallback(async () => {
     if (pdfjsRef.current) return pdfjsRef.current;
     const pdfjs = await import("pdfjs-dist");
-    pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`;
+    pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
     pdfjsRef.current = pdfjs;
     return pdfjs;
   }, []);
@@ -35,7 +35,6 @@ export function usePdfFirstPages(
       setLoading(true);
       try {
         const pdfjs = await loadPdfjs();
-        const results = new Map<string, string>();
 
         for (const file of files) {
           if (cancelled) return;
@@ -59,14 +58,17 @@ export function usePdfFirstPages(
               canvas,
             } as Parameters<typeof page.render>[0]).promise;
 
-            results.set(key, canvas.toDataURL("image/jpeg", 0.7));
+            if (!cancelled) {
+              const dataUrl = canvas.toDataURL("image/jpeg", 0.5);
+              setThumbnails((prev) => {
+                const next = new Map(prev);
+                next.set(key, dataUrl);
+                return next;
+              });
+            }
           } catch {
             // Skip files that can't be rendered
           }
-        }
-
-        if (!cancelled) {
-          setThumbnails(results);
         }
       } catch (error) {
         console.error("Failed to generate first page thumbnails:", error);
