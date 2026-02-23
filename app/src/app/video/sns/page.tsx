@@ -114,6 +114,8 @@ const TEXT_COLORS = [
   { label: "赤", value: "#ff3333" },
 ];
 
+const TEXT_PREVIEW_SIZES: Record<string, number> = { s: 10, m: 14, l: 19 };
+
 /* ================================================================
    Helpers
    ================================================================ */
@@ -329,6 +331,12 @@ export default function SnsCreatorPage() {
   /* ── Text overlays (テロップ) ────────────────── */
   const [overlays, setOverlays] = useState<TextOverlay[]>([]);
 
+  /* ── BGM preview audio ────────────────────── */
+  const bgmAudioRef = useRef<HTMLAudioElement>(null);
+  const [bgmDuration, setBgmDuration] = useState(0);
+  const [bgmStartOffset, setBgmStartOffset] = useState(0);
+  const [bgmObjectUrl, setBgmObjectUrl] = useState<string | null>(null);
+
   /* ── Preview ───────────────────────────────── */
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
@@ -421,23 +429,35 @@ export default function SnsCreatorPage() {
   const togglePlay = useCallback(() => {
     const v = videoRef.current;
     if (!v) return;
+    const bgm = bgmAudioRef.current;
+    const useBgm = bgmFile && (audioMode === "replace" || audioMode === "mix");
     if (v.paused) {
       v.play();
+      if (bgm && useBgm) {
+        if (!seqPlayRef.current) bgm.currentTime = bgmStartOffset;
+        bgm.play();
+      }
       setPlaying(true);
     } else {
       v.pause();
+      if (bgm) bgm.pause();
       setPlaying(false);
       seqPlayRef.current = false;
     }
-  }, []);
+  }, [bgmFile, audioMode, bgmStartOffset]);
 
   /** Play all clips in sequence from the first clip */
   const playAll = useCallback(() => {
     if (clips.length === 0) return;
+    const bgm = bgmAudioRef.current;
+    const useBgm = bgmFile && (audioMode === "replace" || audioMode === "mix");
+    if (bgm && useBgm) {
+      bgm.currentTime = bgmStartOffset;
+    }
     seqPlayRef.current = true;
     setSelectedId(clips[0].id);
     setPlaying(true);
-  }, [clips]);
+  }, [clips, bgmFile, audioMode, bgmStartOffset]);
 
   // Auto-play when clip changes during sequential playback
   useEffect(() => {
@@ -448,6 +468,12 @@ export default function SnsCreatorPage() {
       if (seqPlayRef.current) {
         v.currentTime = selectedClip.inPoint;
         v.play().catch(() => {});
+        // Ensure BGM keeps playing during sequential playback
+        const bgm = bgmAudioRef.current;
+        const useBgm = bgmFile && (audioMode === "replace" || audioMode === "mix");
+        if (bgm && useBgm && bgm.paused) {
+          bgm.play().catch(() => {});
+        }
         setPlaying(true);
       }
     };
@@ -458,12 +484,17 @@ export default function SnsCreatorPage() {
       v.addEventListener("loadeddata", startPlayback, { once: true });
       return () => v.removeEventListener("loadeddata", startPlayback);
     }
-  }, [selectedClip]);
+  }, [selectedClip, bgmFile, audioMode]);
 
   // Track time & handle sequential clip transitions
   useEffect(() => {
     const v = videoRef.current;
     if (!v || !selectedClip) return;
+
+    const pauseBgm = () => {
+      const bgm = bgmAudioRef.current;
+      if (bgm) bgm.pause();
+    };
 
     const onTimeUpdate = () => {
       setCurrentTime(v.currentTime);
@@ -477,6 +508,7 @@ export default function SnsCreatorPage() {
         } else {
           seqPlayRef.current = false;
           setPlaying(false);
+          pauseBgm();
         }
       }
     };
@@ -489,9 +521,11 @@ export default function SnsCreatorPage() {
         } else {
           seqPlayRef.current = false;
           setPlaying(false);
+          pauseBgm();
         }
       } else {
         setPlaying(false);
+        pauseBgm();
       }
     };
 
@@ -502,6 +536,46 @@ export default function SnsCreatorPage() {
       v.removeEventListener("ended", onEnded);
     };
   }, [selectedClip, clips]);
+
+  /* ── BGM object URL & duration ──────────────── */
+  useEffect(() => {
+    if (!bgmFile) {
+      setBgmDuration(0);
+      setBgmStartOffset(0);
+      return;
+    }
+    const url = URL.createObjectURL(bgmFile);
+    setBgmObjectUrl(url);
+    const audio = new Audio(url);
+    audio.addEventListener("loadedmetadata", () => setBgmDuration(audio.duration));
+    return () => {
+      URL.revokeObjectURL(url);
+      setBgmObjectUrl(null);
+    };
+  }, [bgmFile]);
+
+  /* ── Sync video/BGM volume with audioMode settings ── */
+  useEffect(() => {
+    const v = videoRef.current;
+    const bgm = bgmAudioRef.current;
+    if (v) {
+      v.muted = audioMode === "mute" || audioMode === "replace";
+      v.volume = audioMode === "mix" ? origVol / 100 : 1;
+    }
+    if (bgm) {
+      bgm.volume = audioMode === "mix" ? bgmVol / 100 : 1;
+    }
+  }, [audioMode, origVol, bgmVol]);
+
+  /* ── Pause BGM when clip changes (non-sequential) ── */
+  useEffect(() => {
+    if (!seqPlayRef.current) {
+      const bgm = bgmAudioRef.current;
+      if (bgm) bgm.pause();
+      setPlaying(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
 
   /* ── BGM handler ───────────────────────────── */
   const handleBgmSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -717,8 +791,9 @@ export default function SnsCreatorPage() {
         const bgmIn = "bgm" + ext(bgmFile.name);
         await ff.writeFile(bgmIn, await fetchFile(bgmFile));
 
-        await ff.exec([
-          "-i", concatFile,
+        const bgmArgs: string[] = ["-i", concatFile];
+        if (bgmStartOffset > 0) bgmArgs.push("-ss", String(bgmStartOffset));
+        bgmArgs.push(
           "-i", bgmIn,
           "-map", "0:v",
           "-map", "1:a",
@@ -727,7 +802,8 @@ export default function SnsCreatorPage() {
           "-shortest",
           "-movflags", "+faststart",
           "-y", "output.mp4",
-        ]);
+        );
+        await ff.exec(bgmArgs);
         outputFile = "output.mp4";
       } else if (audioMode === "mix" && bgmFile) {
         setProcessStep("BGMをミックス中...");
@@ -737,8 +813,9 @@ export default function SnsCreatorPage() {
         const oVol = (origVol / 100).toFixed(2);
         const bVol = (bgmVol / 100).toFixed(2);
 
-        await ff.exec([
-          "-i", concatFile,
+        const mixArgs: string[] = ["-i", concatFile];
+        if (bgmStartOffset > 0) mixArgs.push("-ss", String(bgmStartOffset));
+        mixArgs.push(
           "-i", bgmIn,
           "-filter_complex",
           `[0:a]volume=${oVol}[a0];[1:a]volume=${bVol}[a1];[a0][a1]amix=inputs=2:duration=first[aout]`,
@@ -748,7 +825,8 @@ export default function SnsCreatorPage() {
           "-c:a", "aac", "-b:a", qual.aBit, "-ar", "44100", "-ac", "2",
           "-movflags", "+faststart",
           "-y", "output.mp4",
-        ]);
+        );
+        await ff.exec(mixArgs);
         outputFile = "output.mp4";
       }
 
@@ -780,9 +858,13 @@ export default function SnsCreatorPage() {
 
   const reset = () => {
     clips.forEach((c) => URL.revokeObjectURL(c.objectUrl));
+    const bgm = bgmAudioRef.current;
+    if (bgm) bgm.pause();
     setClips([]);
     setBgmFile(null);
     setBgmName("");
+    setBgmDuration(0);
+    setBgmStartOffset(0);
     setSelectedId(null);
     setResult(null);
     setPlaying(false);
@@ -1014,9 +1096,43 @@ export default function SnsCreatorPage() {
                         src={selectedClip.objectUrl}
                         className="h-full w-full object-contain"
                         playsInline
-                        muted={false}
+                        muted={audioMode === "mute" || audioMode === "replace"}
                       />
+                      {/* Text overlay preview */}
+                      {overlays.filter((o) => o.text.trim()).map((o) => (
+                        <div
+                          key={o.id}
+                          className="absolute left-0 right-0 text-center pointer-events-none px-2"
+                          style={{
+                            top: o.position === "top" ? "5%" : o.position === "center" ? "50%" : undefined,
+                            bottom: o.position === "bottom" ? "5%" : undefined,
+                            transform: o.position === "center" ? "translateY(-50%)" : undefined,
+                          }}
+                        >
+                          {o.text.split("\n").map((line, i) => (
+                            <div
+                              key={i}
+                              style={{
+                                fontSize: `${TEXT_PREVIEW_SIZES[o.size] || 14}px`,
+                                color: o.color,
+                                fontWeight: "bold",
+                                textShadow:
+                                  o.color === "#000000"
+                                    ? "0 0 3px #fff, 0 0 3px #fff"
+                                    : "0 0 3px #000, 0 0 3px #000",
+                                lineHeight: 1.4,
+                              }}
+                            >
+                              {line}
+                            </div>
+                          ))}
+                        </div>
+                      ))}
                     </div>
+                    {/* Hidden BGM audio element */}
+                    {bgmObjectUrl && (
+                      <audio ref={bgmAudioRef} src={bgmObjectUrl} preload="auto" />
+                    )}
                     {/* Transport */}
                     <div className="flex items-center gap-2">
                       <Button variant="ghost" size="icon-xs" onClick={togglePlay} title="再生/一時停止">
@@ -1161,6 +1277,26 @@ export default function SnsCreatorPage() {
                         onChange={(e) => setBgmVol(Number(e.target.value))}
                         className="w-full h-1 accent-primary"
                       />
+                    </div>
+                  </div>
+                )}
+
+                {/* BGM start offset slider */}
+                {bgmFile && (audioMode === "replace" || audioMode === "mix") && bgmDuration > 0 && (
+                  <div className="space-y-2 rounded-md bg-muted/30 p-2.5">
+                    <p className="text-[10px] font-medium text-muted-foreground">BGM開始位置</p>
+                    <input
+                      type="range"
+                      min="0"
+                      max={Math.max(bgmDuration - 1, 0)}
+                      step="0.1"
+                      value={bgmStartOffset}
+                      onChange={(e) => setBgmStartOffset(Number(e.target.value))}
+                      className="w-full h-1 accent-primary"
+                    />
+                    <div className="flex justify-between text-[10px] text-muted-foreground">
+                      <span>{fmt(bgmStartOffset)}</span>
+                      <span>全長 {fmt(bgmDuration)}</span>
                     </div>
                   </div>
                 )}
