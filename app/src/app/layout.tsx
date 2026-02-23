@@ -5,9 +5,9 @@ import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 
 export const metadata: Metadata = {
-  title: "LocalTools - Free Browser-Based File Tools",
+  title: "LocalTools - 無料ブラウザ完結型ファイル処理ツール",
   description:
-    "Free, private, no-limits file processing tools. Your files never leave your browser. No ads, no registration, no upload.",
+    "無料・プライベート・無制限のファイル処理ツール。ファイルはブラウザから出ません。広告なし・登録不要・アップロード不要。",
 };
 
 export default function RootLayout({
@@ -16,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="ja" suppressHydrationWarning>
       <body className="antialiased font-sans">
         <ThemeProvider
           attribute="class"

@@ -7,10 +7,10 @@ export function Footer() {
         <div className="flex flex-col items-center gap-4 text-center">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Shield className="h-4 w-4" />
-            <span>Your files never leave your browser. No data is sent to any server.</span>
+            <span>ファイルはブラウザから出ません。サーバーへのデータ送信は一切ありません。</span>
           </div>
           <div className="text-xs text-muted-foreground">
-            Free. Private. No limits. No ads. No registration.
+            無料。プライベート。無制限。広告なし。登録不要。
           </div>
         </div>
       </div>

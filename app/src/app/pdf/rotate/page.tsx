@@ -78,7 +78,7 @@ export default function PdfRotatePage() {
       setProgress(100);
     } catch (error) {
       console.error("Rotation failed:", error);
-      alert("Failed to rotate PDF. Please check your file and try again.");
+      alert("PDFの回転に失敗しました。ファイルを確認してもう一度お試しください。");
     } finally {
       setProcessing(false);
     }
@@ -108,18 +108,17 @@ export default function PdfRotatePage() {
         href="/"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6"
       >
-        <ArrowLeft className="h-4 w-4" /> Back to tools
+        <ArrowLeft className="h-4 w-4" /> ツール一覧に戻る
       </Link>
 
       <div className="flex items-center gap-3 mb-2">
         <div className="rounded-lg bg-primary/10 p-2">
           <RotateCw className="h-6 w-6 text-primary" />
         </div>
-        <h1 className="text-3xl font-bold">PDF Rotate</h1>
+        <h1 className="text-3xl font-bold">PDF 回転</h1>
       </div>
       <p className="text-muted-foreground mb-8">
-        Rotate PDF pages by 90, 180, or 270 degrees. All processing happens in
-        your browser.
+        PDFのページを90°・180°・270°に回転します。すべての処理はブラウザ内で完結します。
       </p>
 
       {!result ? (
@@ -128,18 +127,18 @@ export default function PdfRotatePage() {
             accept=".pdf,application/pdf"
             files={files}
             onFilesChange={handleFilesChange}
-            label="Drop a PDF file here"
-            description="or click to browse"
+            label="PDFファイルをここにドロップ"
+            description="またはクリックして選択"
           />
 
           {totalPages > 0 && (
             <div className="space-y-4 rounded-xl border bg-card p-4">
               <p className="text-sm text-muted-foreground">
-                {totalPages} pages detected
+                {totalPages}ページを検出
               </p>
 
               <div>
-                <label className="text-sm font-medium">Rotation angle</label>
+                <label className="text-sm font-medium">回転角度</label>
                 <div className="flex gap-2 mt-1">
                   {[90, 180, 270].map((deg) => (
                     <Button
@@ -155,21 +154,21 @@ export default function PdfRotatePage() {
               </div>
 
               <div>
-                <label className="text-sm font-medium">Pages to rotate</label>
+                <label className="text-sm font-medium">回転するページ</label>
                 <div className="flex gap-2 mt-1">
                   <Button
                     variant={rotateAll ? "default" : "outline"}
                     size="sm"
                     onClick={() => setRotateAll(true)}
                   >
-                    All pages
+                    すべてのページ
                   </Button>
                   <Button
                     variant={!rotateAll ? "default" : "outline"}
                     size="sm"
                     onClick={() => setRotateAll(false)}
                   >
-                    Specific pages
+                    ページ指定
                   </Button>
                 </div>
                 {!rotateAll && (
@@ -177,7 +176,7 @@ export default function PdfRotatePage() {
                     type="text"
                     value={pageInput}
                     onChange={(e) => setPageInput(e.target.value)}
-                    placeholder="e.g. 1, 3-5, 8"
+                    placeholder="例: 1, 3-5, 8"
                     className="mt-2 w-full rounded-md border bg-background px-3 py-2 text-sm"
                   />
                 )}
@@ -189,7 +188,7 @@ export default function PdfRotatePage() {
             <div className="space-y-2">
               <Progress value={progress} />
               <p className="text-sm text-muted-foreground text-center">
-                Rotating... {progress}%
+                回転中... {progress}%
               </p>
             </div>
           )}
@@ -200,20 +199,20 @@ export default function PdfRotatePage() {
             className="w-full"
             size="lg"
           >
-            {processing ? "Rotating..." : "Rotate PDF"}
+            {processing ? "回転中..." : "PDFを回転"}
           </Button>
         </div>
       ) : (
         <div className="text-center space-y-4">
           <div className="rounded-xl border bg-card p-8">
-            <p className="text-lg font-medium mb-4">Rotation complete!</p>
+            <p className="text-lg font-medium mb-4">回転が完了しました！</p>
             <Button onClick={handleDownload} size="lg" className="gap-2">
               <Download className="h-5 w-5" />
-              Download Rotated PDF
+              回転済みPDFをダウンロード
             </Button>
           </div>
           <Button variant="outline" onClick={reset}>
-            Rotate another file
+            他のファイルを回転する
           </Button>
         </div>
       )}

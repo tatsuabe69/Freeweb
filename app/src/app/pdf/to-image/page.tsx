@@ -84,7 +84,7 @@ export default function PdfToImagePage() {
       setDone(true);
     } catch (error) {
       console.error("Conversion failed:", error);
-      alert("Failed to convert PDF. Please check your file and try again.");
+      alert("PDFの変換に失敗しました。ファイルを確認してもう一度お試しください。");
     } finally {
       setProcessing(false);
     }
@@ -103,18 +103,17 @@ export default function PdfToImagePage() {
         href="/"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6"
       >
-        <ArrowLeft className="h-4 w-4" /> Back to tools
+        <ArrowLeft className="h-4 w-4" /> ツール一覧に戻る
       </Link>
 
       <div className="flex items-center gap-3 mb-2">
         <div className="rounded-lg bg-primary/10 p-2">
           <ImageIcon className="h-6 w-6 text-primary" />
         </div>
-        <h1 className="text-3xl font-bold">PDF to Image</h1>
+        <h1 className="text-3xl font-bold">PDF → 画像</h1>
       </div>
       <p className="text-muted-foreground mb-8">
-        Convert PDF pages to JPG, PNG, or WebP images. All processing happens in
-        your browser.
+        PDFの各ページをJPG・PNG・WebP画像に変換します。すべての処理はブラウザ内で完結します。
       </p>
 
       {!done ? (
@@ -123,18 +122,18 @@ export default function PdfToImagePage() {
             accept=".pdf,application/pdf"
             files={files}
             onFilesChange={handleFilesChange}
-            label="Drop a PDF file here"
-            description="or click to browse"
+            label="PDFファイルをここにドロップ"
+            description="またはクリックして選択"
           />
 
           {totalPages > 0 && (
             <div className="space-y-4 rounded-xl border bg-card p-4">
               <p className="text-sm text-muted-foreground">
-                {totalPages} pages detected
+                {totalPages}ページを検出
               </p>
 
               <div>
-                <label className="text-sm font-medium">Image format</label>
+                <label className="text-sm font-medium">画像形式</label>
                 <div className="flex gap-2 mt-1">
                   {(["png", "jpeg", "webp"] as ImageFormat[]).map((f) => (
                     <Button
@@ -150,7 +149,7 @@ export default function PdfToImagePage() {
               </div>
 
               <div>
-                <label className="text-sm font-medium">Resolution</label>
+                <label className="text-sm font-medium">解像度</label>
                 <div className="flex gap-2 mt-1">
                   {([72, 150, 300] as DPI[]).map((d) => (
                     <Button
@@ -171,7 +170,7 @@ export default function PdfToImagePage() {
             <div className="space-y-2">
               <Progress value={progress} />
               <p className="text-sm text-muted-foreground text-center">
-                Converting... {progress}%
+                変換中... {progress}%
               </p>
             </div>
           )}
@@ -182,19 +181,19 @@ export default function PdfToImagePage() {
             className="w-full"
             size="lg"
           >
-            {processing ? "Converting..." : "Convert to Images"}
+            {processing ? "変換中..." : "画像に変換"}
           </Button>
         </div>
       ) : (
         <div className="text-center space-y-4">
           <div className="rounded-xl border bg-card p-8">
-            <p className="text-lg font-medium mb-2">Conversion complete!</p>
+            <p className="text-lg font-medium mb-2">変換が完了しました！</p>
             <p className="text-sm text-muted-foreground">
-              Your ZIP file has been downloaded.
+              ZIPファイルがダウンロードされました。
             </p>
           </div>
           <Button variant="outline" onClick={reset}>
-            Convert another file
+            他のファイルを変換する
           </Button>
         </div>
       )}

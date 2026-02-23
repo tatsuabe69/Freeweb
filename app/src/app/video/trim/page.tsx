@@ -80,7 +80,7 @@ export default function VideoTrimPage() {
       setResult({ blob, name: `${baseName}_trimmed${ext}` });
     } catch (error) {
       console.error("Trim failed:", error);
-      alert("Video trimming failed. Please try again.");
+      alert("動画のトリミングに失敗しました。もう一度お試しください。");
     } finally {
       setProcessing(false);
     }
@@ -112,18 +112,17 @@ export default function VideoTrimPage() {
         href="/"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6"
       >
-        <ArrowLeft className="h-4 w-4" /> Back to tools
+        <ArrowLeft className="h-4 w-4" /> ツール一覧に戻る
       </Link>
 
       <div className="flex items-center gap-3 mb-2">
         <div className="rounded-lg bg-primary/10 p-2">
           <Scissors className="h-6 w-6 text-primary" />
         </div>
-        <h1 className="text-3xl font-bold">Video Trim</h1>
+        <h1 className="text-3xl font-bold">動画トリミング</h1>
       </div>
       <p className="text-muted-foreground mb-8">
-        Cut and trim videos by setting start and end times. Processed entirely in
-        your browser.
+        開始・終了時間を指定して動画をカットします。すべての処理はブラウザ内で完結します。
       </p>
 
       <FFmpegLoader
@@ -139,8 +138,8 @@ export default function VideoTrimPage() {
             accept="video/*,.mp4,.mov,.avi,.webm,.mkv"
             files={files}
             onFilesChange={handleFilesChange}
-            label="Drop a video file here"
-            description="MP4, MOV, AVI, WebM supported"
+            label="動画ファイルをここにドロップ"
+            description="MP4・MOV・AVI・WebMに対応"
           />
 
           {videoUrl && (
@@ -157,14 +156,14 @@ export default function VideoTrimPage() {
 
               {duration > 0 && (
                 <p className="text-sm text-muted-foreground text-center">
-                  Duration: {formatTime(duration)}
+                  再生時間: {formatTime(duration)}
                 </p>
               )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium mb-1 block">
-                    Start Time (seconds)
+                    開始時間（秒）
                   </label>
                   <input
                     type="number"
@@ -178,7 +177,7 @@ export default function VideoTrimPage() {
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-1 block">
-                    End Time (seconds)
+                    終了時間（秒）
                   </label>
                   <input
                     type="number"
@@ -198,7 +197,7 @@ export default function VideoTrimPage() {
             <div className="space-y-2">
               <Progress value={progress} />
               <p className="text-sm text-muted-foreground text-center">
-                Trimming... {progress}%
+                トリミング中... {progress}%
               </p>
             </div>
           )}
@@ -209,7 +208,7 @@ export default function VideoTrimPage() {
             className="w-full"
             size="lg"
           >
-            {processing ? "Trimming..." : "Trim Video"}
+            {processing ? "トリミング中..." : "動画をトリミング"}
           </Button>
         </div>
       )}
@@ -217,14 +216,14 @@ export default function VideoTrimPage() {
       {result && (
         <div className="text-center space-y-4">
           <div className="rounded-xl border bg-card p-8">
-            <p className="text-lg font-medium mb-4">Trim complete!</p>
+            <p className="text-lg font-medium mb-4">トリミングが完了しました！</p>
             <Button onClick={handleDownload} size="lg" className="gap-2">
               <Download className="h-5 w-5" />
-              Download Trimmed Video
+              トリミング済み動画をダウンロード
             </Button>
           </div>
           <Button variant="outline" onClick={reset}>
-            Trim another video
+            他の動画をトリミングする
           </Button>
         </div>
       )}

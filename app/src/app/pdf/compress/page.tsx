@@ -56,7 +56,7 @@ export default function PdfCompressPage() {
     } catch (error) {
       console.error("Compression failed:", error);
       alert(
-        "Failed to compress PDF. Please check your file and try again."
+        "PDFの圧縮に失敗しました。ファイルを確認してもう一度お試しください。"
       );
     } finally {
       setProcessing(false);
@@ -91,18 +91,17 @@ export default function PdfCompressPage() {
         href="/"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6"
       >
-        <ArrowLeft className="h-4 w-4" /> Back to tools
+        <ArrowLeft className="h-4 w-4" /> ツール一覧に戻る
       </Link>
 
       <div className="flex items-center gap-3 mb-2">
         <div className="rounded-lg bg-primary/10 p-2">
           <Minimize2 className="h-6 w-6 text-primary" />
         </div>
-        <h1 className="text-3xl font-bold">PDF Compress</h1>
+        <h1 className="text-3xl font-bold">PDF 圧縮</h1>
       </div>
       <p className="text-muted-foreground mb-8">
-        Reduce PDF file size by removing unused objects and optimizing the
-        structure. All processing happens in your browser.
+        不要なオブジェクトの削除と構造の最適化によりPDFのファイルサイズを縮小します。すべての処理はブラウザ内で完結します。
       </p>
 
       {!result ? (
@@ -111,15 +110,15 @@ export default function PdfCompressPage() {
             accept=".pdf,application/pdf"
             files={files}
             onFilesChange={setFiles}
-            label="Drop a PDF file here"
-            description="or click to browse"
+            label="PDFファイルをここにドロップ"
+            description="またはクリックして選択"
           />
 
           {processing && (
             <div className="space-y-2">
               <Progress value={progress} />
               <p className="text-sm text-muted-foreground text-center">
-                Compressing... {progress}%
+                圧縮中... {progress}%
               </p>
             </div>
           )}
@@ -130,34 +129,34 @@ export default function PdfCompressPage() {
             className="w-full"
             size="lg"
           >
-            {processing ? "Compressing..." : "Compress PDF"}
+            {processing ? "圧縮中..." : "PDFを圧縮"}
           </Button>
         </div>
       ) : (
         <div className="text-center space-y-4">
           <div className="rounded-xl border bg-card p-8 space-y-4">
-            <p className="text-lg font-medium">Compression complete!</p>
+            <p className="text-lg font-medium">圧縮が完了しました！</p>
             <div className="flex justify-center gap-8 text-sm">
               <div>
-                <p className="text-muted-foreground">Original</p>
+                <p className="text-muted-foreground">元のサイズ</p>
                 <p className="font-semibold">{formatSize(originalSize)}</p>
               </div>
               <div>
-                <p className="text-muted-foreground">Compressed</p>
+                <p className="text-muted-foreground">圧縮後</p>
                 <p className="font-semibold">{formatSize(result.length)}</p>
               </div>
               <div>
-                <p className="text-muted-foreground">Savings</p>
+                <p className="text-muted-foreground">削減率</p>
                 <p className="font-semibold text-green-600">{savings}%</p>
               </div>
             </div>
             <Button onClick={handleDownload} size="lg" className="gap-2">
               <Download className="h-5 w-5" />
-              Download Compressed PDF
+              圧縮済みPDFをダウンロード
             </Button>
           </div>
           <Button variant="outline" onClick={reset}>
-            Compress another file
+            他のファイルを圧縮する
           </Button>
         </div>
       )}

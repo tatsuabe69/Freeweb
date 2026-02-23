@@ -32,7 +32,7 @@ export default function PdfMergePage() {
       setResult(pdfBytes);
     } catch (error) {
       console.error("Merge failed:", error);
-      alert("Failed to merge PDFs. Please check your files and try again.");
+      alert("PDFの結合に失敗しました。ファイルを確認してもう一度お試しください。");
     } finally {
       setProcessing(false);
     }
@@ -61,18 +61,17 @@ export default function PdfMergePage() {
         href="/"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6"
       >
-        <ArrowLeft className="h-4 w-4" /> Back to tools
+        <ArrowLeft className="h-4 w-4" /> ツール一覧に戻る
       </Link>
 
       <div className="flex items-center gap-3 mb-2">
         <div className="rounded-lg bg-primary/10 p-2">
           <Merge className="h-6 w-6 text-primary" />
         </div>
-        <h1 className="text-3xl font-bold">PDF Merge</h1>
+        <h1 className="text-3xl font-bold">PDF 結合</h1>
       </div>
       <p className="text-muted-foreground mb-8">
-        Combine multiple PDF files into a single document. Files are processed
-        entirely in your browser.
+        複数のPDFファイルを1つのドキュメントに結合します。すべての処理はブラウザ内で完結します。
       </p>
 
       {!result ? (
@@ -82,15 +81,15 @@ export default function PdfMergePage() {
             multiple
             files={files}
             onFilesChange={setFiles}
-            label="Drop PDF files here"
-            description="or click to browse — add 2 or more PDFs to merge"
+            label="PDFファイルをここにドロップ"
+            description="またはクリックして選択 — 2つ以上のPDFを追加してください"
           />
 
           {processing && (
             <div className="space-y-2">
               <Progress value={progress} />
               <p className="text-sm text-muted-foreground text-center">
-                Merging... {progress}%
+                結合中... {progress}%
               </p>
             </div>
           )}
@@ -101,20 +100,20 @@ export default function PdfMergePage() {
             className="w-full"
             size="lg"
           >
-            {processing ? "Merging..." : `Merge ${files.length} PDFs`}
+            {processing ? "結合中..." : `${files.length}個のPDFを結合`}
           </Button>
         </div>
       ) : (
         <div className="text-center space-y-4">
           <div className="rounded-xl border bg-card p-8">
-            <p className="text-lg font-medium mb-4">Merge complete!</p>
+            <p className="text-lg font-medium mb-4">結合が完了しました！</p>
             <Button onClick={handleDownload} size="lg" className="gap-2">
               <Download className="h-5 w-5" />
-              Download Merged PDF
+              結合済みPDFをダウンロード
             </Button>
           </div>
           <Button variant="outline" onClick={reset}>
-            Merge more files
+            他のファイルを結合する
           </Button>
         </div>
       )}

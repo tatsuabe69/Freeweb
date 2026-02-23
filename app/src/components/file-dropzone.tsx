@@ -26,8 +26,8 @@ export function FileDropzone({
   multiple = false,
   files,
   onFilesChange,
-  label = "Drop files here",
-  description = "or click to browse",
+  label = "ここにファイルをドロップ",
+  description = "またはクリックして選択",
 }: FileDropzoneProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);

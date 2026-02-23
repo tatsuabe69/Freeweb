@@ -20,7 +20,7 @@ const widthOptions = [
   { label: "320px", value: 320 },
   { label: "480px", value: 480 },
   { label: "640px", value: 640 },
-  { label: "Original", value: -1 },
+  { label: "元のサイズ", value: -1 },
 ];
 
 export default function VideoToGifPage() {
@@ -81,7 +81,7 @@ export default function VideoToGifPage() {
       setResult({ blob, name: `${baseName}.gif` });
     } catch (error) {
       console.error("GIF conversion failed:", error);
-      alert("GIF conversion failed. Please try again.");
+      alert("GIF変換に失敗しました。もう一度お試しください。");
     } finally {
       setProcessing(false);
     }
@@ -108,18 +108,17 @@ export default function VideoToGifPage() {
         href="/"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6"
       >
-        <ArrowLeft className="h-4 w-4" /> Back to tools
+        <ArrowLeft className="h-4 w-4" /> ツール一覧に戻る
       </Link>
 
       <div className="flex items-center gap-3 mb-2">
         <div className="rounded-lg bg-primary/10 p-2">
           <Film className="h-6 w-6 text-primary" />
         </div>
-        <h1 className="text-3xl font-bold">Video to GIF</h1>
+        <h1 className="text-3xl font-bold">動画 → GIF</h1>
       </div>
       <p className="text-muted-foreground mb-8">
-        Convert video clips to animated GIFs. Adjust frame rate, size, and
-        timing. Processed entirely in your browser.
+        動画をアニメーションGIFに変換します。フレームレート・サイズ・時間を調整可能。すべての処理はブラウザ内で完結します。
       </p>
 
       <FFmpegLoader
@@ -135,8 +134,8 @@ export default function VideoToGifPage() {
             accept="video/*,.mp4,.mov,.avi,.webm,.mkv"
             files={files}
             onFilesChange={setFiles}
-            label="Drop a video file here"
-            description="MP4, MOV, AVI, WebM supported"
+            label="動画ファイルをここにドロップ"
+            description="MP4・MOV・AVI・WebMに対応"
           />
 
           {files.length > 0 && (
@@ -144,7 +143,7 @@ export default function VideoToGifPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium mb-1 block">
-                    Start Time (seconds)
+                    開始時間（秒）
                   </label>
                   <input
                     type="text"
@@ -156,13 +155,13 @@ export default function VideoToGifPage() {
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-1 block">
-                    End Time (seconds)
+                    終了時間（秒）
                   </label>
                   <input
                     type="text"
                     value={endTime}
                     onChange={(e) => setEndTime(e.target.value)}
-                    placeholder="End of video"
+                    placeholder="動画の最後まで"
                     className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
                   />
                 </div>
@@ -170,7 +169,7 @@ export default function VideoToGifPage() {
 
               <div>
                 <label className="text-sm font-medium mb-2 block">
-                  Frame Rate
+                  フレームレート
                 </label>
                 <div className="flex gap-2">
                   {fpsOptions.map((opt) => (
@@ -190,7 +189,7 @@ export default function VideoToGifPage() {
               </div>
 
               <div>
-                <label className="text-sm font-medium mb-2 block">Width</label>
+                <label className="text-sm font-medium mb-2 block">幅</label>
                 <div className="grid grid-cols-4 gap-2">
                   {widthOptions.map((opt) => (
                     <button
@@ -214,7 +213,7 @@ export default function VideoToGifPage() {
             <div className="space-y-2">
               <Progress value={progress} />
               <p className="text-sm text-muted-foreground text-center">
-                Converting to GIF... {progress}%
+                GIFに変換中... {progress}%
               </p>
             </div>
           )}
@@ -225,7 +224,7 @@ export default function VideoToGifPage() {
             className="w-full"
             size="lg"
           >
-            {processing ? "Converting..." : "Convert to GIF"}
+            {processing ? "変換中..." : "GIFに変換"}
           </Button>
         </div>
       )}
@@ -233,14 +232,14 @@ export default function VideoToGifPage() {
       {result && (
         <div className="text-center space-y-4">
           <div className="rounded-xl border bg-card p-8">
-            <p className="text-lg font-medium mb-4">GIF created!</p>
+            <p className="text-lg font-medium mb-4">GIFが作成されました！</p>
             <Button onClick={handleDownload} size="lg" className="gap-2">
               <Download className="h-5 w-5" />
-              Download GIF
+              GIFをダウンロード
             </Button>
           </div>
           <Button variant="outline" onClick={reset}>
-            Convert another video
+            他の動画を変換する
           </Button>
         </div>
       )}

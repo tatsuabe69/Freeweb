@@ -77,7 +77,7 @@ export default function ImageToPdfPage() {
     } catch (error) {
       console.error("Conversion failed:", error);
       alert(
-        "Failed to convert images. Please use JPG or PNG files."
+        "画像の変換に失敗しました。JPGまたはPNGファイルをご使用ください。"
       );
     } finally {
       setProcessing(false);
@@ -107,18 +107,17 @@ export default function ImageToPdfPage() {
         href="/"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6"
       >
-        <ArrowLeft className="h-4 w-4" /> Back to tools
+        <ArrowLeft className="h-4 w-4" /> ツール一覧に戻る
       </Link>
 
       <div className="flex items-center gap-3 mb-2">
         <div className="rounded-lg bg-primary/10 p-2">
           <FileImage className="h-6 w-6 text-primary" />
         </div>
-        <h1 className="text-3xl font-bold">Image to PDF</h1>
+        <h1 className="text-3xl font-bold">画像 → PDF</h1>
       </div>
       <p className="text-muted-foreground mb-8">
-        Convert JPG and PNG images into a PDF document. All processing happens in
-        your browser.
+        JPG・PNG画像をPDFドキュメントに変換します。すべての処理はブラウザ内で完結します。
       </p>
 
       {!result ? (
@@ -128,21 +127,21 @@ export default function ImageToPdfPage() {
             multiple
             files={files}
             onFilesChange={setFiles}
-            label="Drop images here"
-            description="JPG and PNG supported — add multiple images to create a multi-page PDF"
+            label="画像をここにドロップ"
+            description="JPG・PNGに対応 — 複数の画像で複数ページのPDFを作成できます"
           />
 
           {files.length > 0 && (
             <div className="space-y-4 rounded-xl border bg-card p-4">
               <div>
-                <label className="text-sm font-medium">Page size</label>
+                <label className="text-sm font-medium">ページサイズ</label>
                 <div className="flex gap-2 mt-1">
                   <Button
                     variant={pageSize === "fit" ? "default" : "outline"}
                     size="sm"
                     onClick={() => setPageSize("fit")}
                   >
-                    Fit to image
+                    画像に合わせる
                   </Button>
                   <Button
                     variant={pageSize === "a4" ? "default" : "outline"}
@@ -167,7 +166,7 @@ export default function ImageToPdfPage() {
             <div className="space-y-2">
               <Progress value={progress} />
               <p className="text-sm text-muted-foreground text-center">
-                Converting... {progress}%
+                変換中... {progress}%
               </p>
             </div>
           )}
@@ -179,21 +178,21 @@ export default function ImageToPdfPage() {
             size="lg"
           >
             {processing
-              ? "Converting..."
-              : `Convert ${files.length} image${files.length !== 1 ? "s" : ""} to PDF`}
+              ? "変換中..."
+              : `${files.length}枚の画像をPDFに変換`}
           </Button>
         </div>
       ) : (
         <div className="text-center space-y-4">
           <div className="rounded-xl border bg-card p-8">
-            <p className="text-lg font-medium mb-4">Conversion complete!</p>
+            <p className="text-lg font-medium mb-4">変換が完了しました！</p>
             <Button onClick={handleDownload} size="lg" className="gap-2">
               <Download className="h-5 w-5" />
-              Download PDF
+              PDFをダウンロード
             </Button>
           </div>
           <Button variant="outline" onClick={reset}>
-            Convert more images
+            他の画像を変換する
           </Button>
         </div>
       )}

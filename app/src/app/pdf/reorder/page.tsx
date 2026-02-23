@@ -42,7 +42,7 @@ export default function PdfReorderPage() {
         setPages(
           Array.from({ length: count }, (_, i) => ({
             index: i,
-            label: `Page ${i + 1}`,
+            label: `ページ ${i + 1}`,
             deleted: false,
           }))
         );
@@ -98,7 +98,7 @@ export default function PdfReorderPage() {
       setResult(pdfBytes);
     } catch (error) {
       console.error("Reorder failed:", error);
-      alert("Failed to reorder PDF. Please check your file and try again.");
+      alert("PDFの並び替えに失敗しました。ファイルを確認してもう一度お試しください。");
     } finally {
       setProcessing(false);
     }
@@ -131,18 +131,17 @@ export default function PdfReorderPage() {
         href="/"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6"
       >
-        <ArrowLeft className="h-4 w-4" /> Back to tools
+        <ArrowLeft className="h-4 w-4" /> ツール一覧に戻る
       </Link>
 
       <div className="flex items-center gap-3 mb-2">
         <div className="rounded-lg bg-primary/10 p-2">
           <ArrowUpDown className="h-6 w-6 text-primary" />
         </div>
-        <h1 className="text-3xl font-bold">PDF Reorder</h1>
+        <h1 className="text-3xl font-bold">PDF 並び替え</h1>
       </div>
       <p className="text-muted-foreground mb-8">
-        Reorder or remove pages from a PDF. All processing happens in your
-        browser.
+        PDFのページを並び替え・削除します。すべての処理はブラウザ内で完結します。
       </p>
 
       {!result ? (
@@ -152,15 +151,15 @@ export default function PdfReorderPage() {
               accept=".pdf,application/pdf"
               files={files}
               onFilesChange={handleFilesChange}
-              label="Drop a PDF file here"
-              description="or click to browse"
+              label="PDFファイルをここにドロップ"
+              description="またはクリックして選択"
             />
           )}
 
           {loaded && pages.length > 0 && (
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground mb-3">
-                {pages.length} pages — use arrows to reorder, trash to remove
+                {pages.length}ページ — 矢印で並び替え、ゴミ箱で削除
               </p>
               {pages.map((page, idx) => (
                 <div
@@ -183,7 +182,7 @@ export default function PdfReorderPage() {
                       size="icon"
                       onClick={() => movePage(idx, "up")}
                       disabled={idx === 0 || page.deleted}
-                      aria-label="Move up"
+                      aria-label="上に移動"
                     >
                       <ArrowUp className="h-4 w-4" />
                     </Button>
@@ -192,7 +191,7 @@ export default function PdfReorderPage() {
                       size="icon"
                       onClick={() => movePage(idx, "down")}
                       disabled={idx === pages.length - 1 || page.deleted}
-                      aria-label="Move down"
+                      aria-label="下に移動"
                     >
                       <ArrowDown className="h-4 w-4" />
                     </Button>
@@ -200,7 +199,7 @@ export default function PdfReorderPage() {
                       variant="ghost"
                       size="icon"
                       onClick={() => toggleDelete(idx)}
-                      aria-label={page.deleted ? "Restore page" : "Delete page"}
+                      aria-label={page.deleted ? "ページを復元" : "ページを削除"}
                     >
                       <Trash2
                         className={`h-4 w-4 ${
@@ -220,7 +219,7 @@ export default function PdfReorderPage() {
             <div className="space-y-2">
               <Progress value={progress} />
               <p className="text-sm text-muted-foreground text-center">
-                Processing... {progress}%
+                処理中... {progress}%
               </p>
             </div>
           )}
@@ -233,22 +232,22 @@ export default function PdfReorderPage() {
               size="lg"
             >
               {processing
-                ? "Processing..."
-                : `Save PDF (${activeCount} pages)`}
+                ? "処理中..."
+                : `PDFを保存（${activeCount}ページ）`}
             </Button>
           )}
         </div>
       ) : (
         <div className="text-center space-y-4">
           <div className="rounded-xl border bg-card p-8">
-            <p className="text-lg font-medium mb-4">Reorder complete!</p>
+            <p className="text-lg font-medium mb-4">並び替えが完了しました！</p>
             <Button onClick={handleDownload} size="lg" className="gap-2">
               <Download className="h-5 w-5" />
-              Download Reordered PDF
+              並び替え済みPDFをダウンロード
             </Button>
           </div>
           <Button variant="outline" onClick={reset}>
-            Reorder another file
+            他のファイルを並び替える
           </Button>
         </div>
       )}

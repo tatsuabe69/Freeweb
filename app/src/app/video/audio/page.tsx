@@ -65,7 +65,7 @@ export default function AudioExtractPage() {
       setResult({ blob, name: `${baseName}.${fmt.value}` });
     } catch (error) {
       console.error("Audio extraction failed:", error);
-      alert("Audio extraction failed. Please try again.");
+      alert("音声の抽出に失敗しました。もう一度お試しください。");
     } finally {
       setProcessing(false);
     }
@@ -92,18 +92,17 @@ export default function AudioExtractPage() {
         href="/"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6"
       >
-        <ArrowLeft className="h-4 w-4" /> Back to tools
+        <ArrowLeft className="h-4 w-4" /> ツール一覧に戻る
       </Link>
 
       <div className="flex items-center gap-3 mb-2">
         <div className="rounded-lg bg-primary/10 p-2">
           <Music className="h-6 w-6 text-primary" />
         </div>
-        <h1 className="text-3xl font-bold">Audio Extraction</h1>
+        <h1 className="text-3xl font-bold">音声抽出</h1>
       </div>
       <p className="text-muted-foreground mb-8">
-        Extract audio from video files as MP3, WAV, or AAC. Processed entirely
-        in your browser.
+        動画ファイルからMP3・WAV・AACとして音声を抽出します。すべての処理はブラウザ内で完結します。
       </p>
 
       <FFmpegLoader
@@ -119,15 +118,15 @@ export default function AudioExtractPage() {
             accept="video/*,.mp4,.mov,.avi,.webm,.mkv"
             files={files}
             onFilesChange={setFiles}
-            label="Drop a video file here"
-            description="MP4, MOV, AVI, WebM supported"
+            label="動画ファイルをここにドロップ"
+            description="MP4・MOV・AVI・WebMに対応"
           />
 
           {files.length > 0 && (
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium mb-2 block">
-                  Output Format
+                  出力形式
                 </label>
                 <div className="flex gap-2">
                   {formatOptions.map((fmt) => (
@@ -149,7 +148,7 @@ export default function AudioExtractPage() {
               {format !== "wav" && (
                 <div>
                   <label className="text-sm font-medium mb-2 block">
-                    Bitrate
+                    ビットレート
                   </label>
                   <div className="grid grid-cols-4 gap-2">
                     {bitrateOptions.map((opt) => (
@@ -175,7 +174,7 @@ export default function AudioExtractPage() {
             <div className="space-y-2">
               <Progress value={progress} />
               <p className="text-sm text-muted-foreground text-center">
-                Extracting audio... {progress}%
+                音声抽出中... {progress}%
               </p>
             </div>
           )}
@@ -187,8 +186,8 @@ export default function AudioExtractPage() {
             size="lg"
           >
             {processing
-              ? "Extracting..."
-              : `Extract Audio as ${format.toUpperCase()}`}
+              ? "抽出中..."
+              : `${format.toUpperCase()}として音声を抽出`}
           </Button>
         </div>
       )}
@@ -196,14 +195,14 @@ export default function AudioExtractPage() {
       {result && (
         <div className="text-center space-y-4">
           <div className="rounded-xl border bg-card p-8">
-            <p className="text-lg font-medium mb-4">Audio extracted!</p>
+            <p className="text-lg font-medium mb-4">音声の抽出が完了しました！</p>
             <Button onClick={handleDownload} size="lg" className="gap-2">
               <Download className="h-5 w-5" />
-              Download {format.toUpperCase()}
+              {format.toUpperCase()}をダウンロード
             </Button>
           </div>
           <Button variant="outline" onClick={reset}>
-            Extract from another video
+            他の動画から抽出する
           </Button>
         </div>
       )}

@@ -14,7 +14,7 @@ const presets = [
   { label: "Discord (< 8 MB)", targetMB: 8, id: "discord" },
   { label: "LINE (< 50 MB)", targetMB: 50, id: "line" },
   { label: "Twitter (< 512 MB)", targetMB: 512, id: "twitter" },
-  { label: "Custom", targetMB: 0, id: "custom" },
+  { label: "カスタム", targetMB: 0, id: "custom" },
 ] as const;
 
 function formatFileSize(bytes: number): string {
@@ -82,7 +82,7 @@ export default function VideoCompressPage() {
       setResult({ blob, name: `${baseName}_compressed.mp4` });
     } catch (error) {
       console.error("Compression failed:", error);
-      alert("Video compression failed. Please try a different file.");
+      alert("動画の圧縮に失敗しました。別のファイルをお試しください。");
     } finally {
       setProcessing(false);
     }
@@ -110,18 +110,17 @@ export default function VideoCompressPage() {
         href="/"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6"
       >
-        <ArrowLeft className="h-4 w-4" /> Back to tools
+        <ArrowLeft className="h-4 w-4" /> ツール一覧に戻る
       </Link>
 
       <div className="flex items-center gap-3 mb-2">
         <div className="rounded-lg bg-primary/10 p-2">
           <Minimize2 className="h-6 w-6 text-primary" />
         </div>
-        <h1 className="text-3xl font-bold">Video Compress</h1>
+        <h1 className="text-3xl font-bold">動画圧縮</h1>
       </div>
       <p className="text-muted-foreground mb-8">
-        Compress videos for Discord, LINE, Twitter, or custom size. Processed
-        entirely in your browser.
+        Discord・LINE・Twitter向けやカスタムサイズに動画を圧縮します。すべての処理はブラウザ内で完結します。
       </p>
 
       <FFmpegLoader
@@ -137,15 +136,15 @@ export default function VideoCompressPage() {
             accept="video/*,.mp4,.mov,.avi,.webm,.mkv"
             files={files}
             onFilesChange={setFiles}
-            label="Drop a video file here"
-            description="MP4, MOV, AVI, WebM supported"
+            label="動画ファイルをここにドロップ"
+            description="MP4・MOV・AVI・WebMに対応"
           />
 
           {files.length > 0 && (
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium mb-2 block">
-                  Target Size Preset
+                  目標サイズプリセット
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   {presets.map((p) => (
@@ -167,7 +166,7 @@ export default function VideoCompressPage() {
               {preset === "custom" && (
                 <div>
                   <label className="text-sm font-medium mb-2 block">
-                    Target Size (MB)
+                    目標サイズ（MB）
                   </label>
                   <input
                     type="number"
@@ -186,7 +185,7 @@ export default function VideoCompressPage() {
             <div className="space-y-2">
               <Progress value={progress} />
               <p className="text-sm text-muted-foreground text-center">
-                Compressing... {progress}%
+                圧縮中... {progress}%
               </p>
             </div>
           )}
@@ -198,8 +197,8 @@ export default function VideoCompressPage() {
             size="lg"
           >
             {processing
-              ? "Compressing..."
-              : `Compress to < ${getTargetMB()} MB`}
+              ? "圧縮中..."
+              : `${getTargetMB()} MB以下に圧縮`}
           </Button>
         </div>
       )}
@@ -207,12 +206,12 @@ export default function VideoCompressPage() {
       {result && (
         <div className="text-center space-y-4">
           <div className="rounded-xl border bg-card p-8">
-            <p className="text-lg font-medium mb-2">Compression complete!</p>
+            <p className="text-lg font-medium mb-2">圧縮が完了しました！</p>
             <div className="text-sm text-muted-foreground mb-4 space-y-1">
-              <p>Original: {formatFileSize(originalSize)}</p>
-              <p>Compressed: {formatFileSize(result.blob.size)}</p>
+              <p>元のサイズ: {formatFileSize(originalSize)}</p>
+              <p>圧縮後: {formatFileSize(result.blob.size)}</p>
               <p className="text-primary font-medium">
-                Saved{" "}
+                削減率{" "}
                 {Math.round(
                   ((originalSize - result.blob.size) / originalSize) * 100
                 )}
@@ -221,11 +220,11 @@ export default function VideoCompressPage() {
             </div>
             <Button onClick={handleDownload} size="lg" className="gap-2">
               <Download className="h-5 w-5" />
-              Download Compressed Video
+              圧縮済み動画をダウンロード
             </Button>
           </div>
           <Button variant="outline" onClick={reset}>
-            Compress another video
+            他の動画を圧縮する
           </Button>
         </div>
       )}

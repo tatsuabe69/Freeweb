@@ -78,7 +78,7 @@ export default function PdfSplitPage() {
       } else {
         groups = parseRanges(rangeInput, pageCount);
         if (groups.length === 0) {
-          alert("Please enter valid page ranges.");
+          alert("有効なページ範囲を入力してください。");
           setProcessing(false);
           return;
         }
@@ -102,7 +102,7 @@ export default function PdfSplitPage() {
       setDone(true);
     } catch (error) {
       console.error("Split failed:", error);
-      alert("Failed to split PDF. Please check your file and try again.");
+      alert("PDFの分割に失敗しました。ファイルを確認してもう一度お試しください。");
     } finally {
       setProcessing(false);
     }
@@ -121,17 +121,17 @@ export default function PdfSplitPage() {
         href="/"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6"
       >
-        <ArrowLeft className="h-4 w-4" /> Back to tools
+        <ArrowLeft className="h-4 w-4" /> ツール一覧に戻る
       </Link>
 
       <div className="flex items-center gap-3 mb-2">
         <div className="rounded-lg bg-primary/10 p-2">
           <Scissors className="h-6 w-6 text-primary" />
         </div>
-        <h1 className="text-3xl font-bold">PDF Split</h1>
+        <h1 className="text-3xl font-bold">PDF 分割</h1>
       </div>
       <p className="text-muted-foreground mb-8">
-        Split a PDF into separate files. All processing happens in your browser.
+        PDFを複数のファイルに分割します。すべての処理はブラウザ内で完結します。
       </p>
 
       {!done ? (
@@ -140,14 +140,14 @@ export default function PdfSplitPage() {
             accept=".pdf,application/pdf"
             files={files}
             onFilesChange={handleFilesChange}
-            label="Drop a PDF file here"
-            description="or click to browse"
+            label="PDFファイルをここにドロップ"
+            description="またはクリックして選択"
           />
 
           {totalPages > 0 && (
             <div className="space-y-4 rounded-xl border bg-card p-4">
               <p className="text-sm text-muted-foreground">
-                {totalPages} pages detected
+                {totalPages}ページを検出
               </p>
 
               <div className="flex gap-2">
@@ -156,21 +156,21 @@ export default function PdfSplitPage() {
                   size="sm"
                   onClick={() => setSplitMode("every-page")}
                 >
-                  Every page
+                  1ページずつ
                 </Button>
                 <Button
                   variant={splitMode === "range" ? "default" : "outline"}
                   size="sm"
                   onClick={() => setSplitMode("range")}
                 >
-                  By range
+                  範囲指定
                 </Button>
               </div>
 
               {splitMode === "range" && (
                 <div>
                   <label className="text-sm font-medium">
-                    Page ranges (e.g. 1-3, 4-6, 7)
+                    ページ範囲（例: 1-3, 4-6, 7）
                   </label>
                   <input
                     type="text"
@@ -188,7 +188,7 @@ export default function PdfSplitPage() {
             <div className="space-y-2">
               <Progress value={progress} />
               <p className="text-sm text-muted-foreground text-center">
-                Splitting... {progress}%
+                分割中... {progress}%
               </p>
             </div>
           )}
@@ -199,19 +199,19 @@ export default function PdfSplitPage() {
             className="w-full"
             size="lg"
           >
-            {processing ? "Splitting..." : "Split PDF"}
+            {processing ? "分割中..." : "PDFを分割"}
           </Button>
         </div>
       ) : (
         <div className="text-center space-y-4">
           <div className="rounded-xl border bg-card p-8">
-            <p className="text-lg font-medium mb-2">Split complete!</p>
+            <p className="text-lg font-medium mb-2">分割が完了しました！</p>
             <p className="text-sm text-muted-foreground">
-              Your ZIP file has been downloaded.
+              ZIPファイルがダウンロードされました。
             </p>
           </div>
           <Button variant="outline" onClick={reset}>
-            Split another file
+            他のファイルを分割する
           </Button>
         </div>
       )}

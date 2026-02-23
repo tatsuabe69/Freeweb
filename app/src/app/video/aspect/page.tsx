@@ -18,9 +18,9 @@ const aspectPresets = [
 ] as const;
 
 const cropPositions = [
-  { label: "Center", value: "center", id: "center" },
-  { label: "Top", value: "top", id: "top" },
-  { label: "Bottom", value: "bottom", id: "bottom" },
+  { label: "中央", value: "center", id: "center" },
+  { label: "上部", value: "top", id: "top" },
+  { label: "下部", value: "bottom", id: "bottom" },
 ] as const;
 
 export default function VideoAspectPage() {
@@ -67,7 +67,7 @@ export default function VideoAspectPage() {
       setResult({ blob, name: `${baseName}_${selected.id}.mp4` });
     } catch (error) {
       console.error("Aspect ratio conversion failed:", error);
-      alert("Aspect ratio conversion failed. Please try again.");
+      alert("アスペクト比の変換に失敗しました。もう一度お試しください。");
     } finally {
       setProcessing(false);
     }
@@ -94,18 +94,17 @@ export default function VideoAspectPage() {
         href="/"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6"
       >
-        <ArrowLeft className="h-4 w-4" /> Back to tools
+        <ArrowLeft className="h-4 w-4" /> ツール一覧に戻る
       </Link>
 
       <div className="flex items-center gap-3 mb-2">
         <div className="rounded-lg bg-primary/10 p-2">
           <Ratio className="h-6 w-6 text-primary" />
         </div>
-        <h1 className="text-3xl font-bold">SNS Aspect Ratio</h1>
+        <h1 className="text-3xl font-bold">SNSアスペクト比</h1>
       </div>
       <p className="text-muted-foreground mb-8">
-        Resize videos for TikTok, Instagram, YouTube, and Twitter. Processed
-        entirely in your browser.
+        TikTok・Instagram・YouTube・Twitter向けに動画をリサイズします。すべての処理はブラウザ内で完結します。
       </p>
 
       <FFmpegLoader
@@ -121,15 +120,15 @@ export default function VideoAspectPage() {
             accept="video/*,.mp4,.mov,.avi,.webm,.mkv"
             files={files}
             onFilesChange={setFiles}
-            label="Drop a video file here"
-            description="MP4, MOV, AVI, WebM supported"
+            label="動画ファイルをここにドロップ"
+            description="MP4・MOV・AVI・WebMに対応"
           />
 
           {files.length > 0 && (
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium mb-2 block">
-                  Platform / Aspect Ratio
+                  プラットフォーム / アスペクト比
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   {aspectPresets.map((p) => (
@@ -153,7 +152,7 @@ export default function VideoAspectPage() {
 
               <div>
                 <label className="text-sm font-medium mb-2 block">
-                  Crop Position
+                  クロップ位置
                 </label>
                 <div className="flex gap-2">
                   {cropPositions.map((pos) => (
@@ -178,7 +177,7 @@ export default function VideoAspectPage() {
             <div className="space-y-2">
               <Progress value={progress} />
               <p className="text-sm text-muted-foreground text-center">
-                Converting... {progress}%
+                変換中... {progress}%
               </p>
             </div>
           )}
@@ -190,10 +189,10 @@ export default function VideoAspectPage() {
             size="lg"
           >
             {processing
-              ? "Converting..."
-              : `Convert to ${
+              ? "変換中..."
+              : `${
                   aspectPresets.find((p) => p.id === preset)?.ratio
-                }`}
+                }に変換`}
           </Button>
         </div>
       )}
@@ -201,14 +200,14 @@ export default function VideoAspectPage() {
       {result && (
         <div className="text-center space-y-4">
           <div className="rounded-xl border bg-card p-8">
-            <p className="text-lg font-medium mb-4">Conversion complete!</p>
+            <p className="text-lg font-medium mb-4">変換が完了しました！</p>
             <Button onClick={handleDownload} size="lg" className="gap-2">
               <Download className="h-5 w-5" />
-              Download Video
+              動画をダウンロード
             </Button>
           </div>
           <Button variant="outline" onClick={reset}>
-            Convert another video
+            他の動画を変換する
           </Button>
         </div>
       )}

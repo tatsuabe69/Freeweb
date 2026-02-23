@@ -25,22 +25,21 @@ export function FFmpegLoader({
         <Download className="h-6 w-6 text-primary" />
       </div>
       <div>
-        <h3 className="font-semibold mb-1">Video Processing Engine</h3>
+        <h3 className="font-semibold mb-1">動画処理エンジン</h3>
         <p className="text-sm text-muted-foreground">
-          FFmpeg runs entirely in your browser. A one-time download (~25 MB) is
-          required.
+          FFmpegがブラウザ内で動作します。初回のみダウンロード（約25 MB）が必要です。
         </p>
       </div>
       {loading ? (
         <div className="space-y-2">
           <Progress value={loadProgress} />
           <p className="text-sm text-muted-foreground">
-            Loading engine... {loadProgress}%
+            エンジン読み込み中... {loadProgress}%
           </p>
         </div>
       ) : (
         <Button onClick={onLoad} size="lg">
-          Load Video Engine
+          動画エンジンを読み込む
         </Button>
       )}
     </div>

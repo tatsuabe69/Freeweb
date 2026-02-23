@@ -24,44 +24,44 @@ import { Badge } from "@/components/ui/badge";
 
 const pdfTools = [
   {
-    title: "PDF Merge",
-    description: "Combine multiple PDF files into one",
+    title: "PDF 結合",
+    description: "複数のPDFファイルを1つにまとめる",
     href: "/pdf/merge",
     icon: Merge,
   },
   {
-    title: "PDF Split",
-    description: "Split a PDF into separate files",
+    title: "PDF 分割",
+    description: "PDFを複数のファイルに分ける",
     href: "/pdf/split",
     icon: Scissors,
   },
   {
-    title: "PDF Compress",
-    description: "Reduce PDF file size",
+    title: "PDF 圧縮",
+    description: "PDFのファイルサイズを小さくする",
     href: "/pdf/compress",
     icon: Minimize2,
   },
   {
-    title: "PDF Rotate",
-    description: "Rotate PDF pages",
+    title: "PDF 回転",
+    description: "PDFのページを回転させる",
     href: "/pdf/rotate",
     icon: RotateCw,
   },
   {
-    title: "PDF to Image",
-    description: "Convert PDF pages to JPG, PNG, or WebP",
+    title: "PDF → 画像",
+    description: "PDFの各ページをJPG・PNG・WebPに変換",
     href: "/pdf/to-image",
     icon: Image,
   },
   {
-    title: "Image to PDF",
-    description: "Convert images to a PDF document",
+    title: "画像 → PDF",
+    description: "画像をPDFドキュメントに変換",
     href: "/pdf/from-image",
     icon: FileImage,
   },
   {
-    title: "PDF Reorder",
-    description: "Drag and drop to reorder PDF pages",
+    title: "PDF 並び替え",
+    description: "ページの順番を入れ替え・削除",
     href: "/pdf/reorder",
     icon: ArrowUpDown,
   },
@@ -69,32 +69,32 @@ const pdfTools = [
 
 const videoTools = [
   {
-    title: "Video Compress",
-    description: "Compress for Discord, LINE, Twitter",
+    title: "動画圧縮",
+    description: "Discord・LINE・Twitter向けに圧縮",
     href: "/video/compress",
     icon: Minimize2,
   },
   {
-    title: "Video to GIF",
-    description: "Convert video clips to animated GIFs",
+    title: "動画 → GIF",
+    description: "動画をアニメーションGIFに変換",
     href: "/video/to-gif",
     icon: Film,
   },
   {
-    title: "Video Trim",
-    description: "Cut and trim videos by time",
+    title: "動画トリミング",
+    description: "開始・終了時間を指定してカット",
     href: "/video/trim",
     icon: Scissors,
   },
   {
-    title: "SNS Aspect Ratio",
-    description: "Resize for TikTok, Instagram, YouTube",
+    title: "SNSアスペクト比",
+    description: "TikTok・Instagram・YouTube向けにリサイズ",
     href: "/video/aspect",
     icon: Ratio,
   },
   {
-    title: "Audio Extraction",
-    description: "Extract MP3, WAV, or AAC from video",
+    title: "音声抽出",
+    description: "動画からMP3・WAV・AACを抽出",
     href: "/video/audio",
     icon: Music,
   },
@@ -103,18 +103,18 @@ const videoTools = [
 const features = [
   {
     icon: Shield,
-    title: "100% Private",
-    description: "Files are processed entirely in your browser. Nothing is uploaded.",
+    title: "完全プライベート",
+    description: "すべての処理はブラウザ内で完結。ファイルはどこにも送信されません。",
   },
   {
     icon: Ban,
-    title: "No Ads, No Limits",
-    description: "Completely free. No watermarks, no file size limits, no usage caps.",
+    title: "広告なし・制限なし",
+    description: "完全無料。透かし・ファイルサイズ制限・使用回数制限は一切ありません。",
   },
   {
     icon: Zap,
-    title: "Fast & Instant",
-    description: "No waiting for server processing. Everything runs locally at full speed.",
+    title: "高速処理",
+    description: "サーバーへの送信待ちなし。すべてローカルでフルスピード処理。",
   },
 ];
 
@@ -160,17 +160,17 @@ export default function HomePage() {
       <section className="py-16 md:py-24">
         <div className="container mx-auto px-4 text-center">
           <Badge variant="secondary" className="mb-4">
-            No upload required
+            アップロード不要
           </Badge>
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-4">
-            Your files never leave
+            ファイルは、あなたの
             <br />
-            <span className="text-primary">your browser.</span>
+            <span className="text-primary">ブラウザから出ません。</span>
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-            Free, private, no-limits file processing tools.
+            無料・プライベート・無制限のファイル処理ツール。
             <br />
-            No ads. No registration. No upload.
+            広告なし。登録不要。アップロード不要。
           </p>
           <div className="flex flex-wrap justify-center gap-3">
             {features.map((feature) => (
@@ -189,9 +189,9 @@ export default function HomePage() {
       {/* PDF Tools Grid */}
       <section className="pb-12 md:pb-16">
         <div className="container mx-auto px-4">
-          <h2 className="text-2xl font-bold text-center mb-2">PDF Tools</h2>
+          <h2 className="text-2xl font-bold text-center mb-2">PDFツール</h2>
           <p className="text-muted-foreground text-center mb-8">
-            All processing happens in your browser
+            すべての処理はブラウザ内で完結します
           </p>
           <ToolGrid tools={pdfTools} />
         </div>
@@ -200,9 +200,9 @@ export default function HomePage() {
       {/* Video Tools Grid */}
       <section className="pb-16 md:pb-24">
         <div className="container mx-auto px-4">
-          <h2 className="text-2xl font-bold text-center mb-2">Video Tools</h2>
+          <h2 className="text-2xl font-bold text-center mb-2">動画ツール</h2>
           <p className="text-muted-foreground text-center mb-8">
-            Powered by FFmpeg — runs entirely in your browser
+            FFmpeg搭載 — すべてブラウザ内で処理
           </p>
           <ToolGrid tools={videoTools} />
         </div>
