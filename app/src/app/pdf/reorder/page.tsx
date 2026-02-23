@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { PDFDocument } from "pdf-lib";
+import { usePdfThumbnails } from "@/hooks/use-pdf-thumbnails";
 import { FileDropzone } from "@/components/file-dropzone";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -9,17 +10,109 @@ import {
   Download,
   ArrowUpDown,
   ArrowLeft,
-  GripVertical,
   Trash2,
-  ArrowUp,
-  ArrowDown,
+  RotateCcw,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  rectSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface PageInfo {
+  id: string;
   index: number;
   label: string;
   deleted: boolean;
+}
+
+function SortablePageCard({
+  page,
+  thumbnail,
+  onToggleDelete,
+}: {
+  page: PageInfo;
+  thumbnail: string | undefined;
+  onToggleDelete: () => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: page.id, disabled: page.deleted });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : page.deleted ? 0.35 : 1,
+    zIndex: isDragging ? 50 : undefined,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`group relative flex flex-col items-center rounded-lg border bg-card p-2 transition-shadow ${
+        isDragging ? "shadow-xl ring-2 ring-primary" : "hover:shadow-md"
+      } ${page.deleted ? "border-dashed" : ""}`}
+    >
+      <div
+        {...attributes}
+        {...listeners}
+        className={`w-full cursor-grab active:cursor-grabbing ${
+          page.deleted ? "pointer-events-none" : ""
+        }`}
+      >
+        {thumbnail ? (
+          <img
+            src={thumbnail}
+            alt={page.label}
+            className={`w-full rounded border bg-white object-contain ${
+              page.deleted ? "grayscale" : ""
+            }`}
+            draggable={false}
+          />
+        ) : (
+          <div className="flex aspect-[3/4] w-full items-center justify-center rounded border bg-muted">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        )}
+      </div>
+      <span
+        className={`mt-1 text-xs font-medium ${
+          page.deleted ? "line-through text-muted-foreground" : ""
+        }`}
+      >
+        {page.label}
+      </span>
+      <button
+        onClick={onToggleDelete}
+        className="absolute -top-2 -right-2 rounded-full border bg-background p-1 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+        aria-label={page.deleted ? "ページを復元" : "ページを削除"}
+      >
+        {page.deleted ? (
+          <RotateCcw className="h-3.5 w-3.5 text-muted-foreground" />
+        ) : (
+          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+        )}
+      </button>
+    </div>
+  );
 }
 
 export default function PdfReorderPage() {
@@ -29,6 +122,17 @@ export default function PdfReorderPage() {
   const [result, setResult] = useState<Uint8Array | null>(null);
   const [pages, setPages] = useState<PageInfo[]>([]);
   const [loaded, setLoaded] = useState(false);
+
+  const { thumbnails, loading: thumbnailsLoading } = usePdfThumbnails(
+    files.length === 1 ? files[0] : null,
+    180
+  );
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 5 },
+    })
+  );
 
   const handleFilesChange = async (newFiles: File[]) => {
     setFiles(newFiles);
@@ -41,6 +145,7 @@ export default function PdfReorderPage() {
         const count = pdf.getPageCount();
         setPages(
           Array.from({ length: count }, (_, i) => ({
+            id: `page-${i}`,
             index: i,
             label: `ページ ${i + 1}`,
             deleted: false,
@@ -55,13 +160,14 @@ export default function PdfReorderPage() {
     }
   };
 
-  const movePage = useCallback(
-    (from: number, direction: "up" | "down") => {
-      const to = direction === "up" ? from - 1 : from + 1;
-      if (to < 0 || to >= pages.length) return;
-      const newPages = [...pages];
-      [newPages[from], newPages[to]] = [newPages[to], newPages[from]];
-      setPages(newPages);
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (over && active.id !== over.id) {
+        const oldIndex = pages.findIndex((p) => p.id === active.id);
+        const newIndex = pages.findIndex((p) => p.id === over.id);
+        setPages(arrayMove(pages, oldIndex, newIndex));
+      }
     },
     [pages]
   );
@@ -69,7 +175,10 @@ export default function PdfReorderPage() {
   const toggleDelete = useCallback(
     (index: number) => {
       const newPages = [...pages];
-      newPages[index] = { ...newPages[index], deleted: !newPages[index].deleted };
+      newPages[index] = {
+        ...newPages[index],
+        deleted: !newPages[index].deleted,
+      };
       setPages(newPages);
     },
     [pages]
@@ -98,7 +207,9 @@ export default function PdfReorderPage() {
       setResult(pdfBytes);
     } catch (error) {
       console.error("Reorder failed:", error);
-      alert("PDFの並び替えに失敗しました。ファイルを確認してもう一度お試しください。");
+      alert(
+        "PDFの並び替えに失敗しました。ファイルを確認してもう一度お試しください。"
+      );
     } finally {
       setProcessing(false);
     }
@@ -106,7 +217,9 @@ export default function PdfReorderPage() {
 
   const handleDownload = () => {
     if (!result) return;
-    const blob = new Blob([result.buffer as ArrayBuffer], { type: "application/pdf" });
+    const blob = new Blob([result.buffer as ArrayBuffer], {
+      type: "application/pdf",
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -126,7 +239,7 @@ export default function PdfReorderPage() {
   const activeCount = pages.filter((p) => !p.deleted).length;
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-3xl">
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
       <Link
         href="/"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6"
@@ -157,61 +270,40 @@ export default function PdfReorderPage() {
           )}
 
           {loaded && pages.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground mb-3">
-                {pages.length}ページ — 矢印で並び替え、ゴミ箱で削除
-              </p>
-              {pages.map((page, idx) => (
-                <div
-                  key={`${page.index}-${idx}`}
-                  className={`flex items-center gap-3 rounded-lg border p-3 transition-opacity ${
-                    page.deleted ? "opacity-40" : ""
-                  }`}
-                >
-                  <GripVertical className="h-4 w-4 text-muted-foreground" />
-                  <span
-                    className={`flex-1 text-sm font-medium ${
-                      page.deleted ? "line-through" : ""
-                    }`}
-                  >
-                    {page.label}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                  {pages.length}ページ —
+                  ドラッグで並び替え、ホバーでゴミ箱ボタン表示
+                </p>
+                {thumbnailsLoading && (
+                  <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    プレビュー生成中...
                   </span>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => movePage(idx, "up")}
-                      disabled={idx === 0 || page.deleted}
-                      aria-label="上に移動"
-                    >
-                      <ArrowUp className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => movePage(idx, "down")}
-                      disabled={idx === pages.length - 1 || page.deleted}
-                      aria-label="下に移動"
-                    >
-                      <ArrowDown className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => toggleDelete(idx)}
-                      aria-label={page.deleted ? "ページを復元" : "ページを削除"}
-                    >
-                      <Trash2
-                        className={`h-4 w-4 ${
-                          page.deleted
-                            ? "text-muted-foreground"
-                            : "text-destructive"
-                        }`}
+                )}
+              </div>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={pages.map((p) => p.id)}
+                  strategy={rectSortingStrategy}
+                >
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                    {pages.map((page, idx) => (
+                      <SortablePageCard
+                        key={page.id}
+                        page={page}
+                        thumbnail={thumbnails[page.index]}
+                        onToggleDelete={() => toggleDelete(idx)}
                       />
-                    </Button>
+                    ))}
                   </div>
-                </div>
-              ))}
+                </SortableContext>
+              </DndContext>
             </div>
           )}
 
@@ -240,7 +332,9 @@ export default function PdfReorderPage() {
       ) : (
         <div className="text-center space-y-4">
           <div className="rounded-xl border bg-card p-8">
-            <p className="text-lg font-medium mb-4">並び替えが完了しました！</p>
+            <p className="text-lg font-medium mb-4">
+              並び替えが完了しました！
+            </p>
             <Button onClick={handleDownload} size="lg" className="gap-2">
               <Download className="h-5 w-5" />
               並び替え済みPDFをダウンロード
