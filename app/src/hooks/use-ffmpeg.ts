@@ -4,8 +4,6 @@ import { useState, useRef, useCallback } from "react";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { toBlobURL } from "@ffmpeg/util";
 
-const BASE_URL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
-
 export function useFFmpeg() {
   const ffmpegRef = useRef<FFmpeg | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -33,20 +31,20 @@ export function useFFmpeg() {
         setLogMessages((prev) => [...prev.slice(-50), message]);
       });
 
-      const coreURL = await toBlobURL(`${BASE_URL}/ffmpeg-core.js`, "text/javascript");
-      setLoadProgress(33);
-      const wasmURL = await toBlobURL(`${BASE_URL}/ffmpeg-core.wasm`, "application/wasm");
-      setLoadProgress(66);
-      const workerURL = await toBlobURL(`${BASE_URL}/ffmpeg-core.worker.js`, "text/javascript");
+      // Load from local public/ffmpeg/ (same-origin, no CORS issues)
+      const coreURL = await toBlobURL("/ffmpeg/ffmpeg-core.js", "text/javascript");
+      setLoadProgress(50);
+      const wasmURL = await toBlobURL("/ffmpeg/ffmpeg-core.wasm", "application/wasm");
       setLoadProgress(90);
 
-      await ffmpeg.load({ coreURL, wasmURL, workerURL });
+      await ffmpeg.load({ coreURL, wasmURL });
       setLoadProgress(100);
       setLoaded(true);
     } catch (err) {
       console.error("Failed to load FFmpeg:", err);
+      const msg = err instanceof Error ? err.message : String(err);
       setError(
-        "動画エンジンの読み込みに失敗しました。ページをリロードして再試行してください。"
+        `動画エンジンの読み込みに失敗しました: ${msg}`
       );
     } finally {
       setLoading(false);
