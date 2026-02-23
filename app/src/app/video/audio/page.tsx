@@ -1,0 +1,217 @@
+"use client";
+
+import { useState } from "react";
+import { fetchFile } from "@ffmpeg/util";
+import { useFFmpeg } from "@/hooks/use-ffmpeg";
+import { FFmpegLoader } from "@/components/ffmpeg-loader";
+import { FileDropzone } from "@/components/file-dropzone";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Download, Music, ArrowLeft } from "lucide-react";
+import Link from "next/link";
+
+const formatOptions = [
+  { label: "MP3", value: "mp3", mime: "audio/mpeg", codec: "libmp3lame" },
+  { label: "WAV", value: "wav", mime: "audio/wav", codec: "pcm_s16le" },
+  { label: "AAC", value: "aac", mime: "audio/aac", codec: "aac" },
+] as const;
+
+const bitrateOptions = [
+  { label: "128 kbps", value: "128k" },
+  { label: "192 kbps", value: "192k" },
+  { label: "256 kbps", value: "256k" },
+  { label: "320 kbps", value: "320k" },
+] as const;
+
+export default function AudioExtractPage() {
+  const { load, loaded, loading, loadProgress, progress, exec, writeFile, readFile } =
+    useFFmpeg();
+  const [files, setFiles] = useState<File[]>([]);
+  const [format, setFormat] = useState<string>("mp3");
+  const [bitrate, setBitrate] = useState("192k");
+  const [processing, setProcessing] = useState(false);
+  const [result, setResult] = useState<{ blob: Blob; name: string } | null>(null);
+
+  const handleExtract = async () => {
+    if (files.length === 0) return;
+    setProcessing(true);
+
+    try {
+      const file = files[0];
+      const inputName = "input" + getExtension(file.name);
+      const fmt = formatOptions.find((f) => f.value === format)!;
+      const outputName = `output.${fmt.value}`;
+
+      await writeFile(inputName, await fetchFile(file));
+
+      const args = [
+        "-i", inputName,
+        "-vn", // no video
+        "-c:a", fmt.codec,
+      ];
+
+      // WAV doesn't use bitrate
+      if (format !== "wav") {
+        args.push("-b:a", bitrate);
+      }
+
+      args.push("-y", outputName);
+
+      await exec(args);
+
+      const data = await readFile(outputName);
+      const blob = new Blob([data.buffer as ArrayBuffer], { type: fmt.mime });
+      const baseName = file.name.replace(/\.[^.]+$/, "");
+      setResult({ blob, name: `${baseName}.${fmt.value}` });
+    } catch (error) {
+      console.error("Audio extraction failed:", error);
+      alert("Audio extraction failed. Please try again.");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleDownload = () => {
+    if (!result) return;
+    const url = URL.createObjectURL(result.blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = result.name;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const reset = () => {
+    setFiles([]);
+    setResult(null);
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-3xl">
+      <Link
+        href="/"
+        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6"
+      >
+        <ArrowLeft className="h-4 w-4" /> Back to tools
+      </Link>
+
+      <div className="flex items-center gap-3 mb-2">
+        <div className="rounded-lg bg-primary/10 p-2">
+          <Music className="h-6 w-6 text-primary" />
+        </div>
+        <h1 className="text-3xl font-bold">Audio Extraction</h1>
+      </div>
+      <p className="text-muted-foreground mb-8">
+        Extract audio from video files as MP3, WAV, or AAC. Processed entirely
+        in your browser.
+      </p>
+
+      <FFmpegLoader
+        loaded={loaded}
+        loading={loading}
+        loadProgress={loadProgress}
+        onLoad={load}
+      />
+
+      {loaded && !result && (
+        <div className="space-y-6">
+          <FileDropzone
+            accept="video/*,.mp4,.mov,.avi,.webm,.mkv"
+            files={files}
+            onFilesChange={setFiles}
+            label="Drop a video file here"
+            description="MP4, MOV, AVI, WebM supported"
+          />
+
+          {files.length > 0 && (
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  Output Format
+                </label>
+                <div className="flex gap-2">
+                  {formatOptions.map((fmt) => (
+                    <button
+                      key={fmt.value}
+                      onClick={() => setFormat(fmt.value)}
+                      className={`flex-1 rounded-lg border p-3 text-sm font-medium transition-colors ${
+                        format === fmt.value
+                          ? "border-primary bg-primary/10"
+                          : "hover:border-primary/50"
+                      }`}
+                    >
+                      {fmt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {format !== "wav" && (
+                <div>
+                  <label className="text-sm font-medium mb-2 block">
+                    Bitrate
+                  </label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {bitrateOptions.map((opt) => (
+                      <button
+                        key={opt.value}
+                        onClick={() => setBitrate(opt.value)}
+                        className={`rounded-lg border p-2 text-sm transition-colors ${
+                          bitrate === opt.value
+                            ? "border-primary bg-primary/10 font-medium"
+                            : "hover:border-primary/50"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {processing && (
+            <div className="space-y-2">
+              <Progress value={progress} />
+              <p className="text-sm text-muted-foreground text-center">
+                Extracting audio... {progress}%
+              </p>
+            </div>
+          )}
+
+          <Button
+            onClick={handleExtract}
+            disabled={files.length === 0 || processing}
+            className="w-full"
+            size="lg"
+          >
+            {processing
+              ? "Extracting..."
+              : `Extract Audio as ${format.toUpperCase()}`}
+          </Button>
+        </div>
+      )}
+
+      {result && (
+        <div className="text-center space-y-4">
+          <div className="rounded-xl border bg-card p-8">
+            <p className="text-lg font-medium mb-4">Audio extracted!</p>
+            <Button onClick={handleDownload} size="lg" className="gap-2">
+              <Download className="h-5 w-5" />
+              Download {format.toUpperCase()}
+            </Button>
+          </div>
+          <Button variant="outline" onClick={reset}>
+            Extract from another video
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function getExtension(filename: string): string {
+  const match = filename.match(/\.[^.]+$/);
+  return match ? match[0] : ".mp4";
+}
