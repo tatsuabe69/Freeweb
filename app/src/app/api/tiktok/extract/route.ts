@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
+// ページ取得+CDNダウンロードで時間がかかる場合に備えて実行時間上限を延長
+export const maxDuration = 30;
+
 /**
  * POST /api/tiktok/extract
  *

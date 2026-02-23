@@ -527,12 +527,18 @@ export default function SnsCreatorPage() {
       });
 
       if (!res.ok) {
-        // エラー時はJSONレスポンス
-        let msg = "TikTok音源の取得に失敗しました";
+        // エラー詳細をできるだけ取得する
+        let msg = `TikTok音源の取得に失敗 (HTTP ${res.status})`;
         try {
-          const data = await res.json();
-          msg = data.error || msg;
-        } catch { /* non-JSON error body */ }
+          const text = await res.text();
+          try {
+            const data = JSON.parse(text);
+            msg = data.error || msg;
+          } catch {
+            // JSONでない場合は先頭200文字を表示
+            msg += `: ${text.slice(0, 200)}`;
+          }
+        } catch { /* body読み取り失敗 */ }
         throw new Error(msg);
       }
 
