@@ -10,6 +10,8 @@ import {
   Film,
   Ratio,
   Music,
+  Smartphone,
+  Volume2,
 } from "lucide-react";
 
 const tools = [
@@ -96,6 +98,20 @@ const tools = [
     icon: Music,
     color: "from-pink-500 to-rose-500",
     bg: "group-hover:bg-pink-500",
+  },
+  {
+    title: "SNS動画作成",
+    href: "/video/sns",
+    icon: Smartphone,
+    color: "from-gray-800 to-black",
+    bg: "group-hover:bg-gray-800",
+  },
+  {
+    title: "BGM追加",
+    href: "/video/bgm",
+    icon: Volume2,
+    color: "from-purple-500 to-indigo-600",
+    bg: "group-hover:bg-purple-500",
   },
 ];
 
