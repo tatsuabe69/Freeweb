@@ -27,6 +27,13 @@ export async function POST(request: NextRequest) {
       redirect: "follow",
     });
 
+    // CDNダウンロード時に必要なCookieを収集
+    const setCookies = res.headers.getSetCookie?.() ?? [];
+    const cookieStr = setCookies
+      .map((c) => c.split(";")[0])
+      .filter(Boolean)
+      .join("; ");
+
     if (!res.ok) {
       return NextResponse.json(
         { error: "TikTokページの取得に失敗しました" },
@@ -79,6 +86,7 @@ export async function POST(request: NextRequest) {
         coverUrl: music.coverLarge ?? music.coverMedium ?? music.coverThumb ?? "",
         playUrl: music.playUrl,
       },
+      cookies: cookieStr,
     });
   } catch (err) {
     console.error("TikTok API error:", err);

@@ -333,6 +333,7 @@ export default function SnsCreatorPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
+  const seqPlayRef = useRef(false); // true during sequential playback of all clips
 
   /* ── Process state ─────────────────────────── */
   const [processing, setProcessing] = useState(false);
@@ -426,21 +427,81 @@ export default function SnsCreatorPage() {
     } else {
       v.pause();
       setPlaying(false);
+      seqPlayRef.current = false;
     }
   }, []);
 
+  /** Play all clips in sequence from the first clip */
+  const playAll = useCallback(() => {
+    if (clips.length === 0) return;
+    seqPlayRef.current = true;
+    setSelectedId(clips[0].id);
+    setPlaying(true);
+  }, [clips]);
+
+  // Auto-play when clip changes during sequential playback
   useEffect(() => {
     const v = videoRef.current;
-    if (!v) return;
-    const onTime = () => setCurrentTime(v.currentTime);
-    const onEnd = () => setPlaying(false);
-    v.addEventListener("timeupdate", onTime);
-    v.addEventListener("ended", onEnd);
-    return () => {
-      v.removeEventListener("timeupdate", onTime);
-      v.removeEventListener("ended", onEnd);
+    if (!v || !selectedClip) return;
+
+    const startPlayback = () => {
+      if (seqPlayRef.current) {
+        v.currentTime = selectedClip.inPoint;
+        v.play().catch(() => {});
+        setPlaying(true);
+      }
     };
+
+    if (v.readyState >= 2) {
+      startPlayback();
+    } else {
+      v.addEventListener("loadeddata", startPlayback, { once: true });
+      return () => v.removeEventListener("loadeddata", startPlayback);
+    }
   }, [selectedClip]);
+
+  // Track time & handle sequential clip transitions
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || !selectedClip) return;
+
+    const onTimeUpdate = () => {
+      setCurrentTime(v.currentTime);
+
+      // In sequential mode, advance to next clip at outPoint
+      if (seqPlayRef.current && v.currentTime >= selectedClip.outPoint - 0.05) {
+        v.pause();
+        const idx = clips.findIndex((c) => c.id === selectedClip.id);
+        if (idx >= 0 && idx < clips.length - 1) {
+          setSelectedId(clips[idx + 1].id);
+        } else {
+          seqPlayRef.current = false;
+          setPlaying(false);
+        }
+      }
+    };
+
+    const onEnded = () => {
+      if (seqPlayRef.current) {
+        const idx = clips.findIndex((c) => c.id === selectedClip.id);
+        if (idx >= 0 && idx < clips.length - 1) {
+          setSelectedId(clips[idx + 1].id);
+        } else {
+          seqPlayRef.current = false;
+          setPlaying(false);
+        }
+      } else {
+        setPlaying(false);
+      }
+    };
+
+    v.addEventListener("timeupdate", onTimeUpdate);
+    v.addEventListener("ended", onEnded);
+    return () => {
+      v.removeEventListener("timeupdate", onTimeUpdate);
+      v.removeEventListener("ended", onEnded);
+    };
+  }, [selectedClip, clips]);
 
   /* ── BGM handler ───────────────────────────── */
   const handleBgmSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -469,7 +530,7 @@ export default function SnsCreatorPage() {
       const dlRes = await fetch("/api/tiktok/download", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: info.music.playUrl, filename: info.music.title }),
+        body: JSON.stringify({ url: info.music.playUrl, filename: info.music.title, cookies: info.cookies || "" }),
       });
       if (!dlRes.ok) throw new Error("音源のダウンロードに失敗しました");
 
@@ -561,9 +622,9 @@ export default function SnsCreatorPage() {
 
         args.push("-i", inputName);
 
-        // Add overlay PNG inputs
+        // Add overlay PNG inputs (with -loop 1 so the image persists for the entire clip)
         for (let j = 0; j < numOverlays; j++) {
-          args.push("-i", `overlay${j}.png`);
+          args.push("-loop", "1", "-i", `overlay${j}.png`);
         }
 
         // Video filter
@@ -580,7 +641,7 @@ export default function SnsCreatorPage() {
               position === "bottom" ? "main_h-overlay_h-80" :
               "(main_h-overlay_h)/2";
 
-            fc += `; [${prev}][${j + 1}:v]overlay=x=(main_w-overlay_w)/2:y=${yExpr}[${next}]`;
+            fc += `; [${prev}][${j + 1}:v]overlay=x=(main_w-overlay_w)/2:y=${yExpr}:shortest=1[${next}]`;
             prev = next;
           }
 
@@ -591,7 +652,7 @@ export default function SnsCreatorPage() {
           args.push("-map", "[outv]");
 
           if (keepAudio) {
-            args.push("-map", "0:a?");
+            args.push("-map", "0:a");
           }
         } else {
           args.push("-vf", `${scaleAndCrop},format=yuv420p,setsar=1`);
@@ -613,11 +674,7 @@ export default function SnsCreatorPage() {
         if (keepAudio) {
           args.push("-c:a", "aac", "-b:a", qual.aBit, "-ar", "44100", "-ac", "2");
         } else {
-          if (numOverlays === 0) {
-            args.push("-an");
-          } else {
-            args.push("-an");
-          }
+          args.push("-an");
         }
 
         args.push("-movflags", "+faststart", "-y", `temp${i}.mp4`);
@@ -949,10 +1006,22 @@ export default function SnsCreatorPage() {
                       />
                     </div>
                     {/* Transport */}
-                    <div className="flex items-center gap-3">
-                      <Button variant="ghost" size="icon-xs" onClick={togglePlay}>
+                    <div className="flex items-center gap-2">
+                      <Button variant="ghost" size="icon-xs" onClick={togglePlay} title="再生/一時停止">
                         {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                       </Button>
+                      {clips.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={playAll}
+                          disabled={playing}
+                          className="text-[10px] h-6 px-2"
+                          title="全クリップを通して再生"
+                        >
+                          全再生
+                        </Button>
+                      )}
                       <span className="text-xs font-mono text-muted-foreground tabular-nums">
                         {fmt(currentTime)} / {fmt(selectedClip.fullDuration)}
                       </span>
