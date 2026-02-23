@@ -1,202 +1,513 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { fetchFile } from "@ffmpeg/util";
 import { useFFmpeg } from "@/hooks/use-ffmpeg";
 import { FFmpegLoader } from "@/components/ffmpeg-loader";
-import { FileDropzone } from "@/components/file-dropzone";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Download, Smartphone, ArrowLeft } from "lucide-react";
+import {
+  Download,
+  Play,
+  Pause,
+  Plus,
+  Trash2,
+  GripVertical,
+  ArrowLeft,
+  Smartphone,
+  Volume2,
+  VolumeX,
+  Film,
+  Music,
+  Settings2,
+  Scissors,
+  ChevronDown,
+  ChevronUp,
+  RotateCcw,
+  Loader2,
+} from "lucide-react";
 import Link from "next/link";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  horizontalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
-/* ── Platform presets ─────────────────────────────── */
+/* ================================================================
+   Types
+   ================================================================ */
 
-const platforms = [
-  {
-    id: "tiktok",
-    label: "TikTok",
-    width: 1080,
-    height: 1920,
-    maxDuration: 600,
-    note: "15〜60秒が推奨",
-  },
-  {
-    id: "reels",
-    label: "Instagram Reels",
-    width: 1080,
-    height: 1920,
-    maxDuration: 90,
-    note: "最大90秒",
-  },
-  {
-    id: "shorts",
-    label: "YouTube Shorts",
-    width: 1080,
-    height: 1920,
-    maxDuration: 60,
-    note: "最大60秒",
-  },
+interface TimelineClip {
+  id: string;
+  file: File;
+  name: string;
+  fullDuration: number;
+  inPoint: number;
+  outPoint: number;
+  thumbnailUrl: string;
+  objectUrl: string;
+}
+
+/* ================================================================
+   Constants
+   ================================================================ */
+
+const PLATFORMS = [
+  { id: "tiktok", label: "TikTok", w: 1080, h: 1920, maxDur: 600, note: "15〜60秒推奨" },
+  { id: "reels", label: "Reels", w: 1080, h: 1920, maxDur: 90, note: "最大90秒" },
+  { id: "shorts", label: "Shorts", w: 1080, h: 1920, maxDur: 60, note: "最大60秒" },
 ] as const;
 
-const cropPositions = [
+const CROP_POSITIONS = [
+  { label: "上", value: "top" },
   { label: "中央", value: "center" },
-  { label: "上部", value: "top" },
-  { label: "下部", value: "bottom" },
+  { label: "下", value: "bottom" },
 ] as const;
 
-const audioModes = [
-  { label: "元の音声を保持", value: "keep" },
-  { label: "BGMで置換", value: "replace" },
-  { label: "BGMをミックス", value: "mix" },
-  { label: "ミュート（無音）", value: "mute" },
+const AUDIO_MODES = [
+  { label: "元音声を保持", value: "keep", icon: Volume2 },
+  { label: "BGMで置換", value: "replace", icon: Music },
+  { label: "BGMをミックス", value: "mix", icon: Volume2 },
+  { label: "ミュート", value: "mute", icon: VolumeX },
 ] as const;
 
-const qualityPresets = [
-  { label: "高画質", value: "high", videoBitrate: "8000k", audioBitrate: "192k" },
-  { label: "標準", value: "standard", videoBitrate: "4000k", audioBitrate: "128k" },
-  { label: "軽量", value: "compact", videoBitrate: "2000k", audioBitrate: "96k" },
+const QUALITY = [
+  { label: "高画質", value: "high", vBit: "8000k", aBit: "192k", buf: "16000k" },
+  { label: "標準", value: "standard", vBit: "4000k", aBit: "128k", buf: "8000k" },
+  { label: "軽量", value: "compact", vBit: "2000k", aBit: "96k", buf: "4000k" },
 ] as const;
 
-/* ── Component ────────────────────────────────────── */
+const CLIP_COLORS = [
+  "bg-blue-500", "bg-violet-500", "bg-emerald-500", "bg-amber-500",
+  "bg-rose-500", "bg-cyan-500", "bg-indigo-500", "bg-lime-500",
+];
+
+const TIMELINE_PX_PER_SEC = 8;
+
+/* ================================================================
+   Helpers
+   ================================================================ */
+
+let _idCounter = 0;
+function uid(): string {
+  return `clip-${Date.now()}-${_idCounter++}`;
+}
+
+function ext(name: string): string {
+  const m = name.match(/\.[^.]+$/);
+  return m ? m[0] : ".mp4";
+}
+
+function fmt(sec: number): string {
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  const ms = Math.floor((sec % 1) * 10);
+  return `${m}:${String(s).padStart(2, "0")}.${ms}`;
+}
+
+function fmtSize(bytes: number): string {
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const u = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + u[i];
+}
+
+async function loadClipMeta(file: File): Promise<{ duration: number; thumb: string; url: string }> {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement("video");
+    video.preload = "auto";
+    video.muted = true;
+    video.playsInline = true;
+    const url = URL.createObjectURL(file);
+    video.src = url;
+
+    video.onloadeddata = () => {
+      video.currentTime = Math.min(1, video.duration * 0.1);
+    };
+
+    video.onseeked = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 160;
+      canvas.height = 90;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(video, 0, 0, 160, 90);
+      const thumb = canvas.toDataURL("image/jpeg", 0.6);
+      resolve({ duration: video.duration, thumb, url });
+    };
+
+    video.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("動画を読み込めませんでした"));
+    };
+
+    // Timeout fallback — some videos never fire onseeked
+    setTimeout(() => {
+      if (video.duration) {
+        resolve({ duration: video.duration, thumb: "", url });
+      }
+    }, 5000);
+  });
+}
+
+/* ================================================================
+   SortableClip — draggable clip block on the timeline
+   ================================================================ */
+
+function SortableClip({
+  clip,
+  index,
+  isSelected,
+  totalDuration,
+  onClick,
+}: {
+  clip: TimelineClip;
+  index: number;
+  isSelected: boolean;
+  totalDuration: number;
+  onClick: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: clip.id,
+  });
+
+  const clipDur = clip.outPoint - clip.inPoint;
+  const widthPx = Math.max(clipDur * TIMELINE_PX_PER_SEC, 64);
+  const color = CLIP_COLORS[index % CLIP_COLORS.length];
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    width: `${widthPx}px`,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : undefined,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      onClick={onClick}
+      className={`
+        relative flex-shrink-0 h-14 rounded-md cursor-pointer select-none overflow-hidden
+        border-2 transition-colors
+        ${isSelected ? "border-white ring-1 ring-white/30" : "border-transparent hover:border-white/40"}
+      `}
+      {...attributes}
+    >
+      {/* Color bar + thumbnail background */}
+      <div className={`absolute inset-0 ${color} opacity-80`} />
+      {clip.thumbnailUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={clip.thumbnailUrl}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-luminosity"
+        />
+      )}
+      {/* Content */}
+      <div className="relative flex items-center h-full px-2 gap-1.5">
+        <div {...listeners} className="cursor-grab active:cursor-grabbing shrink-0">
+          <GripVertical className="h-3.5 w-3.5 text-white/70" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-medium text-white truncate leading-tight">{clip.name}</p>
+          <p className="text-[9px] text-white/70 leading-tight">{fmt(clipDur)}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================
+   Main Component
+   ================================================================ */
 
 export default function SnsCreatorPage() {
-  const { load, loaded, loading, loadProgress, progress, error, exec, writeFile, readFile } =
-    useFFmpeg();
+  const ff = useFFmpeg();
 
-  // Files
-  const [videoFiles, setVideoFiles] = useState<File[]>([]);
-  const [bgmFiles, setBgmFiles] = useState<File[]>([]);
+  /* ── Clips & media ─────────────────────────── */
+  const [clips, setClips] = useState<TimelineClip[]>([]);
+  const [bgmFile, setBgmFile] = useState<File | null>(null);
+  const [bgmName, setBgmName] = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [loadingClips, setLoadingClips] = useState(false);
 
-  // Settings
-  const [platform, setPlatform] = useState<string>("tiktok");
-  const [cropPosition, setCropPosition] = useState("center");
-  const [startTime, setStartTime] = useState("0");
-  const [endTime, setEndTime] = useState("");
-  const [audioMode, setAudioMode] = useState<string>("keep");
-  const [originalVolume, setOriginalVolume] = useState(30);
-  const [bgmVolume, setBgmVolume] = useState(70);
-  const [quality, setQuality] = useState<string>("standard");
+  /* ── Settings ──────────────────────────────── */
+  const [platform, setPlatform] = useState("tiktok");
+  const [crop, setCrop] = useState("center");
+  const [audioMode, setAudioMode] = useState("keep");
+  const [quality, setQuality] = useState("standard");
+  const [origVol, setOrigVol] = useState(30);
+  const [bgmVol, setBgmVol] = useState(70);
 
-  // Video preview
-  const [duration, setDuration] = useState(0);
-  const [videoUrl, setVideoUrl] = useState("");
+  /* ── Preview ───────────────────────────────── */
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
 
-  // Process state
+  /* ── Process state ─────────────────────────── */
   const [processing, setProcessing] = useState(false);
+  const [processStep, setProcessStep] = useState("");
   const [result, setResult] = useState<{ blob: Blob; name: string } | null>(null);
 
-  const selectedPlatform = platforms.find((p) => p.id === platform)!;
-  const selectedQuality = qualityPresets.find((q) => q.value === quality)!;
-  const needsBgm = audioMode === "replace" || audioMode === "mix";
+  /* ── Accordion for mobile ──────────────────── */
+  const [settingsOpen, setSettingsOpen] = useState(true);
 
-  const handleVideoChange = useCallback((files: File[]) => {
-    setVideoFiles(files);
-    setResult(null);
-    if (files.length > 0) {
-      const url = URL.createObjectURL(files[0]);
-      setVideoUrl(url);
-    } else {
-      setVideoUrl("");
-      setDuration(0);
-      setEndTime("");
+  /* ── Derived ───────────────────────────────── */
+  const plat = PLATFORMS.find((p) => p.id === platform)!;
+  const qual = QUALITY.find((q) => q.value === quality)!;
+  const needsBgm = audioMode === "replace" || audioMode === "mix";
+  const selectedClip = clips.find((c) => c.id === selectedId) ?? null;
+  const totalDuration = clips.reduce((s, c) => s + (c.outPoint - c.inPoint), 0);
+
+  const videoInputRef = useRef<HTMLInputElement>(null);
+  const bgmInputRef = useRef<HTMLInputElement>(null);
+
+  /* ── DnD sensors ───────────────────────────── */
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  );
+
+  /* ── Add clips ─────────────────────────────── */
+  const addClips = useCallback(async (files: FileList | File[]) => {
+    setLoadingClips(true);
+    const arr = Array.from(files);
+    const newClips: TimelineClip[] = [];
+
+    for (const file of arr) {
+      try {
+        const meta = await loadClipMeta(file);
+        newClips.push({
+          id: uid(),
+          file,
+          name: file.name.replace(/\.[^.]+$/, ""),
+          fullDuration: meta.duration,
+          inPoint: 0,
+          outPoint: meta.duration,
+          thumbnailUrl: meta.thumb,
+          objectUrl: meta.url,
+        });
+      } catch {
+        // skip unreadable files
+      }
+    }
+
+    setClips((prev) => {
+      const all = [...prev, ...newClips];
+      if (!selectedId && newClips.length > 0) {
+        setSelectedId(newClips[0].id);
+      }
+      return all;
+    });
+    setLoadingClips(false);
+  }, [selectedId]);
+
+  const removeClip = useCallback((id: string) => {
+    setClips((prev) => {
+      const next = prev.filter((c) => c.id !== id);
+      return next;
+    });
+    setSelectedId((prev) => (prev === id ? null : prev));
+  }, []);
+
+  /* ── Trim controls ─────────────────────────── */
+  const updateClip = useCallback((id: string, patch: Partial<TimelineClip>) => {
+    setClips((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+  }, []);
+
+  /* ── DnD handler ───────────────────────────── */
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setClips((prev) => {
+        const oldIdx = prev.findIndex((c) => c.id === active.id);
+        const newIdx = prev.findIndex((c) => c.id === over.id);
+        return arrayMove(prev, oldIdx, newIdx);
+      });
     }
   }, []);
 
-  const handleVideoLoaded = () => {
-    if (videoRef.current) {
-      const dur = videoRef.current.duration;
-      setDuration(dur);
-      if (!endTime) setEndTime(dur.toFixed(1));
+  /* ── Preview transport ─────────────────────── */
+  const togglePlay = useCallback(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (v.paused) {
+      v.play();
+      setPlaying(true);
+    } else {
+      v.pause();
+      setPlaying(false);
     }
-  };
+  }, []);
 
-  /* ── Build & run FFmpeg command ─────────────────── */
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    const onTime = () => setCurrentTime(v.currentTime);
+    const onEnd = () => setPlaying(false);
+    v.addEventListener("timeupdate", onTime);
+    v.addEventListener("ended", onEnd);
+    return () => {
+      v.removeEventListener("timeupdate", onTime);
+      v.removeEventListener("ended", onEnd);
+    };
+  }, [selectedClip]);
 
-  const handleProcess = async () => {
-    if (videoFiles.length === 0) return;
-    if (needsBgm && bgmFiles.length === 0) return;
+  /* ── BGM handler ───────────────────────────── */
+  const handleBgmSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) {
+      setBgmFile(f);
+      setBgmName(f.name.replace(/\.[^.]+$/, ""));
+    }
+    if (bgmInputRef.current) bgmInputRef.current.value = "";
+  }, []);
+
+  /* ================================================================
+     FFmpeg Processing — Multi-clip with proper encoding
+     ================================================================ */
+
+  const handleExport = async () => {
+    if (clips.length === 0) return;
+    if (needsBgm && !bgmFile) return;
     setProcessing(true);
+    setResult(null);
 
     try {
-      const video = videoFiles[0];
-      const inputVideo = "input" + getExtension(video.name);
-      const outputName = "output.mp4";
+      const W = plat.w;
+      const H = plat.h;
+      const cropY =
+        crop === "top" ? "0" : crop === "bottom" ? "in_h-out_h" : "(in_h-out_h)/2";
+      const vFilter = `scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H}:(in_w-out_w)/2:${cropY},format=yuv420p,setsar=1`;
 
-      await writeFile(inputVideo, await fetchFile(video));
+      const keepAudio = audioMode === "keep" || audioMode === "mix";
 
-      // Write BGM if needed
-      let inputBgm = "";
-      if (needsBgm && bgmFiles.length > 0) {
-        inputBgm = "bgm" + getExtension(bgmFiles[0].name);
-        await writeFile(inputBgm, await fetchFile(bgmFiles[0]));
+      /* ── Step 1: Encode each clip ─────────────── */
+      for (let i = 0; i < clips.length; i++) {
+        const c = clips[i];
+        setProcessStep(`クリップ ${i + 1}/${clips.length} をエンコード中...`);
+
+        const inputName = `input${i}${ext(c.file.name)}`;
+        await ff.writeFile(inputName, await fetchFile(c.file));
+
+        const args: string[] = [];
+
+        // Trim (input-level for speed)
+        if (c.inPoint > 0) args.push("-ss", String(c.inPoint));
+        if (c.outPoint < c.fullDuration) args.push("-to", String(c.outPoint));
+
+        args.push("-i", inputName);
+
+        // Video
+        args.push("-vf", vFilter);
+        args.push(
+          "-c:v", "libx264",
+          "-profile:v", "high",
+          "-level", "4.0",
+          "-pix_fmt", "yuv420p",
+          "-preset", "fast",
+          "-b:v", qual.vBit,
+          "-maxrate", qual.vBit,
+          "-bufsize", qual.buf,
+        );
+
+        // Audio
+        if (keepAudio) {
+          args.push("-c:a", "aac", "-b:a", qual.aBit, "-ar", "44100", "-ac", "2");
+        } else {
+          args.push("-an");
+        }
+
+        args.push("-movflags", "+faststart", "-y", `temp${i}.mp4`);
+        await ff.exec(args);
       }
 
-      const args: string[] = [];
+      /* ── Step 2: Concat ───────────────────────── */
+      let concatFile: string;
 
-      // Trim: seek before input for speed
-      const ss = parseFloat(startTime) || 0;
-      const to = parseFloat(endTime) || 0;
-      if (ss > 0) args.push("-ss", String(ss));
-      if (to > 0 && to > ss) args.push("-to", String(to));
+      if (clips.length === 1) {
+        concatFile = "temp0.mp4";
+      } else {
+        setProcessStep("クリップを結合中...");
+        const listContent = clips.map((_, i) => `file 'temp${i}.mp4'`).join("\n");
+        await ff.writeFile("list.txt", new TextEncoder().encode(listContent));
+        await ff.exec([
+          "-f", "concat", "-safe", "0", "-i", "list.txt",
+          "-c", "copy", "-movflags", "+faststart", "-y", "concat.mp4",
+        ]);
+        concatFile = "concat.mp4";
+      }
 
-      // Input files
-      args.push("-i", inputVideo);
-      if (inputBgm) args.push("-i", inputBgm);
+      /* ── Step 3: Audio post-processing ────────── */
+      let outputFile = concatFile;
 
-      // Video filter: scale + crop to 9:16
-      let cropY = "(in_h-out_h)/2";
-      if (cropPosition === "top") cropY = "0";
-      if (cropPosition === "bottom") cropY = "in_h-out_h";
-      const vf = `scale=${selectedPlatform.width}:${selectedPlatform.height}:force_original_aspect_ratio=increase,crop=${selectedPlatform.width}:${selectedPlatform.height}:(in_w-out_w)/2:${cropY}`;
-      args.push("-vf", vf);
+      if (audioMode === "replace" && bgmFile) {
+        setProcessStep("BGMを適用中...");
+        const bgmIn = "bgm" + ext(bgmFile.name);
+        await ff.writeFile(bgmIn, await fetchFile(bgmFile));
 
-      // Audio handling
-      if (audioMode === "mute") {
-        args.push("-an");
-      } else if (audioMode === "replace" && inputBgm) {
-        args.push("-map", "0:v", "-map", "1:a", "-shortest");
-      } else if (audioMode === "mix" && inputBgm) {
-        const origVol = (originalVolume / 100).toFixed(2);
-        const bgmVol = (bgmVolume / 100).toFixed(2);
-        args.push(
+        await ff.exec([
+          "-i", concatFile,
+          "-i", bgmIn,
+          "-map", "0:v",
+          "-map", "1:a",
+          "-c:v", "copy",
+          "-c:a", "aac", "-b:a", qual.aBit, "-ar", "44100", "-ac", "2",
+          "-shortest",
+          "-movflags", "+faststart",
+          "-y", "output.mp4",
+        ]);
+        outputFile = "output.mp4";
+      } else if (audioMode === "mix" && bgmFile) {
+        setProcessStep("BGMをミックス中...");
+        const bgmIn = "bgm" + ext(bgmFile.name);
+        await ff.writeFile(bgmIn, await fetchFile(bgmFile));
+
+        const oVol = (origVol / 100).toFixed(2);
+        const bVol = (bgmVol / 100).toFixed(2);
+
+        await ff.exec([
+          "-i", concatFile,
+          "-i", bgmIn,
           "-filter_complex",
-          `[0:a]volume=${origVol}[a0];[1:a]volume=${bgmVol}[a1];[a0][a1]amix=inputs=2:duration=first[aout]`,
+          `[0:a]volume=${oVol}[a0];[1:a]volume=${bVol}[a1];[a0][a1]amix=inputs=2:duration=first[aout]`,
           "-map", "0:v",
           "-map", "[aout]",
-        );
-      }
-      // "keep" → no special audio args, FFmpeg copies original
-
-      // Encoding
-      args.push(
-        "-c:v", "libx264",
-        "-preset", "fast",
-        "-b:v", selectedQuality.videoBitrate,
-        "-maxrate", selectedQuality.videoBitrate,
-      );
-
-      if (audioMode !== "mute") {
-        args.push("-c:a", "aac", "-b:a", selectedQuality.audioBitrate);
+          "-c:v", "copy",
+          "-c:a", "aac", "-b:a", qual.aBit, "-ar", "44100", "-ac", "2",
+          "-movflags", "+faststart",
+          "-y", "output.mp4",
+        ]);
+        outputFile = "output.mp4";
       }
 
-      args.push("-movflags", "+faststart", "-y", outputName);
-
-      await exec(args);
-
-      const data = await readFile(outputName);
+      /* ── Step 4: Read result ──────────────────── */
+      setProcessStep("完了!");
+      const data = await ff.readFile(outputFile);
       const blob = new Blob([data.buffer as ArrayBuffer], { type: "video/mp4" });
-      const baseName = video.name.replace(/\.[^.]+$/, "");
+      const baseName = clips[0].name;
       setResult({ blob, name: `${baseName}_${platform}.mp4` });
     } catch (err) {
-      console.error("SNS video creation failed:", err);
-      alert("動画の作成に失敗しました。もう一度お試しください。");
+      console.error("Export failed:", err);
+      alert("書き出しに失敗しました。クリップやBGMを確認してもう一度お試しください。");
     } finally {
       setProcessing(false);
+      setProcessStep("");
     }
   };
 
+  /* ── Download result ───────────────────────── */
   const handleDownload = () => {
     if (!result) return;
     const url = URL.createObjectURL(result.blob);
@@ -208,309 +519,573 @@ export default function SnsCreatorPage() {
   };
 
   const reset = () => {
-    if (videoUrl) URL.revokeObjectURL(videoUrl);
-    setVideoFiles([]);
-    setBgmFiles([]);
+    clips.forEach((c) => URL.revokeObjectURL(c.objectUrl));
+    setClips([]);
+    setBgmFile(null);
+    setBgmName("");
+    setSelectedId(null);
     setResult(null);
-    setVideoUrl("");
-    setDuration(0);
-    setStartTime("0");
-    setEndTime("");
+    setPlaying(false);
   };
 
+  /* ================================================================
+     Render
+     ================================================================ */
+
   return (
-    <div className="mx-auto max-w-screen-xl px-6 lg:px-10 py-8">
-      <Link
-        href="/"
-        className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-8"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" /> Anything
-      </Link>
-
-      <div className="flex items-center gap-3 mb-1">
-        <Smartphone className="h-5 w-5 text-primary" />
-        <h1 className="text-xl font-semibold tracking-tight">SNS動画クリエイター</h1>
-      </div>
-      <p className="text-sm text-muted-foreground mb-8">
-        TikTok・Instagram Reels・YouTube Shorts向けの縦動画を作成。クロップ・トリミング・BGM追加をまとめて処理します。すべてブラウザ内で完結。
-      </p>
-
-      <FFmpegLoader
-        loaded={loaded}
-        loading={loading}
-        loadProgress={loadProgress}
-        error={error}
-        onLoad={load}
-      />
-
-      {loaded && !result && (
-        <div className="space-y-6">
-          {/* ── Platform ──────────────────────────── */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">プラットフォーム</label>
-            <div className="grid grid-cols-3 gap-2">
-              {platforms.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => setPlatform(p.id)}
-                  className={`rounded-lg border p-3 text-left transition-colors ${
-                    platform === p.id
-                      ? "border-primary bg-primary/10"
-                      : "hover:border-primary/50"
-                  }`}
-                >
-                  <p className="text-sm font-medium">{p.label}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {p.width}x{p.height} ・ {p.note}
-                  </p>
-                </button>
-              ))}
-            </div>
+    <div className="flex flex-col min-h-[calc(100vh-120px)]">
+      {/* ── Top bar ──────────────────────────────── */}
+      <div className="flex items-center justify-between px-4 py-2 border-b bg-card">
+        <div className="flex items-center gap-3">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+          </Link>
+          <div className="flex items-center gap-2">
+            <Smartphone className="h-4 w-4 text-primary" />
+            <h1 className="text-sm font-semibold tracking-tight">SNS動画クリエイター</h1>
           </div>
+        </div>
 
-          {/* ── Video file ────────────────────────── */}
-          <FileDropzone
-            accept="video/*,.mp4,.mov,.avi,.webm,.mkv"
-            files={videoFiles}
-            onFilesChange={handleVideoChange}
-            label="動画ファイルをここにドロップ"
-            description="MP4・MOV・AVI・WebMに対応"
-          />
+        <FFmpegLoader
+          loaded={ff.loaded}
+          loading={ff.loading}
+          loadProgress={ff.loadProgress}
+          error={ff.error}
+          onLoad={ff.load}
+        />
+      </div>
 
-          {/* ── Video preview ─────────────────────── */}
-          {videoUrl && (
-            <div className="rounded-xl border overflow-hidden bg-black">
-              <video
-                ref={videoRef}
-                src={videoUrl}
-                controls
-                onLoadedMetadata={handleVideoLoaded}
-                className="w-full max-h-[360px]"
-              />
-            </div>
-          )}
-
-          {videoFiles.length > 0 && (
-            <div className="space-y-6">
-              {/* ── Crop position ─────────────────── */}
-              <div>
-                <label className="text-sm font-medium mb-2 block">クロップ位置</label>
-                <div className="flex gap-2">
-                  {cropPositions.map((pos) => (
-                    <button
-                      key={pos.value}
-                      onClick={() => setCropPosition(pos.value)}
-                      className={`flex-1 rounded-lg border p-2 text-sm transition-colors ${
-                        cropPosition === pos.value
-                          ? "border-primary bg-primary/10 font-medium"
-                          : "hover:border-primary/50"
-                      }`}
-                    >
-                      {pos.label}
-                    </button>
-                  ))}
+      {ff.loaded && !result && (
+        <>
+          {/* ── Main panels ──────────────────────── */}
+          <div className="flex-1 flex flex-col lg:flex-row min-h-0">
+            {/* ─── Left: Media Bin ─────────────────── */}
+            <div className="lg:w-56 xl:w-64 border-b lg:border-b-0 lg:border-r bg-card/50 flex flex-col">
+              <div className="px-3 py-2 border-b flex items-center justify-between">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  メディア
+                </span>
+                <div className="flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    onClick={() => videoInputRef.current?.click()}
+                    title="動画を追加"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
               </div>
 
-              {/* ── Trim ──────────────────────────── */}
-              {duration > 0 && (
+              <input
+                ref={videoInputRef}
+                type="file"
+                accept="video/*,.mp4,.mov,.avi,.webm,.mkv"
+                multiple
+                onChange={(e) => {
+                  if (e.target.files) addClips(e.target.files);
+                  e.target.value = "";
+                }}
+                className="hidden"
+              />
+              <input
+                ref={bgmInputRef}
+                type="file"
+                accept="audio/*,.mp3,.wav,.aac,.m4a,.ogg,.flac"
+                onChange={handleBgmSelect}
+                className="hidden"
+              />
+
+              <div className="flex-1 overflow-y-auto p-2 space-y-1">
+                {clips.length === 0 && !bgmFile && (
+                  <button
+                    onClick={() => videoInputRef.current?.click()}
+                    className="w-full flex flex-col items-center justify-center gap-1.5 py-8 rounded-lg border border-dashed border-border/60 hover:border-primary/50 hover:bg-muted/30 transition-colors"
+                  >
+                    <Film className="h-5 w-5 text-muted-foreground/50" />
+                    <span className="text-xs text-muted-foreground">動画を追加</span>
+                  </button>
+                )}
+
+                {/* Video clips */}
+                {clips.map((clip, i) => (
+                  <div
+                    key={clip.id}
+                    onClick={() => setSelectedId(clip.id)}
+                    className={`flex items-center gap-2 p-1.5 rounded-md cursor-pointer transition-colors ${
+                      selectedId === clip.id
+                        ? "bg-primary/15 ring-1 ring-primary/30"
+                        : "hover:bg-muted/50"
+                    }`}
+                  >
+                    {clip.thumbnailUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={clip.thumbnailUrl}
+                        alt=""
+                        className="w-10 h-6 rounded object-cover shrink-0"
+                      />
+                    ) : (
+                      <div className="w-10 h-6 rounded bg-muted shrink-0 flex items-center justify-center">
+                        <Film className="h-3 w-3 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] font-medium truncate">{clip.name}</p>
+                      <p className="text-[10px] text-muted-foreground">{fmt(clip.fullDuration)}</p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeClip(clip.id);
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+
+                {/* Add more clips */}
+                {clips.length > 0 && (
+                  <button
+                    onClick={() => videoInputRef.current?.click()}
+                    className="w-full flex items-center justify-center gap-1 py-1.5 rounded-md text-[10px] text-muted-foreground hover:bg-muted/50 transition-colors"
+                  >
+                    <Plus className="h-3 w-3" /> 動画を追加
+                  </button>
+                )}
+
+                {loadingClips && (
+                  <div className="flex items-center gap-2 px-2 py-1">
+                    <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                    <span className="text-[10px] text-muted-foreground">読み込み中...</span>
+                  </div>
+                )}
+
+                {/* Divider */}
+                {clips.length > 0 && <div className="border-t my-2" />}
+
+                {/* BGM */}
+                {bgmFile ? (
+                  <div className="flex items-center gap-2 p-1.5 rounded-md bg-muted/30">
+                    <div className="w-10 h-6 rounded bg-purple-500/20 flex items-center justify-center shrink-0">
+                      <Music className="h-3 w-3 text-purple-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] font-medium truncate">{bgmName}</p>
+                      <p className="text-[10px] text-muted-foreground">BGM</p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={() => {
+                        setBgmFile(null);
+                        setBgmName("");
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => bgmInputRef.current?.click()}
+                    className="w-full flex items-center justify-center gap-1 py-1.5 rounded-md text-[10px] text-muted-foreground hover:bg-muted/50 transition-colors"
+                  >
+                    <Music className="h-3 w-3" /> BGMを追加
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* ─── Center: Preview ─────────────────── */}
+            <div className="flex-1 flex flex-col bg-neutral-100 dark:bg-neutral-900 min-h-0">
+              <div className="flex-1 flex items-center justify-center p-4 min-h-0">
+                {selectedClip ? (
+                  <div className="relative flex flex-col items-center gap-2 max-h-full">
+                    <div className="relative bg-black rounded-lg overflow-hidden shadow-xl" style={{ aspectRatio: "9/16", maxHeight: "min(50vh, 400px)" }}>
+                      <video
+                        ref={videoRef}
+                        key={selectedClip.objectUrl}
+                        src={selectedClip.objectUrl}
+                        className="h-full w-full object-contain"
+                        playsInline
+                        muted={false}
+                      />
+                    </div>
+                    {/* Transport */}
+                    <div className="flex items-center gap-3">
+                      <Button variant="ghost" size="icon-xs" onClick={togglePlay}>
+                        {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                      </Button>
+                      <span className="text-xs font-mono text-muted-foreground tabular-nums">
+                        {fmt(currentTime)} / {fmt(selectedClip.fullDuration)}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <Film className="h-10 w-10 text-muted-foreground/30 mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground/60">
+                      動画を追加してプレビュー
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* ─── Right: Inspector / Settings ────── */}
+            <div className="lg:w-60 xl:w-72 border-t lg:border-t-0 lg:border-l bg-card/50 overflow-y-auto">
+              {/* Settings header (collapsible on mobile) */}
+              <button
+                onClick={() => setSettingsOpen(!settingsOpen)}
+                className="w-full px-3 py-2 border-b flex items-center justify-between lg:pointer-events-none"
+              >
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <Settings2 className="h-3 w-3" /> 設定
+                </span>
+                <span className="lg:hidden">
+                  {settingsOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                </span>
+              </button>
+
+              <div className={`${settingsOpen ? "block" : "hidden lg:block"} p-3 space-y-4`}>
+                {/* Platform */}
                 <div>
-                  <label className="text-sm font-medium mb-2 block">
-                    トリミング
-                    <span className="text-xs text-muted-foreground ml-2">
-                      再生時間: {formatTime(duration)} / {selectedPlatform.note}
-                    </span>
+                  <label className="text-[11px] font-medium text-muted-foreground mb-1.5 block">
+                    プラットフォーム
                   </label>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-1">
+                    {PLATFORMS.map((p) => (
+                      <button
+                        key={p.id}
+                        onClick={() => setPlatform(p.id)}
+                        className={`rounded-md px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                          platform === p.id
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted/50 hover:bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    {plat.w}×{plat.h} ・ {plat.note}
+                  </p>
+                </div>
+
+                {/* Crop position */}
+                <div>
+                  <label className="text-[11px] font-medium text-muted-foreground mb-1.5 block">
+                    クロップ位置
+                  </label>
+                  <div className="grid grid-cols-3 gap-1">
+                    {CROP_POSITIONS.map((c) => (
+                      <button
+                        key={c.value}
+                        onClick={() => setCrop(c.value)}
+                        className={`rounded-md px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                          crop === c.value
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted/50 hover:bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        {c.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Audio mode */}
+                <div>
+                  <label className="text-[11px] font-medium text-muted-foreground mb-1.5 block">
+                    オーディオ
+                  </label>
+                  <div className="grid grid-cols-2 gap-1">
+                    {AUDIO_MODES.map((m) => (
+                      <button
+                        key={m.value}
+                        onClick={() => setAudioMode(m.value)}
+                        className={`flex items-center gap-1 rounded-md px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                          audioMode === m.value
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted/50 hover:bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        <m.icon className="h-3 w-3" />
+                        {m.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Volume sliders */}
+                {audioMode === "mix" && bgmFile && (
+                  <div className="space-y-2 rounded-md bg-muted/30 p-2.5">
+                    <p className="text-[10px] font-medium text-muted-foreground">音量バランス</p>
                     <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">
-                        開始（秒）
-                      </label>
+                      <div className="flex justify-between text-[10px] mb-0.5">
+                        <span>元音声</span>
+                        <span className="text-muted-foreground">{origVol}%</span>
+                      </div>
                       <input
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        max={duration || undefined}
-                        value={startTime}
-                        onChange={(e) => setStartTime(e.target.value)}
-                        className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                        type="range" min="0" max="100" value={origVol}
+                        onChange={(e) => setOrigVol(Number(e.target.value))}
+                        className="w-full h-1 accent-primary"
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">
-                        終了（秒）
-                      </label>
+                      <div className="flex justify-between text-[10px] mb-0.5">
+                        <span>BGM</span>
+                        <span className="text-muted-foreground">{bgmVol}%</span>
+                      </div>
                       <input
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        max={duration || undefined}
-                        value={endTime}
-                        onChange={(e) => setEndTime(e.target.value)}
-                        className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                        type="range" min="0" max="100" value={bgmVol}
+                        onChange={(e) => setBgmVol(Number(e.target.value))}
+                        className="w-full h-1 accent-primary"
                       />
                     </div>
                   </div>
-                  {parseFloat(endTime) - parseFloat(startTime) > selectedPlatform.maxDuration && (
-                    <p className="text-xs text-destructive mt-1">
-                      {selectedPlatform.label}の上限（{selectedPlatform.maxDuration}秒）を超えています
+                )}
+
+                {/* Quality */}
+                <div>
+                  <label className="text-[11px] font-medium text-muted-foreground mb-1.5 block">
+                    画質
+                  </label>
+                  <div className="grid grid-cols-3 gap-1">
+                    {QUALITY.map((q) => (
+                      <button
+                        key={q.value}
+                        onClick={() => setQuality(q.value)}
+                        className={`rounded-md px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                          quality === q.value
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted/50 hover:bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        {q.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Selected clip trim */}
+                {selectedClip && (
+                  <div className="space-y-2 rounded-md border p-2.5">
+                    <div className="flex items-center gap-1.5">
+                      <Scissors className="h-3 w-3 text-muted-foreground" />
+                      <p className="text-[11px] font-medium">クリップをトリミング</p>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground truncate">
+                      {selectedClip.name} ({fmt(selectedClip.fullDuration)})
                     </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[10px] text-muted-foreground mb-0.5 block">イン</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          max={selectedClip.outPoint}
+                          value={selectedClip.inPoint.toFixed(1)}
+                          onChange={(e) =>
+                            updateClip(selectedClip.id, {
+                              inPoint: Math.max(0, Math.min(parseFloat(e.target.value) || 0, selectedClip.outPoint)),
+                            })
+                          }
+                          className="w-full rounded border bg-background px-2 py-1 text-[11px] font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-muted-foreground mb-0.5 block">アウト</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          min={selectedClip.inPoint}
+                          max={selectedClip.fullDuration}
+                          value={selectedClip.outPoint.toFixed(1)}
+                          onChange={(e) =>
+                            updateClip(selectedClip.id, {
+                              outPoint: Math.min(selectedClip.fullDuration, Math.max(parseFloat(e.target.value) || 0, selectedClip.inPoint)),
+                            })
+                          }
+                          className="w-full rounded border bg-background px-2 py-1 text-[11px] font-mono"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">
+                      使用区間: {fmt(selectedClip.outPoint - selectedClip.inPoint)}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Timeline ─────────────────────────── */}
+          <div className="border-t bg-neutral-50 dark:bg-neutral-900/80">
+            {/* Timeline header */}
+            <div className="flex items-center justify-between px-3 py-1.5 border-b">
+              <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                タイムライン
+              </span>
+              <span className="text-[10px] text-muted-foreground font-mono tabular-nums">
+                合計 {fmt(totalDuration)}
+                {totalDuration > plat.maxDur && (
+                  <span className="text-destructive ml-1">
+                    ({plat.label}上限 {plat.maxDur}秒 超過)
+                  </span>
+                )}
+              </span>
+            </div>
+
+            {/* Video track */}
+            <div className="px-3 py-2">
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="text-[10px] font-semibold text-muted-foreground w-6 shrink-0">V</span>
+                <div className="flex-1 min-w-0 overflow-x-auto">
+                  {clips.length > 0 ? (
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleDragEnd}
+                    >
+                      <SortableContext
+                        items={clips.map((c) => c.id)}
+                        strategy={horizontalListSortingStrategy}
+                      >
+                        <div className="flex gap-1">
+                          {clips.map((clip, i) => (
+                            <SortableClip
+                              key={clip.id}
+                              clip={clip}
+                              index={i}
+                              isSelected={clip.id === selectedId}
+                              totalDuration={totalDuration}
+                              onClick={() => setSelectedId(clip.id)}
+                            />
+                          ))}
+                        </div>
+                      </SortableContext>
+                    </DndContext>
+                  ) : (
+                    <div className="h-14 rounded-md border border-dashed border-border/50 flex items-center justify-center">
+                      <span className="text-[10px] text-muted-foreground/50">
+                        動画クリップをここに配置
+                      </span>
+                    </div>
                   )}
                 </div>
-              )}
+              </div>
 
-              {/* ── Audio ─────────────────────────── */}
-              <div>
-                <label className="text-sm font-medium mb-2 block">オーディオ</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {audioModes.map((m) => (
-                    <button
-                      key={m.value}
-                      onClick={() => setAudioMode(m.value)}
-                      className={`rounded-lg border p-2.5 text-sm transition-colors ${
-                        audioMode === m.value
-                          ? "border-primary bg-primary/10 font-medium"
-                          : "hover:border-primary/50"
-                      }`}
+              {/* Audio track */}
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-semibold text-muted-foreground w-6 shrink-0">A</span>
+                <div className="flex-1 min-w-0 overflow-x-auto">
+                  {bgmFile && needsBgm ? (
+                    <div
+                      className="h-8 rounded-md bg-purple-500/30 border border-purple-500/40 flex items-center px-2"
+                      style={{
+                        width: `${Math.max(totalDuration * TIMELINE_PX_PER_SEC, 64)}px`,
+                      }}
                     >
-                      {m.label}
+                      <Music className="h-3 w-3 text-purple-400 shrink-0 mr-1" />
+                      <span className="text-[10px] text-purple-300 truncate">{bgmName}</span>
+                    </div>
+                  ) : audioMode === "keep" && clips.length > 0 ? (
+                    <div
+                      className="h-8 rounded-md bg-emerald-500/20 border border-emerald-500/30 flex items-center px-2"
+                      style={{
+                        width: `${Math.max(totalDuration * TIMELINE_PX_PER_SEC, 64)}px`,
+                      }}
+                    >
+                      <Volume2 className="h-3 w-3 text-emerald-400 shrink-0 mr-1" />
+                      <span className="text-[10px] text-emerald-400">元の音声</span>
+                    </div>
+                  ) : audioMode === "mute" ? (
+                    <div className="h-8 rounded-md border border-dashed border-border/30 flex items-center px-2">
+                      <VolumeX className="h-3 w-3 text-muted-foreground/40 shrink-0 mr-1" />
+                      <span className="text-[10px] text-muted-foreground/40">ミュート</span>
+                    </div>
+                  ) : needsBgm && !bgmFile ? (
+                    <button
+                      onClick={() => bgmInputRef.current?.click()}
+                      className="h-8 rounded-md border border-dashed border-purple-500/30 flex items-center px-2 hover:bg-purple-500/5 transition-colors"
+                    >
+                      <Plus className="h-3 w-3 text-purple-400 shrink-0 mr-1" />
+                      <span className="text-[10px] text-purple-400">BGMを追加</span>
                     </button>
-                  ))}
+                  ) : null}
                 </div>
               </div>
 
-              {/* ── BGM upload ────────────────────── */}
-              {needsBgm && (
-                <div>
-                  <label className="text-sm font-medium mb-2 block">BGM / 音声ファイル</label>
-                  <FileDropzone
-                    accept="audio/*,.mp3,.wav,.aac,.m4a,.ogg,.flac"
-                    files={bgmFiles}
-                    onFilesChange={setBgmFiles}
-                    label="音声ファイルをここにドロップ"
-                    description="MP3・WAV・AAC・M4A・OGG・FLACに対応"
-                  />
-                </div>
-              )}
-
-              {/* ── Volume mix ────────────────────── */}
-              {audioMode === "mix" && bgmFiles.length > 0 && (
-                <div className="space-y-3 rounded-lg border p-4">
-                  <p className="text-sm font-medium">音量バランス</p>
-                  <div>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span>元の音声</span>
-                      <span className="text-muted-foreground">{originalVolume}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={originalVolume}
-                      onChange={(e) => setOriginalVolume(Number(e.target.value))}
-                      className="w-full accent-primary"
-                    />
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span>BGM</span>
-                      <span className="text-muted-foreground">{bgmVolume}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={bgmVolume}
-                      onChange={(e) => setBgmVolume(Number(e.target.value))}
-                      className="w-full accent-primary"
-                    />
+              {/* Time ruler */}
+              {totalDuration > 0 && (
+                <div className="flex items-center gap-2 mt-1.5">
+                  <span className="w-6 shrink-0" />
+                  <div className="flex-1 flex items-end text-[9px] text-muted-foreground/50 font-mono">
+                    <span>0:00</span>
+                    <span className="flex-1" />
+                    {totalDuration > 10 && <span>{fmt(totalDuration / 2)}</span>}
+                    <span className="flex-1" />
+                    <span>{fmt(totalDuration)}</span>
                   </div>
                 </div>
               )}
+            </div>
+          </div>
 
-              {/* ── Quality ──────────────────────── */}
-              <div>
-                <label className="text-sm font-medium mb-2 block">画質</label>
-                <div className="flex gap-2">
-                  {qualityPresets.map((q) => (
-                    <button
-                      key={q.value}
-                      onClick={() => setQuality(q.value)}
-                      className={`flex-1 rounded-lg border p-2 text-sm transition-colors ${
-                        quality === q.value
-                          ? "border-primary bg-primary/10 font-medium"
-                          : "hover:border-primary/50"
-                      }`}
-                    >
-                      {q.label}
-                    </button>
-                  ))}
-                </div>
+          {/* ── Export bar ────────────────────────── */}
+          <div className="border-t bg-card px-4 py-3">
+            {processing ? (
+              <div className="space-y-2">
+                <Progress value={ff.progress} className="h-1.5" />
+                <p className="text-xs text-muted-foreground text-center">
+                  {processStep} {ff.progress > 0 ? `${ff.progress}%` : ""}
+                </p>
               </div>
-            </div>
-          )}
-
-          {/* ── Progress ─────────────────────────── */}
-          {processing && (
-            <div className="space-y-2">
-              <Progress value={progress} />
-              <p className="text-sm text-muted-foreground text-center">
-                動画を作成中... {progress}%
-              </p>
-            </div>
-          )}
-
-          {/* ── Submit ───────────────────────────── */}
-          <Button
-            onClick={handleProcess}
-            disabled={
-              videoFiles.length === 0 ||
-              (needsBgm && bgmFiles.length === 0) ||
-              processing
-            }
-            className="w-full"
-            size="lg"
-          >
-            {processing
-              ? "処理中..."
-              : `${selectedPlatform.label}用の動画を作成`}
-          </Button>
-        </div>
+            ) : (
+              <Button
+                onClick={handleExport}
+                disabled={clips.length === 0 || (needsBgm && !bgmFile) || processing}
+                className="w-full gap-2"
+                size="lg"
+              >
+                <Download className="h-4 w-4" />
+                {plat.label}用に書き出し ({fmt(totalDuration)})
+              </Button>
+            )}
+          </div>
+        </>
       )}
 
-      {/* ── Result ──────────────────────────────── */}
+      {/* ── Result ───────────────────────────────── */}
       {result && (
-        <div className="text-center space-y-4">
-          <div className="rounded-xl border bg-card p-8">
-            <p className="text-lg font-medium mb-4">
-              {selectedPlatform.label}用の動画が完成しました！
-            </p>
-            <Button onClick={handleDownload} size="lg" className="gap-2">
-              <Download className="h-5 w-5" />
-              動画をダウンロード
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="text-center space-y-4 max-w-md">
+            <div className="rounded-xl border bg-card p-8">
+              <p className="text-lg font-medium mb-1">書き出し完了</p>
+              <p className="text-sm text-muted-foreground mb-6">
+                {plat.label}用の動画 ({fmt(totalDuration)})
+              </p>
+              <Button onClick={handleDownload} size="lg" className="gap-2">
+                <Download className="h-5 w-5" />
+                ダウンロード
+              </Button>
+            </div>
+            <Button variant="outline" onClick={reset} className="gap-2">
+              <RotateCcw className="h-4 w-4" />
+              新しいプロジェクト
             </Button>
           </div>
-          <Button variant="outline" onClick={reset}>
-            他の動画を作成する
-          </Button>
         </div>
       )}
     </div>
   );
-}
-
-/* ── Helpers ──────────────────────────────────────── */
-
-function getExtension(filename: string): string {
-  const match = filename.match(/\.[^.]+$/);
-  return match ? match[0] : ".mp4";
-}
-
-function formatTime(seconds: number): string {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = Math.floor(seconds % 60);
-  const ms = Math.round((seconds % 1) * 10);
-  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}.${ms}`;
-  return `${m}:${String(s).padStart(2, "0")}.${ms}`;
 }
