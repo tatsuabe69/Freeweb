@@ -24,7 +24,7 @@ const widthOptions = [
 ];
 
 export default function VideoToGifPage() {
-  const { load, loaded, loading, loadProgress, progress, exec, writeFile, readFile } =
+  const { load, loaded, loading, loadProgress, progress, error, exec, writeFile, readFile } =
     useFFmpeg();
   const [files, setFiles] = useState<File[]>([]);
   const [startTime, setStartTime] = useState("0");
@@ -123,6 +123,7 @@ export default function VideoToGifPage() {
         loaded={loaded}
         loading={loading}
         loadProgress={loadProgress}
+        error={error}
         onLoad={load}
       />
 

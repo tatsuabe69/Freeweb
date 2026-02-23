@@ -12,12 +12,14 @@ export function useFFmpeg() {
   const [loading, setLoading] = useState(false);
   const [loadProgress, setLoadProgress] = useState(0);
   const [progress, setProgress] = useState(0);
+  const [error, setError] = useState<string | null>(null);
   const [logMessages, setLogMessages] = useState<string[]>([]);
 
   const load = useCallback(async () => {
     if (loaded || loading) return;
     setLoading(true);
     setLoadProgress(0);
+    setError(null);
 
     try {
       const ffmpeg = new FFmpeg();
@@ -41,9 +43,11 @@ export function useFFmpeg() {
       await ffmpeg.load({ coreURL, wasmURL, workerURL });
       setLoadProgress(100);
       setLoaded(true);
-    } catch (error) {
-      console.error("Failed to load FFmpeg:", error);
-      throw error;
+    } catch (err) {
+      console.error("Failed to load FFmpeg:", err);
+      setError(
+        "動画エンジンの読み込みに失敗しました。ページをリロードして再試行してください。"
+      );
     } finally {
       setLoading(false);
     }
@@ -83,6 +87,7 @@ export function useFFmpeg() {
     loading,
     loadProgress,
     progress,
+    error,
     logMessages,
     exec,
     writeFile,

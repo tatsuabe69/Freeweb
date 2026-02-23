@@ -24,7 +24,7 @@ const cropPositions = [
 ] as const;
 
 export default function VideoAspectPage() {
-  const { load, loaded, loading, loadProgress, progress, exec, writeFile, readFile } =
+  const { load, loaded, loading, loadProgress, progress, error, exec, writeFile, readFile } =
     useFFmpeg();
   const [files, setFiles] = useState<File[]>([]);
   const [preset, setPreset] = useState("tiktok");
@@ -109,6 +109,7 @@ export default function VideoAspectPage() {
         loaded={loaded}
         loading={loading}
         loadProgress={loadProgress}
+        error={error}
         onLoad={load}
       />
 

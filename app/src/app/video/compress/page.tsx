@@ -26,7 +26,7 @@ function formatFileSize(bytes: number): string {
 }
 
 export default function VideoCompressPage() {
-  const { load, loaded, loading, loadProgress, progress, exec, writeFile, readFile } =
+  const { load, loaded, loading, loadProgress, progress, error, exec, writeFile, readFile } =
     useFFmpeg();
   const [files, setFiles] = useState<File[]>([]);
   const [preset, setPreset] = useState<string>("discord");
@@ -125,6 +125,7 @@ export default function VideoCompressPage() {
         loaded={loaded}
         loading={loading}
         loadProgress={loadProgress}
+        error={error}
         onLoad={load}
       />
 

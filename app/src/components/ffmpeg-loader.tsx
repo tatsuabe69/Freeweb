@@ -2,12 +2,13 @@
 
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Download } from "lucide-react";
+import { Download, AlertCircle } from "lucide-react";
 
 interface FFmpegLoaderProps {
   loaded: boolean;
   loading: boolean;
   loadProgress: number;
+  error?: string | null;
   onLoad: () => void;
 }
 
@@ -15,6 +16,7 @@ export function FFmpegLoader({
   loaded,
   loading,
   loadProgress,
+  error,
   onLoad,
 }: FFmpegLoaderProps) {
   if (loaded) return null;
@@ -30,6 +32,12 @@ export function FFmpegLoader({
           </p>
         </div>
       </div>
+      {error && (
+        <div className="flex items-start gap-2 rounded-md bg-destructive/10 p-3">
+          <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+          <p className="text-xs text-destructive">{error}</p>
+        </div>
+      )}
       {loading ? (
         <div className="space-y-1.5">
           <Progress value={loadProgress} className="h-1.5" />
@@ -39,7 +47,7 @@ export function FFmpegLoader({
         </div>
       ) : (
         <Button onClick={onLoad} size="sm">
-          エンジンを読み込む
+          {error ? "再試行" : "エンジンを読み込む"}
         </Button>
       )}
     </div>

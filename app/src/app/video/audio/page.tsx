@@ -24,7 +24,7 @@ const bitrateOptions = [
 ] as const;
 
 export default function AudioExtractPage() {
-  const { load, loaded, loading, loadProgress, progress, exec, writeFile, readFile } =
+  const { load, loaded, loading, loadProgress, progress, error, exec, writeFile, readFile } =
     useFFmpeg();
   const [files, setFiles] = useState<File[]>([]);
   const [format, setFormat] = useState<string>("mp3");
@@ -107,6 +107,7 @@ export default function AudioExtractPage() {
         loaded={loaded}
         loading={loading}
         loadProgress={loadProgress}
+        error={error}
         onLoad={load}
       />
 
