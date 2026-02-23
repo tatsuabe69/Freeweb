@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useTheme } from "next-themes";
-import { Moon, Sun, FileText } from "lucide-react";
+import { Moon, Sun, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 
@@ -17,17 +17,11 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-xl">
       <div className="mx-auto flex h-14 max-w-screen-2xl items-center justify-between px-6 lg:px-10">
-        <Link href="/" className="flex items-center gap-2.5 font-semibold text-lg tracking-tight">
-          <FileText className="h-5 w-5 text-primary" />
-          <span>FreeWEB</span>
+        <Link href="/" className="flex items-center gap-2 font-bold text-lg tracking-tight">
+          <Sparkles className="h-5 w-5 text-primary" />
+          <span>Anything</span>
         </Link>
         <nav className="flex items-center gap-1">
-          <Link
-            href="/"
-            className="rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-          >
-            ツール一覧
-          </Link>
           {mounted && (
             <Button
               variant="ghost"

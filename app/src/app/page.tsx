@@ -7,216 +7,133 @@ import {
   Image,
   FileImage,
   ArrowUpDown,
-  Shield,
-  Zap,
-  Ban,
   Film,
   Ratio,
   Music,
 } from "lucide-react";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 
-const pdfTools = [
+const tools = [
   {
     title: "PDF 結合",
-    description: "複数のPDFファイルを1つにまとめる",
     href: "/pdf/merge",
     icon: Merge,
+    color: "from-violet-500 to-purple-600",
+    bg: "group-hover:bg-violet-500",
   },
   {
     title: "PDF 分割",
-    description: "PDFを複数のファイルに分ける",
     href: "/pdf/split",
     icon: Scissors,
+    color: "from-blue-500 to-cyan-500",
+    bg: "group-hover:bg-blue-500",
   },
   {
     title: "PDF 圧縮",
-    description: "PDFのファイルサイズを小さくする",
     href: "/pdf/compress",
     icon: Minimize2,
+    color: "from-emerald-500 to-teal-500",
+    bg: "group-hover:bg-emerald-500",
   },
   {
     title: "PDF 回転",
-    description: "PDFのページを回転させる",
     href: "/pdf/rotate",
     icon: RotateCw,
+    color: "from-amber-500 to-orange-500",
+    bg: "group-hover:bg-amber-500",
   },
   {
     title: "PDF → 画像",
-    description: "PDFの各ページをJPG・PNG・WebPに変換",
     href: "/pdf/to-image",
     icon: Image,
+    color: "from-rose-500 to-pink-500",
+    bg: "group-hover:bg-rose-500",
   },
   {
     title: "画像 → PDF",
-    description: "画像をPDFドキュメントに変換",
     href: "/pdf/from-image",
     icon: FileImage,
+    color: "from-indigo-500 to-blue-600",
+    bg: "group-hover:bg-indigo-500",
   },
   {
     title: "PDF 並び替え",
-    description: "ページの順番を入れ替え・削除",
     href: "/pdf/reorder",
     icon: ArrowUpDown,
+    color: "from-fuchsia-500 to-purple-500",
+    bg: "group-hover:bg-fuchsia-500",
   },
-];
-
-const videoTools = [
   {
     title: "動画圧縮",
-    description: "Discord・LINE・Twitter向けに圧縮",
     href: "/video/compress",
     icon: Minimize2,
+    color: "from-sky-500 to-blue-500",
+    bg: "group-hover:bg-sky-500",
   },
   {
     title: "動画 → GIF",
-    description: "動画をアニメーションGIFに変換",
     href: "/video/to-gif",
     icon: Film,
+    color: "from-lime-500 to-green-500",
+    bg: "group-hover:bg-lime-500",
   },
   {
     title: "動画トリミング",
-    description: "開始・終了時間を指定してカット",
     href: "/video/trim",
     icon: Scissors,
+    color: "from-orange-500 to-red-500",
+    bg: "group-hover:bg-orange-500",
   },
   {
     title: "SNSアスペクト比",
-    description: "TikTok・Instagram・YouTube向けにリサイズ",
     href: "/video/aspect",
     icon: Ratio,
+    color: "from-teal-500 to-cyan-500",
+    bg: "group-hover:bg-teal-500",
   },
   {
     title: "音声抽出",
-    description: "動画からMP3・WAV・AACを抽出",
     href: "/video/audio",
     icon: Music,
+    color: "from-pink-500 to-rose-500",
+    bg: "group-hover:bg-pink-500",
   },
 ];
-
-const features = [
-  {
-    icon: Shield,
-    title: "完全プライベート",
-    description: "すべての処理はブラウザ内で完結。ファイルはどこにも送信されません。",
-  },
-  {
-    icon: Ban,
-    title: "広告なし・制限なし",
-    description: "完全無料。透かし・ファイルサイズ制限・使用回数制限は一切ありません。",
-  },
-  {
-    icon: Zap,
-    title: "高速処理",
-    description: "サーバーへの送信待ちなし。すべてローカルでフルスピード処理。",
-  },
-];
-
-interface Tool {
-  title: string;
-  description: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-}
-
-function ToolGrid({ tools }: { tools: Tool[] }) {
-  return (
-    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-      {tools.map((tool) => (
-        <Link key={tool.href} href={tool.href}>
-          <Card className="group h-full border-border/60 transition-all duration-200 hover:border-primary/30 hover:shadow-sm cursor-pointer">
-            <CardHeader className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="rounded-md bg-primary/8 p-2 transition-colors group-hover:bg-primary/12">
-                  <tool.icon className="h-4 w-4 text-primary" />
-                </div>
-                <div className="min-w-0">
-                  <CardTitle className="text-sm font-medium">
-                    {tool.title}
-                  </CardTitle>
-                  <CardDescription className="text-xs mt-0.5">
-                    {tool.description}
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-          </Card>
-        </Link>
-      ))}
-    </div>
-  );
-}
 
 export default function HomePage() {
   return (
     <div className="mx-auto max-w-screen-2xl px-6 lg:px-10">
       {/* Hero */}
-      <section className="py-16 lg:py-24">
-        <div className="max-w-3xl">
-          <Badge variant="secondary" className="mb-4 font-normal">
-            アップロード不要
-          </Badge>
-          <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-4 leading-[1.1]">
-            ファイルは、あなたの
-            <br />
-            <span className="text-primary">ブラウザから出ません。</span>
-          </h1>
-          <p className="text-base md:text-lg text-muted-foreground max-w-xl mb-8 leading-relaxed">
-            無料・プライベート・無制限のファイル処理ツール。
-            <br />
-            広告なし。登録不要。アップロード不要。
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {features.map((feature) => (
-              <div
-                key={feature.title}
-                className="flex items-center gap-1.5 rounded-full border border-border/60 bg-card px-3 py-1.5 text-xs text-muted-foreground"
-              >
-                <feature.icon className="h-3.5 w-3.5 text-primary/70" />
-                <span>{feature.title}</span>
+      <section className="pt-16 pb-12 lg:pt-24 lg:pb-16">
+        <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold tracking-tight leading-[1.05]">
+          Anything.
+        </h1>
+        <p className="mt-3 text-base md:text-lg text-muted-foreground">
+          PDF・動画・画像 — なんでも、ブラウザだけで。
+        </p>
+      </section>
+
+      {/* Tool Grid */}
+      <section className="pb-20 lg:pb-28">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+          {tools.map((tool) => (
+            <Link key={tool.href} href={tool.href}>
+              <div className="group relative flex flex-col items-center gap-3 rounded-2xl border border-border/40 bg-card p-6 cursor-pointer transition-all duration-300 hover:border-transparent hover:shadow-lg hover:shadow-black/5 hover:-translate-y-1 dark:hover:shadow-black/20">
+                {/* Icon */}
+                <div
+                  className={`flex items-center justify-center w-14 h-14 rounded-xl bg-muted transition-all duration-300 ${tool.bg} group-hover:scale-110`}
+                >
+                  <tool.icon className="h-6 w-6 text-muted-foreground transition-colors duration-300 group-hover:text-white" />
+                </div>
+                {/* Label */}
+                <span className="text-sm font-medium text-center leading-tight">
+                  {tool.title}
+                </span>
+                {/* Gradient glow on hover */}
+                <div
+                  className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${tool.color} opacity-0 group-hover:opacity-[0.06] transition-opacity duration-300 pointer-events-none`}
+                />
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* PDF Tools */}
-      <section className="pb-12 lg:pb-16">
-        <div className="flex items-baseline gap-3 mb-5">
-          <h2 className="text-lg font-semibold tracking-tight">PDFツール</h2>
-          <span className="text-xs text-muted-foreground">ブラウザ内で完結</span>
-        </div>
-        <ToolGrid tools={pdfTools} />
-      </section>
-
-      {/* Video Tools */}
-      <section className="pb-16 lg:pb-24">
-        <div className="flex items-baseline gap-3 mb-5">
-          <h2 className="text-lg font-semibold tracking-tight">動画ツール</h2>
-          <span className="text-xs text-muted-foreground">FFmpeg搭載</span>
-        </div>
-        <ToolGrid tools={videoTools} />
-      </section>
-
-      {/* Trust */}
-      <section className="border-t border-border/50 py-12 lg:py-16">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl">
-          {features.map((feature) => (
-            <div key={feature.title}>
-              <div className="flex items-center gap-2 mb-2">
-                <feature.icon className="h-4 w-4 text-primary/70" />
-                <h3 className="text-sm font-medium">{feature.title}</h3>
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                {feature.description}
-              </p>
-            </div>
+            </Link>
           ))}
         </div>
       </section>

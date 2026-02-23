@@ -5,9 +5,9 @@ import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 
 export const metadata: Metadata = {
-  title: "FreeWEB - 無料ブラウザ完結型ファイル処理ツール",
+  title: "Anything - PDF・動画・画像をブラウザだけで処理",
   description:
-    "無料・プライベート・無制限のファイル処理ツール。ファイルはブラウザから出ません。広告なし・登録不要・アップロード不要。",
+    "PDF結合・分割・圧縮、動画変換・圧縮、画像変換。すべてブラウザ内で完結する無料ツール。",
 };
 
 export default function RootLayout({
