@@ -3,13 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 /**
  * POST /api/tiktok/extract
  *
- * TikTok動画URLから音源を **1リクエストで** 抽出してバイナリ返却する。
+ * TikTok動画URLから音源を 1リクエストで 抽出してバイナリ返却する。
  * ページ取得→メタデータ解析→CDN音源ダウンロードを同一サーバーセッション内で
  * 行うため、Cookie/署名URL期限切れ問題を回避できる。
- *
- * Request:  { url: string }
- * Response: audio/mpeg binary
- *           X-Music-Title / X-Music-Author / X-Music-Duration ヘッダ付き
  */
 
 const UA =
@@ -31,18 +27,28 @@ const ALLOWED_CDN_DOMAINS = [
   "tiktokcdn-in.com",
 ];
 
+function err(message: string, status = 502) {
+  return NextResponse.json({ error: message }, { status });
+}
+
 export async function POST(request: NextRequest) {
+  /* ── リクエスト解析 ───────────────────────── */
+  let url: string;
   try {
-    const { url } = await request.json();
+    const body = await request.json();
+    url = body.url;
+  } catch (e) {
+    return err(`リクエストの解析に失敗: ${String(e)}`, 400);
+  }
 
-    if (!url || !isTikTokUrl(url)) {
-      return NextResponse.json(
-        { error: "有効なTikTokのURLを入力してください" },
-        { status: 400 },
-      );
-    }
+  if (!url || !isTikTokUrl(url)) {
+    return err("有効なTikTokのURLを入力してください", 400);
+  }
 
-    /* ── Step 1: TikTokページを取得 ────────────── */
+  /* ── Step 1: TikTokページを取得 ──────────── */
+  let html: string;
+  let cookieStr = "";
+  try {
     const pageRes = await fetch(url, {
       headers: {
         "User-Agent": UA,
@@ -53,145 +59,127 @@ export async function POST(request: NextRequest) {
       redirect: "follow",
     });
 
-    // CDN認証に使うCookieを収集
-    const setCookies = pageRes.headers.getSetCookie?.() ?? [];
-    const cookieStr = setCookies
-      .map((c) => c.split(";")[0])
-      .filter(Boolean)
-      .join("; ");
-
-    if (!pageRes.ok) {
-      return NextResponse.json(
-        { error: "TikTokページの取得に失敗しました" },
-        { status: 502 },
-      );
+    // Cookie収集 (getSetCookie が無い環境でも安全)
+    try {
+      const raw =
+        typeof pageRes.headers.getSetCookie === "function"
+          ? pageRes.headers.getSetCookie()
+          : [];
+      cookieStr = raw
+        .map((c: string) => c.split(";")[0])
+        .filter(Boolean)
+        .join("; ");
+    } catch {
+      // Cookie取得に失敗しても続行
     }
 
-    const html = await pageRes.text();
+    if (!pageRes.ok) {
+      return err(`TikTokページの取得に失敗 (HTTP ${pageRes.status})`);
+    }
 
-    /* ── Step 2: メタデータ抽出 ─────────────────── */
+    html = await pageRes.text();
+  } catch (e) {
+    return err(`TikTokへの接続に失敗: ${String(e)}`);
+  }
+
+  /* ── Step 2: メタデータ抽出 ──────────────── */
+  let playUrl: string;
+  let title: string;
+  let author: string;
+  let duration: number;
+  try {
     const match = html.match(
       /<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([\s\S]*?)<\/script>/,
     );
     if (!match) {
-      return NextResponse.json(
-        { error: "ページデータの解析に失敗しました" },
-        { status: 502 },
-      );
+      return err("ページデータの解析に失敗しました（scriptタグが見つかりません）");
     }
 
-    let data: Record<string, unknown>;
-    try {
-      data = JSON.parse(match[1]);
-    } catch {
-      return NextResponse.json(
-        { error: "ページデータのパースに失敗しました" },
-        { status: 502 },
-      );
-    }
-
-    const scope = data.__DEFAULT_SCOPE__ as Record<string, unknown> | undefined;
-    const detail = scope?.["webapp.video-detail"] as Record<string, unknown> | undefined;
-    const itemInfo = detail?.itemInfo as Record<string, unknown> | undefined;
-    const itemStruct = itemInfo?.itemStruct as Record<string, unknown> | undefined;
-    const music = itemStruct?.music as Record<string, unknown> | undefined;
+    const data = JSON.parse(match[1]);
+    const music =
+      data?.__DEFAULT_SCOPE__?.["webapp.video-detail"]?.itemInfo?.itemStruct
+        ?.music;
 
     if (!music?.playUrl) {
-      return NextResponse.json(
-        { error: "この動画から音源が見つかりませんでした" },
-        { status: 404 },
-      );
+      return err("この動画から音源が見つかりませんでした", 404);
     }
 
-    const playUrl = music.playUrl as string;
-    const title = (music.title as string) ?? "不明";
-    const author = (music.authorName as string) ?? "不明";
-    const duration = (music.duration as number) ?? 0;
+    playUrl = music.playUrl;
+    title = music.title ?? "不明";
+    author = music.authorName ?? "不明";
+    duration = music.duration ?? 0;
+  } catch (e) {
+    return err(`メタデータの解析に失敗: ${String(e)}`);
+  }
 
-    // SSRF対策: CDNドメインチェック
-    if (!isAllowedCdn(playUrl)) {
-      return NextResponse.json(
-        { error: "不明なCDNドメインです" },
-        { status: 400 },
-      );
-    }
+  // SSRF対策
+  if (!isAllowedCdn(playUrl)) {
+    return err(`不明なCDNドメインです: ${new URL(playUrl).hostname}`, 400);
+  }
 
-    /* ── Step 3: 同一セッション内で音源をダウンロード ─ */
-    const cdnHeaders: Record<string, string> = {
+  /* ── Step 3: 音源ダウンロード ────────────── */
+  let buffer: ArrayBuffer;
+  try {
+    const baseHeaders: Record<string, string> = {
       "User-Agent": UA,
-      Referer: "https://www.tiktok.com/",
-      Origin: "https://www.tiktok.com",
       Accept: "*/*",
       "Accept-Language": "ja,en-US;q=0.9,en;q=0.8",
     };
     if (cookieStr) {
-      cdnHeaders["Cookie"] = cookieStr;
+      baseHeaders["Cookie"] = cookieStr;
     }
 
-    // 試行1: フルヘッダー
-    let audioRes = await fetch(playUrl, {
-      headers: cdnHeaders,
-      redirect: "follow",
-    });
+    // ヘッダーパターンを順番に試行
+    const headerVariants: Record<string, string>[] = [
+      { ...baseHeaders, Referer: "https://www.tiktok.com/", Origin: "https://www.tiktok.com" },
+      { ...baseHeaders },
+      { "User-Agent": UA },
+    ];
 
-    // 試行2: Referer/Origin なし（一部CDNが拒否する場合）
-    if (!audioRes.ok) {
-      const { Referer: _r, Origin: _o, ...h } = cdnHeaders;
-      audioRes = await fetch(playUrl, { headers: h, redirect: "follow" });
+    let audioRes: Response | null = null;
+    let lastStatus = 0;
+
+    for (const headers of headerVariants) {
+      try {
+        const res = await fetch(playUrl, { headers, redirect: "follow" });
+        lastStatus = res.status;
+        if (res.ok) {
+          audioRes = res;
+          break;
+        }
+      } catch {
+        // このヘッダーパターンでは接続エラー → 次を試行
+      }
     }
 
-    // 試行3: 最小ヘッダー
-    if (!audioRes.ok) {
-      audioRes = await fetch(playUrl, {
-        headers: { "User-Agent": UA },
-        redirect: "follow",
-      });
+    if (!audioRes) {
+      return err(`CDNから音源をダウンロードできませんでした (最後のステータス: ${lastStatus}, URL host: ${new URL(playUrl).hostname})`);
     }
 
-    if (!audioRes.ok) {
-      console.error(
-        "TikTok CDN download failed:",
-        audioRes.status,
-        audioRes.statusText,
-        playUrl,
-      );
-      return NextResponse.json(
-        { error: `音源のダウンロードに失敗しました (CDN ${audioRes.status})` },
-        { status: 502 },
-      );
-    }
-
-    const buffer = await audioRes.arrayBuffer();
-
-    if (buffer.byteLength === 0) {
-      return NextResponse.json(
-        { error: "音源データが空でした" },
-        { status: 502 },
-      );
-    }
-
-    const safeName =
-      sanitizeFilename(`${title} - ${author}`) + ".mp3";
-
-    return new NextResponse(buffer, {
-      headers: {
-        "Content-Type": "audio/mpeg",
-        "Content-Disposition": `attachment; filename="${safeName}"`,
-        "Content-Length": String(buffer.byteLength),
-        "X-Music-Title": encodeURIComponent(title),
-        "X-Music-Author": encodeURIComponent(author),
-        "X-Music-Duration": String(duration),
-        "Access-Control-Expose-Headers":
-          "X-Music-Title, X-Music-Author, X-Music-Duration",
-      },
-    });
-  } catch (err) {
-    console.error("TikTok extract error:", err);
-    return NextResponse.json(
-      { error: "音源の抽出中にエラーが発生しました" },
-      { status: 500 },
-    );
+    buffer = await audioRes.arrayBuffer();
+  } catch (e) {
+    return err(`音源のダウンロード中にエラー: ${String(e)}`);
   }
+
+  if (buffer.byteLength === 0) {
+    return err("音源データが空でした (0 bytes)");
+  }
+
+  /* ── レスポンス返却 ──────────────────────── */
+  const safeName = sanitizeFilename(`${title} - ${author}`) + ".mp3";
+
+  return new NextResponse(buffer, {
+    headers: {
+      "Content-Type": "audio/mpeg",
+      "Content-Disposition": `attachment; filename="${safeName}"`,
+      "Content-Length": String(buffer.byteLength),
+      "X-Music-Title": encodeURIComponent(title),
+      "X-Music-Author": encodeURIComponent(author),
+      "X-Music-Duration": String(duration),
+      "Access-Control-Expose-Headers":
+        "X-Music-Title, X-Music-Author, X-Music-Duration",
+    },
+  });
 }
 
 function isTikTokUrl(url: string): boolean {
