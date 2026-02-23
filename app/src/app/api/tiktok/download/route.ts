@@ -142,11 +142,12 @@ async function handleExtract(videoUrl: string) {
   }
 
   const safeName = sanitizeFilename(`${title} - ${author}`) + ".mp3";
+  const encodedName = encodeURIComponent(safeName);
 
   return new NextResponse(buffer, {
     headers: {
       "Content-Type": "audio/mpeg",
-      "Content-Disposition": `attachment; filename="${safeName}"`,
+      "Content-Disposition": `attachment; filename="tiktok_sound.mp3"; filename*=UTF-8''${encodedName}`,
       "Content-Length": String(buffer.byteLength),
       "X-Music-Title": encodeURIComponent(title),
       "X-Music-Author": encodeURIComponent(author),
@@ -176,11 +177,12 @@ async function handleProxy(
   }
 
   const safeName = sanitizeFilename(filename || "tiktok_sound") + ".mp3";
+  const encodedName = encodeURIComponent(safeName);
 
   return new NextResponse(buffer, {
     headers: {
       "Content-Type": "audio/mpeg",
-      "Content-Disposition": `attachment; filename="${safeName}"`,
+      "Content-Disposition": `attachment; filename="tiktok_sound.mp3"; filename*=UTF-8''${encodedName}`,
       "Content-Length": String(buffer.byteLength),
     },
   });
