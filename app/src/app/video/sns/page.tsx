@@ -19,10 +19,10 @@ import {
   Film,
   Music,
   Settings2,
-  Scissors,
   ChevronDown,
   ChevronUp,
   RotateCcw,
+  RotateCw,
   Loader2,
   Type,
   Link2,
@@ -128,6 +128,15 @@ export default function SnsCreatorPage() {
   const [timelineZoom, setTimelineZoom] = useState(1);
   const timelineRef = useRef<HTMLDivElement>(null);
 
+  /* ── Video rotation (per-clip) ───────────────── */
+  const [rotation, setRotation] = useState(0); // 0, 90, 180, 270
+
+  /* ── Panel resize ────────────────────────────── */
+  const [leftPanelWidth, setLeftPanelWidth] = useState(224);  // px
+  const [rightPanelWidth, setRightPanelWidth] = useState(260); // px
+  const [timelineHeight, setTimelineHeight] = useState(160);  // px
+  const resizingRef = useRef<{ panel: "left" | "right" | "timeline"; startX: number; startY: number; startVal: number } | null>(null);
+
   /* ── Derived ───────────────────────────────── */
   const plat = PLATFORMS.find((p) => p.id === platform)!;
   const qual = QUALITY.find((q) => q.value === quality)!;
@@ -200,6 +209,58 @@ export default function SnsCreatorPage() {
   /* ── Trim controls ─────────────────────────── */
   const updateClip = useCallback((id: string, patch: Partial<TimelineClip>) => {
     setClips((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+  }, []);
+
+  /* ── Timeline trim handlers (drag clip edges) ── */
+  const handleTrimIn = useCallback((clipId: string, deltaSec: number) => {
+    setClips((prev) =>
+      prev.map((c) => {
+        if (c.id !== clipId) return c;
+        const newIn = Math.max(0, Math.min(c.inPoint + deltaSec, c.outPoint - 0.1));
+        return { ...c, inPoint: newIn };
+      }),
+    );
+  }, []);
+
+  const handleTrimOut = useCallback((clipId: string, deltaSec: number) => {
+    setClips((prev) =>
+      prev.map((c) => {
+        if (c.id !== clipId) return c;
+        const newOut = Math.min(c.fullDuration, Math.max(c.outPoint + deltaSec, c.inPoint + 0.1));
+        return { ...c, outPoint: newOut };
+      }),
+    );
+  }, []);
+
+  /* ── Panel resize handlers ──────────────────── */
+  const handleResizePointerDown = useCallback(
+    (e: React.PointerEvent, panel: "left" | "right" | "timeline") => {
+      e.preventDefault();
+      const startVal =
+        panel === "left" ? leftPanelWidth : panel === "right" ? rightPanelWidth : timelineHeight;
+      resizingRef.current = { panel, startX: e.clientX, startY: e.clientY, startVal };
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    },
+    [leftPanelWidth, rightPanelWidth, timelineHeight],
+  );
+
+  const handleResizePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!resizingRef.current) return;
+    const { panel, startX, startY, startVal } = resizingRef.current;
+    if (panel === "left") {
+      const dx = e.clientX - startX;
+      setLeftPanelWidth(Math.max(160, Math.min(400, startVal + dx)));
+    } else if (panel === "right") {
+      const dx = e.clientX - startX;
+      setRightPanelWidth(Math.max(180, Math.min(450, startVal - dx)));
+    } else if (panel === "timeline") {
+      const dy = e.clientY - startY;
+      setTimelineHeight(Math.max(100, Math.min(400, startVal - dy)));
+    }
+  }, []);
+
+  const handleResizePointerUp = useCallback(() => {
+    resizingRef.current = null;
   }, []);
 
   /* ── DnD handler ───────────────────────────── */
@@ -513,7 +574,8 @@ export default function SnsCreatorPage() {
       const H = plat.h;
       const cropY =
         crop === "top" ? "0" : crop === "bottom" ? "in_h-out_h" : "(in_h-out_h)/2";
-      const scaleAndCrop = `scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H}:(in_w-out_w)/2:${cropY}`;
+      const rotateFilter = rotation === 90 ? "transpose=1," : rotation === 180 ? "transpose=1,transpose=1," : rotation === 270 ? "transpose=2," : "";
+      const scaleAndCrop = `${rotateFilter}scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H}:(in_w-out_w)/2:${cropY}`;
 
       const keepAudio = audioMode === "keep" || audioMode === "mix";
 
@@ -751,7 +813,7 @@ export default function SnsCreatorPage() {
           {/* ── Main panels ──────────────────────── */}
           <div className="flex-1 flex flex-col lg:flex-row min-h-0">
             {/* ─── Left: Media Bin ─────────────────── */}
-            <div className="lg:w-56 xl:w-64 border-b lg:border-b-0 lg:border-r bg-card/50 flex flex-col">
+            <div className="border-b lg:border-b-0 lg:border-r bg-card/50 flex flex-col" style={{ width: leftPanelWidth, minWidth: 160 }}>
               <div className="px-3 py-2 border-b flex items-center justify-between">
                 <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   メディア
@@ -928,6 +990,16 @@ export default function SnsCreatorPage() {
               </div>
             </div>
 
+            {/* Left resize handle */}
+            <div
+              className="hidden lg:flex w-1.5 cursor-col-resize items-center justify-center hover:bg-primary/10 active:bg-primary/20 transition-colors group/resize shrink-0"
+              onPointerDown={(e) => handleResizePointerDown(e, "left")}
+              onPointerMove={handleResizePointerMove}
+              onPointerUp={handleResizePointerUp}
+            >
+              <div className="w-px h-8 bg-border group-hover/resize:bg-primary/40 transition-colors" />
+            </div>
+
             {/* ─── Center: Preview ─────────────────── */}
             <div className="flex-1 flex flex-col bg-neutral-100 dark:bg-neutral-900 min-h-0">
               <div className="flex-1 flex items-center justify-center p-1.5 min-h-0">
@@ -939,6 +1011,7 @@ export default function SnsCreatorPage() {
                         key={selectedClip.objectUrl}
                         src={selectedClip.objectUrl}
                         className="h-full w-full object-contain"
+                        style={{ transform: rotation ? `rotate(${rotation}deg)` : undefined }}
                         playsInline
                         muted={audioMode === "mute" || audioMode === "replace"}
                       />
@@ -1013,8 +1086,28 @@ export default function SnsCreatorPage() {
                           全再生
                         </Button>
                       )}
+                      {/* Rotation controls */}
+                      <div className="border-l mx-1 h-4" />
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
+                        onClick={() => setRotation((r) => ((r + 270) % 360))}
+                        title="左に90°回転"
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                      </Button>
+                      <span className="text-[9px] text-muted-foreground font-mono w-6 text-center">{rotation}°</span>
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
+                        onClick={() => setRotation((r) => ((r + 90) % 360))}
+                        title="右に90°回転"
+                      >
+                        <RotateCw className="h-3.5 w-3.5" />
+                      </Button>
                       {/* Timecode display */}
-                      <div className="ml-1 bg-black/80 rounded px-2 py-0.5 font-mono text-[11px] text-blue-400 tabular-nums tracking-wider">
+                      <div className="border-l mx-1 h-4" />
+                      <div className="bg-black/80 rounded px-2 py-0.5 font-mono text-[11px] text-blue-400 tabular-nums tracking-wider">
                         {fmt(globalCurrentTime)}
                       </div>
                       <span className="text-[10px] text-muted-foreground/60 mx-0.5">/</span>
@@ -1034,8 +1127,18 @@ export default function SnsCreatorPage() {
               </div>
             </div>
 
+            {/* Right resize handle */}
+            <div
+              className="hidden lg:flex w-1.5 cursor-col-resize items-center justify-center hover:bg-primary/10 active:bg-primary/20 transition-colors group/resize shrink-0"
+              onPointerDown={(e) => handleResizePointerDown(e, "right")}
+              onPointerMove={handleResizePointerMove}
+              onPointerUp={handleResizePointerUp}
+            >
+              <div className="w-px h-8 bg-border group-hover/resize:bg-primary/40 transition-colors" />
+            </div>
+
             {/* ─── Right: Inspector / Settings ────── */}
-            <div className="lg:w-60 xl:w-72 border-t lg:border-t-0 lg:border-l bg-card/50 overflow-y-auto">
+            <div className="border-t lg:border-t-0 lg:border-l bg-card/50 overflow-y-auto" style={{ width: rightPanelWidth, minWidth: 180 }}>
               {/* Settings header (collapsible on mobile) */}
               <button
                 onClick={() => setSettingsOpen(!settingsOpen)}
@@ -1295,77 +1398,45 @@ export default function SnsCreatorPage() {
                   </div>
                 </div>
 
-                {/* Selected clip trim */}
+                {/* Selected clip info (trim via timeline handles) */}
                 {selectedClip && (
-                  <div className="space-y-2 rounded-md border p-2.5">
-                    <div className="flex items-center gap-1.5">
-                      <Scissors className="h-3 w-3 text-muted-foreground" />
-                      <p className="text-[11px] font-medium">クリップをトリミング</p>
+                  <div className="rounded-md bg-muted/30 p-2.5 space-y-1">
+                    <p className="text-[11px] font-medium truncate">{selectedClip.name}</p>
+                    <div className="grid grid-cols-3 gap-1 text-[10px] text-muted-foreground">
+                      <div>
+                        <span className="block text-[9px] uppercase tracking-wider opacity-60">In</span>
+                        <span className="font-mono">{fmt(selectedClip.inPoint)}</span>
+                      </div>
+                      <div>
+                        <span className="block text-[9px] uppercase tracking-wider opacity-60">Out</span>
+                        <span className="font-mono">{fmt(selectedClip.outPoint)}</span>
+                      </div>
+                      <div>
+                        <span className="block text-[9px] uppercase tracking-wider opacity-60">使用</span>
+                        <span className="font-mono">{fmt(selectedClip.outPoint - selectedClip.inPoint)}</span>
+                      </div>
                     </div>
-                    <p className="text-[10px] text-muted-foreground truncate">
-                      {selectedClip.name} ({fmt(selectedClip.fullDuration)})
+                    <p className="text-[9px] text-muted-foreground/60">
+                      タイムラインでクリップ端をドラッグしてトリミング
                     </p>
-
-                    {/* In point slider */}
-                    <div>
-                      <div className="flex items-center justify-between mb-0.5">
-                        <label className="text-[10px] text-muted-foreground">イン（開始）</label>
-                        <span className="text-[10px] font-mono text-muted-foreground">{fmt(selectedClip.inPoint)}</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max={selectedClip.fullDuration}
-                        step="0.1"
-                        value={selectedClip.inPoint}
-                        onChange={(e) => {
-                          const val = parseFloat(e.target.value);
-                          updateClip(selectedClip.id, {
-                            inPoint: Math.min(val, selectedClip.outPoint - 0.1),
-                          });
-                        }}
-                        className="w-full h-1.5 accent-primary cursor-pointer"
-                      />
-                    </div>
-
-                    {/* Out point slider */}
-                    <div>
-                      <div className="flex items-center justify-between mb-0.5">
-                        <label className="text-[10px] text-muted-foreground">アウト（終了）</label>
-                        <span className="text-[10px] font-mono text-muted-foreground">{fmt(selectedClip.outPoint)}</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max={selectedClip.fullDuration}
-                        step="0.1"
-                        value={selectedClip.outPoint}
-                        onChange={(e) => {
-                          const val = parseFloat(e.target.value);
-                          updateClip(selectedClip.id, {
-                            outPoint: Math.max(val, selectedClip.inPoint + 0.1),
-                          });
-                        }}
-                        className="w-full h-1.5 accent-primary cursor-pointer"
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between pt-0.5">
-                      <p className="text-[10px] text-muted-foreground">
-                        使用区間: {fmt(selectedClip.outPoint - selectedClip.inPoint)}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground">
-                        全長: {fmt(selectedClip.fullDuration)}
-                      </p>
-                    </div>
                   </div>
                 )}
               </div>
             </div>
           </div>
 
+          {/* Timeline resize handle (drag up/down to resize) */}
+          <div
+            className="h-1.5 cursor-row-resize flex items-center justify-center hover:bg-primary/10 active:bg-primary/20 transition-colors group/resize border-t bg-neutral-900"
+            onPointerDown={(e) => handleResizePointerDown(e, "timeline")}
+            onPointerMove={handleResizePointerMove}
+            onPointerUp={handleResizePointerUp}
+          >
+            <div className="h-px w-12 bg-neutral-700 group-hover/resize:bg-primary/40 transition-colors" />
+          </div>
+
           {/* ── Timeline — Premiere Pro style ───── */}
-          <div className="border-t bg-neutral-950">
+          <div className="bg-neutral-950 overflow-hidden" style={{ height: timelineHeight }}>
             {/* Timeline header */}
             <div className="flex items-center justify-between px-3 py-1 border-b border-neutral-800 bg-neutral-900">
               <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">
@@ -1479,6 +1550,8 @@ export default function SnsCreatorPage() {
                                 totalDuration={totalDuration}
                                 pxPerSec={pxPerSec}
                                 onClick={() => setSelectedId(clip.id)}
+                                onTrimIn={handleTrimIn}
+                                onTrimOut={handleTrimOut}
                               />
                             ))}
                           </div>
