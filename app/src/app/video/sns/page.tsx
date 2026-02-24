@@ -278,10 +278,14 @@ export default function SnsCreatorPage() {
   /* ── Preview transport ─────────────────────── */
   const togglePlay = useCallback(() => {
     const v = videoRef.current;
-    if (!v) return;
+    if (!v || !selectedClip) return;
     const bgm = bgmAudioRef.current;
     const useBgm = bgmFile && (audioMode === "replace" || audioMode === "mix");
     if (v.paused) {
+      // If past outPoint or before inPoint, seek to inPoint first
+      if (v.currentTime < selectedClip.inPoint || v.currentTime >= selectedClip.outPoint - 0.05) {
+        v.currentTime = selectedClip.inPoint;
+      }
       v.play();
       if (bgm && useBgm) {
         if (!seqPlayRef.current) bgm.currentTime = bgmStartOffset;
@@ -294,7 +298,7 @@ export default function SnsCreatorPage() {
       setPlaying(false);
       seqPlayRef.current = false;
     }
-  }, [bgmFile, audioMode, bgmStartOffset]);
+  }, [bgmFile, audioMode, bgmStartOffset, selectedClip]);
 
   /** Play all clips in sequence from the first clip */
   const playAll = useCallback(() => {
@@ -336,7 +340,26 @@ export default function SnsCreatorPage() {
     }
   }, [selectedClip, bgmFile, audioMode]);
 
-  // Track time & handle sequential clip transitions
+  // Seek to inPoint when clip is selected
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || !selectedClip) return;
+    const doSeek = () => {
+      if (!seqPlayRef.current) {
+        v.currentTime = selectedClip.inPoint;
+        setCurrentTime(selectedClip.inPoint);
+      }
+    };
+    if (v.readyState >= 2) {
+      doSeek();
+    } else {
+      v.addEventListener("loadeddata", doSeek, { once: true });
+      return () => v.removeEventListener("loadeddata", doSeek);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedClip?.id]);
+
+  // Track time & handle sequential clip transitions + enforce outPoint
   useEffect(() => {
     const v = videoRef.current;
     if (!v || !selectedClip) return;
@@ -349,14 +372,23 @@ export default function SnsCreatorPage() {
     const onTimeUpdate = () => {
       setCurrentTime(v.currentTime);
 
-      // In sequential mode, advance to next clip at outPoint
-      if (seqPlayRef.current && v.currentTime >= selectedClip.outPoint - 0.05) {
-        v.pause();
-        const idx = clips.findIndex((c) => c.id === selectedClip.id);
-        if (idx >= 0 && idx < clips.length - 1) {
-          setSelectedId(clips[idx + 1].id);
+      // Enforce outPoint — stop at outPoint in all modes
+      if (v.currentTime >= selectedClip.outPoint - 0.05) {
+        if (seqPlayRef.current) {
+          // Sequential mode: advance to next clip
+          v.pause();
+          const idx = clips.findIndex((c) => c.id === selectedClip.id);
+          if (idx >= 0 && idx < clips.length - 1) {
+            setSelectedId(clips[idx + 1].id);
+          } else {
+            seqPlayRef.current = false;
+            setPlaying(false);
+            pauseBgm();
+          }
         } else {
-          seqPlayRef.current = false;
+          // Single clip mode: pause at outPoint
+          v.pause();
+          v.currentTime = selectedClip.outPoint;
           setPlaying(false);
           pauseBgm();
         }
@@ -386,6 +418,22 @@ export default function SnsCreatorPage() {
       v.removeEventListener("ended", onEnded);
     };
   }, [selectedClip, clips]);
+
+  /* ── Ctrl+Wheel zoom on timeline ──────────── */
+  useEffect(() => {
+    const el = timelineRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      const delta = -e.deltaY * 0.005;
+      setTimelineZoom((z) =>
+        Math.round(Math.max(TIMELINE_ZOOM_MIN, Math.min(TIMELINE_ZOOM_MAX, z + delta)) * 20) / 20,
+      );
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, []);
 
   /* ── BGM object URL & duration ──────────────── */
   useEffect(() => {

@@ -16,400 +16,307 @@ import {
   Smartphone,
   Volume2,
   ExternalLink,
-  FileText,
-  Video,
-  ImageIcon,
   type LucideIcon,
 } from "lucide-react";
 
 /* ================================================================
-   Tool definitions grouped by category
+   All tools in a single flat list for the dial
    ================================================================ */
 
-interface Tool {
+interface DialItem {
   title: string;
   href: string;
   icon: LucideIcon;
-  accent: string; // tailwind gradient
+  color: string;  // hex accent
+  category: string;
 }
 
-interface Category {
-  id: string;
-  label: string;
-  icon: LucideIcon;
-  color: string;   // ring / accent color
-  tools: Tool[];
-}
-
-const categories: Category[] = [
-  {
-    id: "pdf",
-    label: "PDF",
-    icon: FileText,
-    color: "#a78bfa",
-    tools: [
-      { title: "結合", href: "/pdf/merge", icon: Merge, accent: "from-violet-500 to-purple-600" },
-      { title: "分割", href: "/pdf/split", icon: Scissors, accent: "from-blue-500 to-cyan-500" },
-      { title: "圧縮", href: "/pdf/compress", icon: Minimize2, accent: "from-emerald-500 to-teal-500" },
-      { title: "回転", href: "/pdf/rotate", icon: RotateCw, accent: "from-amber-500 to-orange-500" },
-      { title: "→ 画像", href: "/pdf/to-image", icon: Image, accent: "from-rose-500 to-pink-500" },
-      { title: "画像 → PDF", href: "/pdf/from-image", icon: FileImage, accent: "from-indigo-500 to-blue-600" },
-      { title: "並び替え", href: "/pdf/reorder", icon: ArrowUpDown, accent: "from-fuchsia-500 to-purple-500" },
-    ],
-  },
-  {
-    id: "video",
-    label: "動画",
-    icon: Video,
-    color: "#38bdf8",
-    tools: [
-      { title: "圧縮", href: "/video/compress", icon: Minimize2, accent: "from-sky-500 to-blue-500" },
-      { title: "→ GIF", href: "/video/to-gif", icon: Film, accent: "from-lime-500 to-green-500" },
-      { title: "トリミング", href: "/video/trim", icon: Scissors, accent: "from-orange-500 to-red-500" },
-      { title: "SNSアスペクト比", href: "/video/aspect", icon: Ratio, accent: "from-teal-500 to-cyan-500" },
-      { title: "音声抽出", href: "/video/audio", icon: Music, accent: "from-pink-500 to-rose-500" },
-      { title: "SNS動画作成", href: "/video/sns", icon: Smartphone, accent: "from-gray-700 to-gray-900" },
-      { title: "BGM追加", href: "/video/bgm", icon: Volume2, accent: "from-purple-500 to-indigo-600" },
-      { title: "TikTok音源", href: "/video/tiktok-sound", icon: ExternalLink, accent: "from-cyan-500 to-teal-500" },
-    ],
-  },
-  {
-    id: "image",
-    label: "画像",
-    icon: ImageIcon,
-    color: "#f472b6",
-    tools: [
-      { title: "画像 → PDF", href: "/pdf/from-image", icon: FileImage, accent: "from-indigo-500 to-blue-600" },
-      { title: "PDF → 画像", href: "/pdf/to-image", icon: Image, accent: "from-rose-500 to-pink-500" },
-    ],
-  },
+const items: DialItem[] = [
+  { title: "PDF 結合",       href: "/pdf/merge",         icon: Merge,        color: "#8b5cf6", category: "PDF" },
+  { title: "PDF 分割",       href: "/pdf/split",         icon: Scissors,     color: "#3b82f6", category: "PDF" },
+  { title: "PDF 圧縮",       href: "/pdf/compress",      icon: Minimize2,    color: "#10b981", category: "PDF" },
+  { title: "PDF 回転",       href: "/pdf/rotate",        icon: RotateCw,     color: "#f59e0b", category: "PDF" },
+  { title: "PDF → 画像",     href: "/pdf/to-image",      icon: Image,        color: "#f43f5e", category: "PDF" },
+  { title: "画像 → PDF",     href: "/pdf/from-image",    icon: FileImage,    color: "#6366f1", category: "PDF" },
+  { title: "PDF 並び替え",   href: "/pdf/reorder",        icon: ArrowUpDown,  color: "#d946ef", category: "PDF" },
+  { title: "動画圧縮",       href: "/video/compress",    icon: Minimize2,    color: "#0ea5e9", category: "動画" },
+  { title: "動画 → GIF",     href: "/video/to-gif",      icon: Film,         color: "#84cc16", category: "動画" },
+  { title: "動画トリミング", href: "/video/trim",         icon: Scissors,     color: "#f97316", category: "動画" },
+  { title: "SNSアスペクト比", href: "/video/aspect",      icon: Ratio,        color: "#14b8a6", category: "動画" },
+  { title: "音声抽出",       href: "/video/audio",       icon: Music,        color: "#ec4899", category: "動画" },
+  { title: "SNS動画作成",    href: "/video/sns",         icon: Smartphone,   color: "#6b7280", category: "動画" },
+  { title: "BGM追加",        href: "/video/bgm",         icon: Volume2,      color: "#a855f7", category: "動画" },
+  { title: "TikTok音源取得", href: "/video/tiktok-sound", icon: ExternalLink, color: "#06b6d4", category: "動画" },
 ];
 
 /* ================================================================
-   Dial / Roulette component
+   Half-circle dial on the left edge
    ================================================================ */
 
-const DIAL_RADIUS = 140;
-const ITEM_COUNT = categories.length;
-
-function angleBetween(a: number, b: number) {
-  let d = b - a;
-  while (d > 180) d -= 360;
-  while (d < -180) d += 360;
-  return d;
-}
+const ARC_RADIUS = 340;           // radius of the half-circle
+const ITEM_SPACING = 28;          // degrees between items
+const VISIBLE_RANGE = 5;          // items visible above/below center
 
 export default function HomePage() {
-  const [angle, setAngle] = useState(0); // current rotation angle (degrees)
-  const [selectedIdx, setSelectedIdx] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
+  const [scrollOffset, setScrollOffset] = useState(0); // in degrees
   const [velocity, setVelocity] = useState(0);
-  const dragStart = useRef<{ y: number; angle: number; time: number } | null>(null);
-  const lastDrag = useRef<{ y: number; time: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragRef = useRef<{ startY: number; startOffset: number } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const animRef = useRef<number>(0);
-  const dialRef = useRef<HTMLDivElement>(null);
 
-  const segmentAngle = 360 / ITEM_COUNT;
+  const totalItems = items.length;
+  const maxOffset = (totalItems - 1) * ITEM_SPACING;
 
-  // Snap to nearest item
-  const snapToNearest = useCallback((currentAngle: number, vel: number) => {
-    // find nearest snap
-    let best = 0;
-    let bestDist = Infinity;
-    for (let i = 0; i < ITEM_COUNT; i++) {
-      const target = i * segmentAngle;
-      const dist = Math.abs(angleBetween(currentAngle, target));
-      if (dist < bestDist) {
-        bestDist = dist;
-        best = i;
-      }
-    }
-    return best;
-  }, [segmentAngle]);
+  // Current center item index
+  const centerIdx = Math.round(Math.max(0, Math.min(scrollOffset, maxOffset)) / ITEM_SPACING);
+  const centerItem = items[Math.max(0, Math.min(centerIdx, totalItems - 1))];
 
-  // Momentum + snap animation
+  // Snap animation
   useEffect(() => {
     if (isDragging) return;
-    if (Math.abs(velocity) < 0.1) {
-      // Snap
-      const idx = snapToNearest(angle, 0);
-      const target = idx * segmentAngle;
-      const diff = angleBetween(angle, target);
-      if (Math.abs(diff) > 0.5) {
-        setAngle((a) => a + diff * 0.2);
-        animRef.current = requestAnimationFrame(() => {});
-      } else {
-        setAngle(target);
-        setSelectedIdx(idx);
-      }
+
+    const snapTarget = Math.round(scrollOffset / ITEM_SPACING) * ITEM_SPACING;
+    const clampedTarget = Math.max(0, Math.min(snapTarget, maxOffset));
+
+    if (Math.abs(velocity) > 0.3) {
+      // Momentum
       const id = requestAnimationFrame(() => {
-        if (Math.abs(diff) > 0.5) {
-          setVelocity(0.01); // trigger re-render
-        }
+        setScrollOffset((o) => {
+          const next = o + velocity;
+          return Math.max(-ITEM_SPACING, Math.min(next, maxOffset + ITEM_SPACING));
+        });
+        setVelocity((v) => v * 0.9);
       });
+      animRef.current = id;
       return () => cancelAnimationFrame(id);
     }
 
-    const tick = () => {
-      setAngle((a) => a + velocity);
-      setVelocity((v) => v * 0.92); // friction
-    };
-    const id = requestAnimationFrame(tick);
-    animRef.current = id;
-    return () => cancelAnimationFrame(id);
-  }, [angle, velocity, isDragging, snapToNearest, segmentAngle]);
-
-  // Mouse / touch handlers
-  const handlePointerDown = (e: React.PointerEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-    setVelocity(0);
-    dragStart.current = { y: e.clientY, angle, time: Date.now() };
-    lastDrag.current = { y: e.clientY, time: Date.now() };
-    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-  };
-
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!isDragging || !dragStart.current) return;
-    const dy = e.clientY - dragStart.current.y;
-    const newAngle = dragStart.current.angle - dy * 0.5;
-    setAngle(newAngle);
-    lastDrag.current = { y: e.clientY, time: Date.now() };
-  };
-
-  const handlePointerUp = (e: React.PointerEvent) => {
-    if (!isDragging) return;
-    setIsDragging(false);
-    if (lastDrag.current && dragStart.current) {
-      const dt = Date.now() - dragStart.current.time;
-      if (dt > 0) {
-        const dy = e.clientY - dragStart.current.y;
-        const v = (-dy / dt) * 8;
-        setVelocity(Math.abs(v) > 0.5 ? v : 0);
-      }
+    // Snap
+    const diff = clampedTarget - scrollOffset;
+    if (Math.abs(diff) > 0.3) {
+      const id = requestAnimationFrame(() => {
+        setScrollOffset((o) => o + diff * 0.18);
+      });
+      animRef.current = id;
+      return () => cancelAnimationFrame(id);
+    } else if (scrollOffset !== clampedTarget) {
+      setScrollOffset(clampedTarget);
     }
-    dragStart.current = null;
-  };
+  }, [scrollOffset, velocity, isDragging, maxOffset]);
 
-  // Wheel
+  // Wheel handler
   const handleWheel = useCallback((e: WheelEvent) => {
     e.preventDefault();
-    setAngle((a) => a + e.deltaY * 0.3);
+    setScrollOffset((o) => {
+      const next = o + e.deltaY * 0.15;
+      return Math.max(-ITEM_SPACING * 0.5, Math.min(next, maxOffset + ITEM_SPACING * 0.5));
+    });
     setVelocity(0);
-    // Debounced snap
-    const idx = snapToNearest(angle + e.deltaY * 0.3, 0);
-    setTimeout(() => {
-      setSelectedIdx(idx);
-    }, 150);
-  }, [angle, snapToNearest]);
+  }, [maxOffset]);
 
   useEffect(() => {
-    const el = dialRef.current;
+    const el = containerRef.current;
     if (!el) return;
     el.addEventListener("wheel", handleWheel, { passive: false });
     return () => el.removeEventListener("wheel", handleWheel);
   }, [handleWheel]);
 
-  const selectedCategory = categories[selectedIdx];
+  // Drag handlers
+  const handlePointerDown = (e: React.PointerEvent) => {
+    setIsDragging(true);
+    setVelocity(0);
+    dragRef.current = { startY: e.clientY, startOffset: scrollOffset };
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDragging || !dragRef.current) return;
+    const dy = e.clientY - dragRef.current.startY;
+    setScrollOffset(dragRef.current.startOffset - dy * 0.3);
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!isDragging || !dragRef.current) return;
+    setIsDragging(false);
+    const dy = e.clientY - dragRef.current.startY;
+    const dt = 1; // simplify
+    setVelocity((-dy * 0.05) / dt);
+    dragRef.current = null;
+  };
 
   return (
-    <div className="min-h-[calc(100vh-80px)] flex flex-col">
-      {/* Hero + Dial */}
-      <section className="flex-1 flex flex-col items-center justify-center px-6 py-12 relative overflow-hidden">
-        {/* Background glow */}
+    <div className="min-h-[calc(100vh-60px)] flex overflow-hidden">
+      {/* ── Left: Half-circle dial ─────────────────── */}
+      <div
+        ref={containerRef}
+        className="relative select-none touch-none cursor-grab active:cursor-grabbing shrink-0"
+        style={{ width: ARC_RADIUS + 80 }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+      >
+        {/* Arc background — subtle semicircle */}
         <div
-          className="absolute inset-0 pointer-events-none transition-colors duration-700"
+          className="absolute rounded-full border border-border/20 pointer-events-none"
           style={{
-            background: `radial-gradient(ellipse 60% 50% at 50% 50%, ${selectedCategory.color}15 0%, transparent 70%)`,
+            width: ARC_RADIUS * 2,
+            height: ARC_RADIUS * 2,
+            left: -ARC_RADIUS + 60,
+            top: "50%",
+            transform: "translateY(-50%)",
           }}
         />
 
-        {/* Title */}
-        <div className="text-center mb-10 relative z-10">
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-none">
-            Anything.
-          </h1>
-          <p className="mt-2 text-sm md:text-base text-muted-foreground">
-            PDF・動画・画像 — なんでも、ブラウザだけで。
-          </p>
+        {/* Center indicator line */}
+        <div
+          className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none z-30"
+          style={{ width: 60, height: 2 }}
+        >
+          <div className="h-full w-full" style={{ background: `linear-gradient(to right, transparent, ${centerItem.color})` }} />
         </div>
 
-        {/* Dial area */}
-        <div className="relative z-10 flex items-center justify-center gap-8 md:gap-16">
-          {/* Indicator line (left) */}
-          <div className="hidden md:flex items-center gap-3">
-            <div className="h-px w-12 lg:w-20" style={{ backgroundColor: selectedCategory.color }} />
-            <span
-              className="text-xs font-semibold uppercase tracking-widest transition-colors duration-300"
-              style={{ color: selectedCategory.color }}
+        {/* Tick marks on the arc */}
+        {Array.from({ length: 36 }).map((_, i) => {
+          const tickAngle = (i * 10 - 180) * (Math.PI / 180);
+          const r = ARC_RADIUS - 4;
+          const x = 60 + Math.cos(tickAngle) * r;
+          const y = Math.sin(tickAngle) * r;
+          if (x < -10) return null;
+          return (
+            <div
+              key={i}
+              className="absolute pointer-events-none"
+              style={{
+                width: i % 3 === 0 ? 6 : 3,
+                height: 1,
+                backgroundColor: "var(--color-border)",
+                opacity: 0.3,
+                left: 60 + Math.cos(tickAngle) * r,
+                top: `calc(50% + ${y}px)`,
+              }}
+            />
+          );
+        })}
+
+        {/* Items placed on the arc */}
+        {items.map((item, i) => {
+          // Angle from center (in degrees). 0 = center, positive = above
+          const angleDeg = (i * ITEM_SPACING - scrollOffset);
+
+          // Only render items within visible range for performance
+          if (Math.abs(angleDeg) > (VISIBLE_RANGE + 1) * ITEM_SPACING) return null;
+
+          const angleRad = (angleDeg * Math.PI) / 180;
+          const x = Math.cos(angleRad) * ARC_RADIUS;
+          const y = -Math.sin(angleRad) * ARC_RADIUS;
+
+          // Proximity to center: 0=center, 1=far
+          const proximity = Math.min(Math.abs(angleDeg) / (ITEM_SPACING * 2.5), 1);
+          const isCenter = i === centerIdx;
+          const scale = isCenter ? 1.15 : 1 - proximity * 0.35;
+          const opacity = isCenter ? 1 : Math.max(0.15, 1 - proximity * 0.9);
+
+          const Icon = item.icon;
+
+          return (
+            <Link
+              key={item.href + i}
+              href={item.href}
+              onClick={(e) => {
+                if (!isCenter) {
+                  e.preventDefault();
+                  setScrollOffset(i * ITEM_SPACING);
+                  setVelocity(0);
+                }
+              }}
+              className="absolute flex items-center gap-3 pointer-events-auto transition-transform duration-150"
+              style={{
+                left: 60 + x - 24,
+                top: `calc(50% + ${y}px - 24px)`,
+                transform: `scale(${scale})`,
+                opacity,
+                zIndex: isCenter ? 20 : 10 - Math.round(proximity * 10),
+              }}
             >
-              {selectedCategory.label}
-            </span>
-          </div>
-
-          {/* Dial */}
-          <div
-            ref={dialRef}
-            className="relative select-none touch-none cursor-grab active:cursor-grabbing"
-            style={{ width: DIAL_RADIUS * 2 + 40, height: DIAL_RADIUS * 2 + 40 }}
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-          >
-            {/* Outer ring */}
-            <div className="absolute inset-0 rounded-full border-2 border-border/30" />
-
-            {/* Tick marks around the dial */}
-            {Array.from({ length: 24 }).map((_, i) => {
-              const tickAngle = (i * 15) * (Math.PI / 180);
-              const r = DIAL_RADIUS + 14;
-              return (
-                <div
-                  key={i}
-                  className="absolute w-px bg-border/40"
-                  style={{
-                    height: i % 3 === 0 ? 8 : 4,
-                    left: DIAL_RADIUS + 20 + Math.sin(tickAngle) * r,
-                    top: DIAL_RADIUS + 20 - Math.cos(tickAngle) * r,
-                    transform: `rotate(${i * 15}deg)`,
-                    transformOrigin: "center top",
-                  }}
+              {/* Icon */}
+              <div
+                className="flex items-center justify-center w-12 h-12 rounded-xl shrink-0 transition-all duration-300"
+                style={{
+                  backgroundColor: isCenter ? item.color : "var(--color-muted)",
+                  boxShadow: isCenter ? `0 0 20px ${item.color}50` : "none",
+                }}
+              >
+                <Icon
+                  className="h-5 w-5 transition-colors duration-200"
+                  style={{ color: isCenter ? "#fff" : "var(--color-muted-foreground)" }}
                 />
-              );
-            })}
+              </div>
 
-            {/* Category items on the dial */}
-            {categories.map((cat, i) => {
-              const itemAngle = (i * segmentAngle - angle) * (Math.PI / 180);
-              const x = Math.sin(itemAngle) * DIAL_RADIUS;
-              const y = -Math.cos(itemAngle) * DIAL_RADIUS;
-              const isActive = i === selectedIdx;
-              const Icon = cat.icon;
-
-              return (
-                <button
-                  key={cat.id}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const target = i * segmentAngle;
-                    setAngle(target);
-                    setSelectedIdx(i);
-                    setVelocity(0);
-                  }}
-                  className="absolute flex flex-col items-center gap-1 transition-all duration-300 pointer-events-auto"
+              {/* Label — only visible near center */}
+              {proximity < 0.6 && (
+                <span
+                  className="text-sm font-semibold whitespace-nowrap transition-all duration-200"
                   style={{
-                    left: DIAL_RADIUS + 20 + x - 32,
-                    top: DIAL_RADIUS + 20 + y - 32,
-                    width: 64,
-                    height: 64,
-                    transform: `scale(${isActive ? 1.3 : 0.8})`,
-                    opacity: isActive ? 1 : 0.4,
-                    zIndex: isActive ? 10 : 1,
+                    color: isCenter ? item.color : "var(--color-muted-foreground)",
+                    opacity: isCenter ? 1 : 0.4,
+                    fontSize: isCenter ? 16 : 13,
                   }}
                 >
-                  <div
-                    className="flex items-center justify-center w-12 h-12 rounded-xl transition-all duration-300"
-                    style={{
-                      backgroundColor: isActive ? cat.color : "var(--color-muted)",
-                      boxShadow: isActive ? `0 0 24px ${cat.color}40` : "none",
-                    }}
-                  >
-                    <Icon
-                      className="h-5 w-5 transition-colors duration-300"
-                      style={{ color: isActive ? "#fff" : "var(--color-muted-foreground)" }}
-                    />
-                  </div>
-                  <span
-                    className="text-[11px] font-bold tracking-wide transition-all duration-300 whitespace-nowrap"
-                    style={{
-                      color: isActive ? cat.color : "var(--color-muted-foreground)",
-                      fontSize: isActive ? 13 : 10,
-                    }}
-                  >
-                    {cat.label}
-                  </span>
-                </button>
-              );
-            })}
+                  {item.title}
+                </span>
+              )}
+            </Link>
+          );
+        })}
+      </div>
 
-            {/* Center dot */}
-            <div
-              className="absolute rounded-full transition-colors duration-500"
-              style={{
-                width: 8,
-                height: 8,
-                left: DIAL_RADIUS + 20 - 4,
-                top: DIAL_RADIUS + 20 - 4,
-                backgroundColor: selectedCategory.color,
-                boxShadow: `0 0 12px ${selectedCategory.color}60`,
-              }}
-            />
+      {/* ── Right: Content area ───────────────────── */}
+      <div className="flex-1 flex flex-col justify-center px-8 lg:px-16 py-12">
+        {/* Title */}
+        <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-none mb-3">
+          Anything.
+        </h1>
+        <p className="text-sm md:text-base text-muted-foreground mb-12">
+          PDF・動画・画像 — なんでも、ブラウザだけで。
+        </p>
 
-            {/* Top pointer / indicator triangle */}
-            <div
-              className="absolute left-1/2 -translate-x-1/2 -top-2 w-0 h-0 z-20"
-              style={{
-                borderLeft: "6px solid transparent",
-                borderRight: "6px solid transparent",
-                borderTop: `8px solid ${selectedCategory.color}`,
-              }}
-            />
-          </div>
-
-          {/* Mobile label (below dial) */}
-          <div className="md:hidden absolute -bottom-2 left-1/2 -translate-x-1/2">
+        {/* Selected tool detail */}
+        <div className="transition-all duration-300">
+          {/* Category badge */}
+          <div className="flex items-center gap-2 mb-3">
             <span
-              className="text-xs font-semibold uppercase tracking-widest"
-              style={{ color: selectedCategory.color }}
+              className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-colors duration-300"
+              style={{ backgroundColor: centerItem.color + "20", color: centerItem.color }}
             >
-              {selectedCategory.label}
+              {centerItem.category}
             </span>
           </div>
 
-          {/* Indicator line (right) */}
-          <div className="hidden md:flex items-center gap-3">
-            <span className="text-xs text-muted-foreground">
-              {selectedCategory.tools.length} tools
-            </span>
-            <div className="h-px w-12 lg:w-20 bg-border/40" />
-          </div>
-        </div>
-      </section>
+          {/* Tool name */}
+          <h2
+            className="text-3xl lg:text-4xl font-bold tracking-tight mb-4 transition-colors duration-300"
+            style={{ color: centerItem.color }}
+          >
+            {centerItem.title}
+          </h2>
 
-      {/* Tool list for selected category */}
-      <section className="px-6 lg:px-10 pb-16 pt-4">
-        <div className="mx-auto max-w-screen-lg">
-          {/* Section header with line */}
-          <div className="flex items-center gap-4 mb-6">
-            <div className="h-px flex-1 bg-border/40" />
-            <h2
-              className="text-lg font-bold tracking-tight transition-colors duration-300"
-              style={{ color: selectedCategory.color }}
-            >
-              {selectedCategory.label}ツール
-            </h2>
-            <div className="h-px flex-1 bg-border/40" />
-          </div>
-
-          {/* Tools grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {selectedCategory.tools.map((tool, i) => (
-              <Link key={tool.href} href={tool.href}>
-                <div
-                  className="group relative flex items-center gap-3 rounded-xl border border-border/40 bg-card px-4 py-3.5 cursor-pointer transition-all duration-300 hover:border-transparent hover:shadow-lg hover:shadow-black/5 hover:-translate-y-0.5 dark:hover:shadow-black/20"
-                  style={{ animationDelay: `${i * 50}ms` }}
-                >
-                  <div className={`flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br ${tool.accent} shrink-0 transition-transform duration-300 group-hover:scale-110`}>
-                    <tool.icon className="h-4.5 w-4.5 text-white" />
-                  </div>
-                  <span className="text-sm font-medium">{tool.title}</span>
-                  <div className={`absolute inset-0 rounded-xl bg-gradient-to-br ${tool.accent} opacity-0 group-hover:opacity-[0.06] transition-opacity duration-300 pointer-events-none`} />
-                </div>
-              </Link>
-            ))}
-          </div>
+          {/* CTA */}
+          <Link
+            href={centerItem.href}
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white transition-all duration-300 hover:opacity-90 hover:-translate-y-0.5"
+            style={{ backgroundColor: centerItem.color }}
+          >
+            <centerItem.icon className="h-4 w-4" />
+            使ってみる
+          </Link>
         </div>
-      </section>
+
+        {/* Scroll hint */}
+        <p className="mt-16 text-xs text-muted-foreground/50">
+          左のダイヤルをスクロール or ドラッグで選択
+        </p>
+      </div>
     </div>
   );
 }
