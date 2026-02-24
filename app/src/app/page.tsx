@@ -63,8 +63,8 @@ const items: DialItem[] = [
    Half-circle dial on the left edge (1/3 of screen)
    ================================================================ */
 
-const ARC_RADIUS = 260;           // radius of the half-circle
-const ITEM_SPACING = 28;          // degrees between items
+const ARC_RADIUS = 220;           // radius of the half-circle
+const ITEM_SPACING = 26;          // degrees between items
 const VISIBLE_RANGE = 5;          // items visible above/below center
 
 /* Category tools for the grid */
@@ -163,10 +163,10 @@ export default function HomePage() {
 
   return (
     <div className="min-h-[calc(100vh-60px)] flex overflow-hidden">
-      {/* ── Left: Half-circle dial (1/3 of screen) ── */}
+      {/* ── Left: Half-circle dial (~20% of screen) ── */}
       <div
         ref={containerRef}
-        className="relative select-none touch-none cursor-grab active:cursor-grabbing shrink-0 w-[33vw] max-w-[400px] min-w-[280px]"
+        className="relative select-none touch-none cursor-grab active:cursor-grabbing shrink-0 w-[20vw] max-w-[300px] min-w-[200px]"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -177,7 +177,7 @@ export default function HomePage() {
           style={{
             width: ARC_RADIUS * 2,
             height: ARC_RADIUS * 2,
-            left: -ARC_RADIUS + 50,
+            left: -ARC_RADIUS + 30,
             top: "50%",
             transform: "translateY(-50%)",
           }}
@@ -195,7 +195,7 @@ export default function HomePage() {
         {Array.from({ length: 36 }).map((_, i) => {
           const tickAngle = (i * 10 - 180) * (Math.PI / 180);
           const r = ARC_RADIUS - 4;
-          const xPos = 50 + Math.cos(tickAngle) * r;
+          const xPos = 30 + Math.cos(tickAngle) * r;
           const y = Math.sin(tickAngle) * r;
           if (xPos < -10) return null;
           return (
@@ -243,7 +243,7 @@ export default function HomePage() {
               }}
               className="absolute flex items-center gap-2.5 pointer-events-auto transition-transform duration-150"
               style={{
-                left: 50 + x - 22,
+                left: 30 + x - 22,
                 top: `calc(50% + ${y}px - 22px)`,
                 transform: `scale(${scale})`,
                 opacity,
@@ -286,8 +286,8 @@ export default function HomePage() {
         </p>
       </div>
 
-      {/* ── Right: Content area (2/3, horizontal layout) ── */}
-      <div className="flex-1 flex flex-col justify-center px-10 lg:px-14 xl:px-20 py-10 min-w-0">
+      {/* ── Right: Content area (horizontal layout) ── */}
+      <div className="flex-1 flex flex-col justify-center px-8 lg:px-12 xl:px-16 py-10 min-w-0">
         {/* Title row */}
         <div className="flex items-baseline gap-6 mb-2">
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-extralight tracking-tight leading-none">
@@ -302,10 +302,10 @@ export default function HomePage() {
         </p>
 
         {/* Thin divider */}
-        <div className="h-px w-full max-w-3xl mb-6 transition-colors duration-500" style={{ backgroundColor: centerItem.color + "25" }} />
+        <div className="h-px w-full mb-6 transition-colors duration-500" style={{ backgroundColor: centerItem.color + "25" }} />
 
         {/* Selected tool detail — horizontal row */}
-        <div className="flex flex-col lg:flex-row lg:items-start gap-6 lg:gap-10 transition-all duration-300 max-w-3xl">
+        <div className="flex flex-col lg:flex-row lg:items-start gap-6 lg:gap-10 transition-all duration-300">
           {/* Left: tool name + CTA */}
           <div className="shrink-0 lg:w-52">
             <div className="flex items-center gap-2 mb-1.5">
@@ -398,7 +398,7 @@ export default function HomePage() {
         </div>
 
         {/* Category tools grid — horizontal */}
-        <div className="mt-8 max-w-3xl">
+        <div className="mt-8">
           <p className="text-[11px] text-muted-foreground/50 uppercase tracking-widest font-medium mb-3">
             {centerItem.category}ツール一覧
           </p>
