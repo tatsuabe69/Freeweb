@@ -2,6 +2,61 @@
    SNS Video Creator — Helper Functions
    ================================================================ */
 
+import type { TimelineClip } from "./types";
+
+/** Compute cumulative start time for each clip on the timeline */
+export function getClipStartTimes(clips: TimelineClip[]): number[] {
+  const starts: number[] = [];
+  let t = 0;
+  for (const c of clips) {
+    starts.push(t);
+    t += c.outPoint - c.inPoint;
+  }
+  return starts;
+}
+
+/** Convert a global timeline position (seconds) to { clipIndex, localTime } */
+export function globalToLocal(
+  globalTime: number,
+  clips: TimelineClip[],
+): { clipIndex: number; localTime: number } | null {
+  let t = 0;
+  for (let i = 0; i < clips.length; i++) {
+    const dur = clips[i].outPoint - clips[i].inPoint;
+    if (globalTime < t + dur) {
+      return { clipIndex: i, localTime: clips[i].inPoint + (globalTime - t) };
+    }
+    t += dur;
+  }
+  return clips.length > 0
+    ? { clipIndex: clips.length - 1, localTime: clips[clips.length - 1].outPoint }
+    : null;
+}
+
+/** Generate tick marks for the timeline ruler */
+export function generateRulerTicks(
+  totalDuration: number,
+  pxPerSec: number,
+): { time: number; major: boolean }[] {
+  if (totalDuration <= 0) return [];
+
+  // Choose interval based on zoom level
+  let interval: number;
+  if (pxPerSec >= 30) interval = 1;
+  else if (pxPerSec >= 15) interval = 2;
+  else if (pxPerSec >= 8) interval = 5;
+  else if (pxPerSec >= 4) interval = 10;
+  else interval = 30;
+
+  const majorInterval = interval * 5;
+  const ticks: { time: number; major: boolean }[] = [];
+
+  for (let t = 0; t <= totalDuration; t += interval) {
+    ticks.push({ time: t, major: t % majorInterval === 0 });
+  }
+  return ticks;
+}
+
 let _idCounter = 0;
 
 export function uid(): string {

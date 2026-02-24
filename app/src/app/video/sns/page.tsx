@@ -27,6 +27,12 @@ import {
   Type,
   Link2,
   Search,
+  SkipBack,
+  SkipForward,
+  ChevronLeft,
+  ChevronRight,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -50,11 +56,23 @@ import {
   AUDIO_MODES,
   QUALITY,
   TIMELINE_PX_PER_SEC,
+  TIMELINE_ZOOM_MIN,
+  TIMELINE_ZOOM_MAX,
+  TIMELINE_ZOOM_STEP,
   TEXT_SIZES,
   TEXT_COLORS,
   TEXT_PREVIEW_SIZES,
 } from "./constants";
-import { uid, ext, fmt, loadClipMeta, renderTextPng } from "./helpers";
+import {
+  uid,
+  ext,
+  fmt,
+  loadClipMeta,
+  renderTextPng,
+  getClipStartTimes,
+  globalToLocal,
+  generateRulerTicks,
+} from "./helpers";
 import { SortableClip } from "./_components/sortable-clip";
 
 /* ================================================================
@@ -106,12 +124,28 @@ export default function SnsCreatorPage() {
   /* ── Accordion for mobile ──────────────────── */
   const [settingsOpen, setSettingsOpen] = useState(true);
 
+  /* ── Timeline zoom ──────────────────────────── */
+  const [timelineZoom, setTimelineZoom] = useState(1);
+  const timelineRef = useRef<HTMLDivElement>(null);
+
   /* ── Derived ───────────────────────────────── */
   const plat = PLATFORMS.find((p) => p.id === platform)!;
   const qual = QUALITY.find((q) => q.value === quality)!;
   const needsBgm = audioMode === "replace" || audioMode === "mix";
   const selectedClip = clips.find((c) => c.id === selectedId) ?? null;
   const totalDuration = clips.reduce((s, c) => s + (c.outPoint - c.inPoint), 0);
+  const pxPerSec = TIMELINE_PX_PER_SEC * timelineZoom;
+  const clipStartTimes = getClipStartTimes(clips);
+  const rulerTicks = generateRulerTicks(totalDuration, pxPerSec);
+
+  // Global playhead position (seconds from start of timeline)
+  const globalCurrentTime = (() => {
+    if (!selectedClip) return 0;
+    const idx = clips.findIndex((c) => c.id === selectedClip.id);
+    if (idx < 0) return 0;
+    return clipStartTimes[idx] + (currentTime - selectedClip.inPoint);
+  })();
+  const playheadPx = globalCurrentTime * pxPerSec;
 
   const videoInputRef = useRef<HTMLInputElement>(null);
   const bgmInputRef = useRef<HTMLInputElement>(null);
@@ -388,6 +422,65 @@ export default function SnsCreatorPage() {
       setTiktokLoading(false);
     }
   };
+
+  /* ── Timeline seek (click ruler to seek) ──── */
+  const seekToGlobalTime = useCallback((globalTime: number) => {
+    const result = globalToLocal(globalTime, clips);
+    if (!result) return;
+    const { clipIndex, localTime } = result;
+    const clip = clips[clipIndex];
+    setSelectedId(clip.id);
+    // Wait for video source to update, then seek
+    setTimeout(() => {
+      const v = videoRef.current;
+      if (v) {
+        v.currentTime = localTime;
+        setCurrentTime(localTime);
+      }
+    }, 50);
+  }, [clips]);
+
+  const handleRulerClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const time = x / pxPerSec;
+    seekToGlobalTime(Math.max(0, Math.min(time, totalDuration)));
+  }, [pxPerSec, totalDuration, seekToGlobalTime]);
+
+  /* ── Frame step ──────────────────────────── */
+  const stepFrame = useCallback((direction: 1 | -1) => {
+    const v = videoRef.current;
+    if (!v) return;
+    const step = 1 / 30; // ~1 frame at 30fps
+    v.currentTime = Math.max(0, v.currentTime + direction * step);
+    setCurrentTime(v.currentTime);
+  }, []);
+
+  /* ── Jump to start/end of timeline ────────── */
+  const jumpToStart = useCallback(() => {
+    if (clips.length === 0) return;
+    setSelectedId(clips[0].id);
+    setTimeout(() => {
+      const v = videoRef.current;
+      if (v) {
+        v.currentTime = clips[0].inPoint;
+        setCurrentTime(clips[0].inPoint);
+      }
+    }, 50);
+  }, [clips]);
+
+  const jumpToEnd = useCallback(() => {
+    if (clips.length === 0) return;
+    const last = clips[clips.length - 1];
+    setSelectedId(last.id);
+    setTimeout(() => {
+      const v = videoRef.current;
+      if (v) {
+        v.currentTime = last.outPoint;
+        setCurrentTime(last.outPoint);
+      }
+    }, 50);
+  }, [clips]);
 
   /* ── Text overlay handlers ──────────────────── */
   const addOverlay = () => {
@@ -884,11 +977,30 @@ export default function SnsCreatorPage() {
                     {bgmObjectUrl && (
                       <audio ref={bgmAudioRef} src={bgmObjectUrl} preload="auto" />
                     )}
-                    {/* Transport */}
-                    <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="icon-xs" onClick={togglePlay} title="再生/一時停止">
+                    {/* Transport bar — Premiere Pro style */}
+                    <div className="flex items-center gap-1 bg-card/80 rounded-lg px-2 py-1 border">
+                      <Button variant="ghost" size="icon-xs" onClick={jumpToStart} title="先頭へ">
+                        <SkipBack className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon-xs" onClick={() => stepFrame(-1)} title="1フレーム戻る">
+                        <ChevronLeft className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
+                        onClick={togglePlay}
+                        title="再生/一時停止"
+                        className="mx-0.5"
+                      >
                         {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                       </Button>
+                      <Button variant="ghost" size="icon-xs" onClick={() => stepFrame(1)} title="1フレーム進む">
+                        <ChevronRight className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon-xs" onClick={jumpToEnd} title="末尾へ">
+                        <SkipForward className="h-3.5 w-3.5" />
+                      </Button>
+                      <div className="border-l mx-1 h-4" />
                       {clips.length > 1 && (
                         <Button
                           variant="ghost"
@@ -901,9 +1013,14 @@ export default function SnsCreatorPage() {
                           全再生
                         </Button>
                       )}
-                      <span className="text-xs font-mono text-muted-foreground tabular-nums">
-                        {fmt(currentTime)} / {fmt(selectedClip.fullDuration)}
-                      </span>
+                      {/* Timecode display */}
+                      <div className="ml-1 bg-black/80 rounded px-2 py-0.5 font-mono text-[11px] text-blue-400 tabular-nums tracking-wider">
+                        {fmt(globalCurrentTime)}
+                      </div>
+                      <span className="text-[10px] text-muted-foreground/60 mx-0.5">/</span>
+                      <div className="bg-black/80 rounded px-2 py-0.5 font-mono text-[11px] text-muted-foreground tabular-nums tracking-wider">
+                        {fmt(totalDuration)}
+                      </div>
                     </div>
                   </div>
                 ) : (
@@ -1231,134 +1348,207 @@ export default function SnsCreatorPage() {
             </div>
           </div>
 
-          {/* ── Timeline ─────────────────────────── */}
-          <div className="border-t bg-neutral-50 dark:bg-neutral-900/80">
+          {/* ── Timeline — Premiere Pro style ───── */}
+          <div className="border-t bg-neutral-950">
             {/* Timeline header */}
-            <div className="flex items-center justify-between px-3 py-1.5 border-b">
-              <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+            <div className="flex items-center justify-between px-3 py-1 border-b border-neutral-800 bg-neutral-900">
+              <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">
                 タイムライン
               </span>
-              <span className="text-[10px] text-muted-foreground font-mono tabular-nums">
-                合計 {fmt(totalDuration)}
+              <div className="flex items-center gap-2">
                 {totalDuration > plat.maxDur && (
-                  <span className="text-destructive ml-1">
-                    ({plat.label}上限 {plat.maxDur}秒 超過)
+                  <span className="text-[10px] text-red-400">
+                    {plat.label}上限 {plat.maxDur}秒 超過
                   </span>
                 )}
-              </span>
+                <span className="text-[10px] text-neutral-500 font-mono tabular-nums">
+                  合計 {fmt(totalDuration)}
+                </span>
+                <div className="border-l border-neutral-700 h-4 mx-0.5" />
+                {/* Zoom controls */}
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={() => setTimelineZoom((z) => Math.max(TIMELINE_ZOOM_MIN, z - TIMELINE_ZOOM_STEP))}
+                  disabled={timelineZoom <= TIMELINE_ZOOM_MIN}
+                  className="text-neutral-400 hover:text-neutral-200 h-5 w-5"
+                  title="ズームアウト"
+                >
+                  <ZoomOut className="h-3 w-3" />
+                </Button>
+                <span className="text-[9px] text-neutral-500 font-mono w-8 text-center tabular-nums">
+                  {timelineZoom.toFixed(1)}x
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={() => setTimelineZoom((z) => Math.min(TIMELINE_ZOOM_MAX, z + TIMELINE_ZOOM_STEP))}
+                  disabled={timelineZoom >= TIMELINE_ZOOM_MAX}
+                  className="text-neutral-400 hover:text-neutral-200 h-5 w-5"
+                  title="ズームイン"
+                >
+                  <ZoomIn className="h-3 w-3" />
+                </Button>
+              </div>
             </div>
 
-            {/* Video track */}
-            <div className="px-3 py-2">
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className="text-[10px] font-semibold text-muted-foreground w-6 shrink-0">V</span>
-                <div className="flex-1 min-w-0 overflow-x-auto">
-                  {clips.length > 0 ? (
-                    <DndContext
-                      sensors={sensors}
-                      collisionDetection={closestCenter}
-                      onDragEnd={handleDragEnd}
-                    >
-                      <SortableContext
-                        items={clips.map((c) => c.id)}
-                        strategy={horizontalListSortingStrategy}
+            {/* Timeline body with ruler + tracks + playhead */}
+            <div className="flex">
+              {/* Track labels */}
+              <div className="w-8 shrink-0 border-r border-neutral-800 bg-neutral-900/50">
+                {/* Ruler spacer */}
+                <div className="h-5 border-b border-neutral-800" />
+                {/* V label */}
+                <div className="h-14 flex items-center justify-center border-b border-neutral-800">
+                  <span className="text-[10px] font-bold text-blue-400">V</span>
+                </div>
+                {/* A label */}
+                <div className="h-8 flex items-center justify-center border-b border-neutral-800">
+                  <span className="text-[10px] font-bold text-emerald-400">A</span>
+                </div>
+                {/* T label */}
+                {overlays.filter((o) => o.text.trim()).length > 0 && (
+                  <div className="h-6 flex items-center justify-center">
+                    <span className="text-[10px] font-bold text-amber-400">T</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Scrollable tracks area */}
+              <div ref={timelineRef} className="flex-1 overflow-x-auto relative">
+                <div style={{ width: `${Math.max(totalDuration * pxPerSec, 200)}px`, minWidth: "100%" }}>
+                  {/* Ruler */}
+                  <div
+                    className="h-5 border-b border-neutral-800 relative cursor-pointer bg-neutral-900/80"
+                    onClick={handleRulerClick}
+                  >
+                    {rulerTicks.map((tick) => (
+                      <div
+                        key={tick.time}
+                        className="absolute top-0"
+                        style={{ left: `${tick.time * pxPerSec}px` }}
                       >
-                        <div className="flex gap-1">
-                          {clips.map((clip, i) => (
-                            <SortableClip
-                              key={clip.id}
-                              clip={clip}
-                              index={i}
-                              isSelected={clip.id === selectedId}
-                              totalDuration={totalDuration}
-                              onClick={() => setSelectedId(clip.id)}
-                            />
-                          ))}
-                        </div>
-                      </SortableContext>
-                    </DndContext>
-                  ) : (
-                    <div className="h-14 rounded-md border border-dashed border-border/50 flex items-center justify-center">
-                      <span className="text-[10px] text-muted-foreground/50">
-                        動画クリップをここに配置
-                      </span>
+                        <div
+                          className={`${tick.major ? "h-5 bg-neutral-600" : "h-2.5 bg-neutral-700"}`}
+                          style={{ width: "1px" }}
+                        />
+                        {tick.major && (
+                          <span className="absolute top-0.5 left-1 text-[8px] text-neutral-500 font-mono whitespace-nowrap select-none">
+                            {fmt(tick.time)}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* V — Video track */}
+                  <div className="h-14 border-b border-neutral-800 relative">
+                    {clips.length > 0 ? (
+                      <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
+                      >
+                        <SortableContext
+                          items={clips.map((c) => c.id)}
+                          strategy={horizontalListSortingStrategy}
+                        >
+                          <div className="flex h-full">
+                            {clips.map((clip, i) => (
+                              <SortableClip
+                                key={clip.id}
+                                clip={clip}
+                                index={i}
+                                isSelected={clip.id === selectedId}
+                                totalDuration={totalDuration}
+                                pxPerSec={pxPerSec}
+                                onClick={() => setSelectedId(clip.id)}
+                              />
+                            ))}
+                          </div>
+                        </SortableContext>
+                      </DndContext>
+                    ) : (
+                      <div className="h-full flex items-center justify-center">
+                        <span className="text-[10px] text-neutral-600">
+                          動画クリップをここに配置
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* A — Audio track */}
+                  <div className="h-8 border-b border-neutral-800 relative">
+                    {bgmFile && needsBgm ? (
+                      <div
+                        className="h-full bg-purple-500/25 border-y border-purple-500/40 flex items-center px-2"
+                        style={{ width: `${Math.max(totalDuration * pxPerSec, 64)}px` }}
+                      >
+                        <Music className="h-3 w-3 text-purple-400 shrink-0 mr-1" />
+                        <span className="text-[10px] text-purple-300 truncate">{bgmName}</span>
+                      </div>
+                    ) : audioMode === "keep" && clips.length > 0 ? (
+                      <div
+                        className="h-full bg-emerald-500/15 flex items-center px-2"
+                        style={{ width: `${Math.max(totalDuration * pxPerSec, 64)}px` }}
+                      >
+                        <Volume2 className="h-3 w-3 text-emerald-500/60 shrink-0 mr-1" />
+                        <span className="text-[10px] text-emerald-500/60">元の音声</span>
+                      </div>
+                    ) : audioMode === "mute" ? (
+                      <div className="h-full flex items-center px-2">
+                        <VolumeX className="h-3 w-3 text-neutral-600 shrink-0 mr-1" />
+                        <span className="text-[10px] text-neutral-600">ミュート</span>
+                      </div>
+                    ) : needsBgm && !bgmFile ? (
+                      <button
+                        onClick={() => bgmInputRef.current?.click()}
+                        className="h-full flex items-center px-2 hover:bg-purple-500/5 transition-colors"
+                      >
+                        <Plus className="h-3 w-3 text-purple-400/60 shrink-0 mr-1" />
+                        <span className="text-[10px] text-purple-400/60">BGMを追加</span>
+                      </button>
+                    ) : null}
+                  </div>
+
+                  {/* T — Text overlay track */}
+                  {overlays.filter((o) => o.text.trim()).length > 0 && (
+                    <div className="h-6 relative">
+                      <div
+                        className="h-full bg-amber-500/15 flex items-center px-2"
+                        style={{ width: `${Math.max(totalDuration * pxPerSec, 64)}px` }}
+                      >
+                        <Type className="h-3 w-3 text-amber-400/60 shrink-0 mr-1" />
+                        <span className="text-[10px] text-amber-400/60 truncate">
+                          テロップ ×{overlays.filter((o) => o.text.trim()).length}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── Playhead (CTI) — red line spanning all tracks ── */}
+                  {totalDuration > 0 && (
+                    <div
+                      className="absolute top-0 bottom-0 pointer-events-none z-30"
+                      style={{ left: `${playheadPx}px` }}
+                    >
+                      {/* Playhead marker (triangle at top) */}
+                      <div className="relative">
+                        <div
+                          className="absolute -top-0 -translate-x-1/2 w-0 h-0"
+                          style={{
+                            borderLeft: "5px solid transparent",
+                            borderRight: "5px solid transparent",
+                            borderTop: "6px solid #ef4444",
+                          }}
+                        />
+                      </div>
+                      {/* Playhead line */}
+                      <div className="w-px h-full bg-red-500" />
                     </div>
                   )}
                 </div>
               </div>
-
-              {/* Audio track */}
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-semibold text-muted-foreground w-6 shrink-0">A</span>
-                <div className="flex-1 min-w-0 overflow-x-auto">
-                  {bgmFile && needsBgm ? (
-                    <div
-                      className="h-8 rounded-md bg-purple-500/30 border border-purple-500/40 flex items-center px-2"
-                      style={{
-                        width: `${Math.max(totalDuration * TIMELINE_PX_PER_SEC, 64)}px`,
-                      }}
-                    >
-                      <Music className="h-3 w-3 text-purple-400 shrink-0 mr-1" />
-                      <span className="text-[10px] text-purple-300 truncate">{bgmName}</span>
-                    </div>
-                  ) : audioMode === "keep" && clips.length > 0 ? (
-                    <div
-                      className="h-8 rounded-md bg-emerald-500/20 border border-emerald-500/30 flex items-center px-2"
-                      style={{
-                        width: `${Math.max(totalDuration * TIMELINE_PX_PER_SEC, 64)}px`,
-                      }}
-                    >
-                      <Volume2 className="h-3 w-3 text-emerald-400 shrink-0 mr-1" />
-                      <span className="text-[10px] text-emerald-400">元の音声</span>
-                    </div>
-                  ) : audioMode === "mute" ? (
-                    <div className="h-8 rounded-md border border-dashed border-border/30 flex items-center px-2">
-                      <VolumeX className="h-3 w-3 text-muted-foreground/40 shrink-0 mr-1" />
-                      <span className="text-[10px] text-muted-foreground/40">ミュート</span>
-                    </div>
-                  ) : needsBgm && !bgmFile ? (
-                    <button
-                      onClick={() => bgmInputRef.current?.click()}
-                      className="h-8 rounded-md border border-dashed border-purple-500/30 flex items-center px-2 hover:bg-purple-500/5 transition-colors"
-                    >
-                      <Plus className="h-3 w-3 text-purple-400 shrink-0 mr-1" />
-                      <span className="text-[10px] text-purple-400">BGMを追加</span>
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-
-              {/* Text overlay indicator on timeline */}
-              {overlays.filter((o) => o.text.trim()).length > 0 && (
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-[10px] font-semibold text-muted-foreground w-6 shrink-0">T</span>
-                  <div
-                    className="h-6 rounded-md bg-amber-500/20 border border-amber-500/30 flex items-center px-2"
-                    style={{
-                      width: `${Math.max(totalDuration * TIMELINE_PX_PER_SEC, 64)}px`,
-                    }}
-                  >
-                    <Type className="h-3 w-3 text-amber-400 shrink-0 mr-1" />
-                    <span className="text-[10px] text-amber-400 truncate">
-                      テロップ ×{overlays.filter((o) => o.text.trim()).length}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* Time ruler */}
-              {totalDuration > 0 && (
-                <div className="flex items-center gap-2 mt-1.5">
-                  <span className="w-6 shrink-0" />
-                  <div className="flex-1 flex items-end text-[9px] text-muted-foreground/50 font-mono">
-                    <span>0:00</span>
-                    <span className="flex-1" />
-                    {totalDuration > 10 && <span>{fmt(totalDuration / 2)}</span>}
-                    <span className="flex-1" />
-                    <span>{fmt(totalDuration)}</span>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 

@@ -4,7 +4,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Film } from "lucide-react";
 import type { TimelineClip } from "../types";
-import { CLIP_COLORS, TIMELINE_PX_PER_SEC } from "../constants";
+import { CLIP_COLORS } from "../constants";
 import { fmt } from "../helpers";
 
 /* ================================================================
@@ -15,12 +15,14 @@ export function SortableClip({
   clip,
   index,
   isSelected,
+  pxPerSec,
   onClick,
 }: {
   clip: TimelineClip;
   index: number;
   isSelected: boolean;
   totalDuration: number;
+  pxPerSec?: number;
   onClick: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -28,7 +30,8 @@ export function SortableClip({
   });
 
   const clipDur = clip.outPoint - clip.inPoint;
-  const widthPx = Math.max(clipDur * TIMELINE_PX_PER_SEC, 64);
+  const scale = pxPerSec ?? 8;
+  const widthPx = Math.max(clipDur * scale, 48);
   const color = CLIP_COLORS[index % CLIP_COLORS.length];
 
   const style = {

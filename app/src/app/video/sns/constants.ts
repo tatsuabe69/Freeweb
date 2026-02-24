@@ -36,6 +36,10 @@ export const CLIP_COLORS = [
 
 export const TIMELINE_PX_PER_SEC = 8;
 
+export const TIMELINE_ZOOM_MIN = 0.5;
+export const TIMELINE_ZOOM_MAX = 6;
+export const TIMELINE_ZOOM_STEP = 0.5;
+
 export const TEXT_SIZES: Record<string, number> = { s: 36, m: 52, l: 72 };
 
 export const TEXT_COLORS = [
