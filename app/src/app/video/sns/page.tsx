@@ -930,10 +930,10 @@ export default function SnsCreatorPage() {
 
             {/* ─── Center: Preview ─────────────────── */}
             <div className="flex-1 flex flex-col bg-neutral-100 dark:bg-neutral-900 min-h-0">
-              <div className="flex-1 flex items-center justify-center p-4 min-h-0">
+              <div className="flex-1 flex items-center justify-center p-1.5 min-h-0">
                 {selectedClip ? (
-                  <div className="relative flex flex-col items-center gap-2 max-h-full">
-                    <div className="relative bg-black rounded-lg overflow-hidden shadow-xl" style={{ aspectRatio: "9/16", maxHeight: "min(50vh, 400px)" }}>
+                  <div className="relative flex flex-col items-center gap-1.5 max-h-full w-full">
+                    <div className="relative bg-black rounded-lg overflow-hidden shadow-xl mx-auto" style={{ aspectRatio: "9/16", maxHeight: "calc(100vh - 280px)", width: "auto" }}>
                       <video
                         ref={videoRef}
                         key={selectedClip.objectUrl}
@@ -978,7 +978,7 @@ export default function SnsCreatorPage() {
                       <audio ref={bgmAudioRef} src={bgmObjectUrl} preload="auto" />
                     )}
                     {/* Transport bar — Premiere Pro style */}
-                    <div className="flex items-center gap-1 bg-card/80 rounded-lg px-2 py-1 border">
+                    <div className="flex items-center gap-1 bg-card/80 rounded-md px-2 py-0.5 border">
                       <Button variant="ghost" size="icon-xs" onClick={jumpToStart} title="先頭へ">
                         <SkipBack className="h-3.5 w-3.5" />
                       </Button>
@@ -1305,43 +1305,59 @@ export default function SnsCreatorPage() {
                     <p className="text-[10px] text-muted-foreground truncate">
                       {selectedClip.name} ({fmt(selectedClip.fullDuration)})
                     </p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="text-[10px] text-muted-foreground mb-0.5 block">イン</label>
-                        <input
-                          type="number"
-                          step="0.1"
-                          min="0"
-                          max={selectedClip.outPoint}
-                          value={selectedClip.inPoint.toFixed(1)}
-                          onChange={(e) =>
-                            updateClip(selectedClip.id, {
-                              inPoint: Math.max(0, Math.min(parseFloat(e.target.value) || 0, selectedClip.outPoint)),
-                            })
-                          }
-                          className="w-full rounded border bg-background px-2 py-1 text-[11px] font-mono"
-                        />
+
+                    {/* In point slider */}
+                    <div>
+                      <div className="flex items-center justify-between mb-0.5">
+                        <label className="text-[10px] text-muted-foreground">イン（開始）</label>
+                        <span className="text-[10px] font-mono text-muted-foreground">{fmt(selectedClip.inPoint)}</span>
                       </div>
-                      <div>
-                        <label className="text-[10px] text-muted-foreground mb-0.5 block">アウト</label>
-                        <input
-                          type="number"
-                          step="0.1"
-                          min={selectedClip.inPoint}
-                          max={selectedClip.fullDuration}
-                          value={selectedClip.outPoint.toFixed(1)}
-                          onChange={(e) =>
-                            updateClip(selectedClip.id, {
-                              outPoint: Math.min(selectedClip.fullDuration, Math.max(parseFloat(e.target.value) || 0, selectedClip.inPoint)),
-                            })
-                          }
-                          className="w-full rounded border bg-background px-2 py-1 text-[11px] font-mono"
-                        />
-                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max={selectedClip.fullDuration}
+                        step="0.1"
+                        value={selectedClip.inPoint}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          updateClip(selectedClip.id, {
+                            inPoint: Math.min(val, selectedClip.outPoint - 0.1),
+                          });
+                        }}
+                        className="w-full h-1.5 accent-primary cursor-pointer"
+                      />
                     </div>
-                    <p className="text-[10px] text-muted-foreground">
-                      使用区間: {fmt(selectedClip.outPoint - selectedClip.inPoint)}
-                    </p>
+
+                    {/* Out point slider */}
+                    <div>
+                      <div className="flex items-center justify-between mb-0.5">
+                        <label className="text-[10px] text-muted-foreground">アウト（終了）</label>
+                        <span className="text-[10px] font-mono text-muted-foreground">{fmt(selectedClip.outPoint)}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max={selectedClip.fullDuration}
+                        step="0.1"
+                        value={selectedClip.outPoint}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          updateClip(selectedClip.id, {
+                            outPoint: Math.max(val, selectedClip.inPoint + 0.1),
+                          });
+                        }}
+                        className="w-full h-1.5 accent-primary cursor-pointer"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between pt-0.5">
+                      <p className="text-[10px] text-muted-foreground">
+                        使用区間: {fmt(selectedClip.outPoint - selectedClip.inPoint)}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        全長: {fmt(selectedClip.fullDuration)}
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>

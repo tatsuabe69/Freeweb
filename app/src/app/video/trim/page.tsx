@@ -149,46 +149,68 @@ export default function VideoTrimPage() {
                   src={videoUrl}
                   controls
                   onLoadedMetadata={handleVideoLoaded}
-                  className="w-full max-h-[400px]"
+                  className="w-full max-h-[calc(100vh-400px)]"
                 />
               </div>
 
               {duration > 0 && (
-                <p className="text-sm text-muted-foreground text-center">
-                  再生時間: {formatTime(duration)}
-                </p>
-              )}
+                <>
+                  <p className="text-sm text-muted-foreground text-center">
+                    再生時間: {formatTime(duration)}
+                  </p>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium mb-1 block">
-                    開始時間（秒）
-                  </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max={duration || undefined}
-                    value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
-                    className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">
-                    終了時間（秒）
-                  </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max={duration || undefined}
-                    value={endTime}
-                    onChange={(e) => setEndTime(e.target.value)}
-                    className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-                  />
-                </div>
-              </div>
+                  {/* Start time slider */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-sm font-medium">開始時間</label>
+                      <span className="text-sm font-mono text-muted-foreground">
+                        {formatTime(parseFloat(startTime) || 0)}
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max={duration}
+                      step="0.1"
+                      value={parseFloat(startTime) || 0}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value);
+                        const end = parseFloat(endTime) || duration;
+                        setStartTime(String(Math.min(val, end - 0.1)));
+                      }}
+                      className="w-full h-2 accent-primary cursor-pointer"
+                    />
+                  </div>
+
+                  {/* End time slider */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-sm font-medium">終了時間</label>
+                      <span className="text-sm font-mono text-muted-foreground">
+                        {formatTime(parseFloat(endTime) || duration)}
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max={duration}
+                      step="0.1"
+                      value={parseFloat(endTime) || duration}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value);
+                        const start = parseFloat(startTime) || 0;
+                        setEndTime(String(Math.max(val, start + 0.1)));
+                      }}
+                      className="w-full h-2 accent-primary cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Duration info */}
+                  <p className="text-sm text-muted-foreground text-center">
+                    トリミング後: {formatTime((parseFloat(endTime) || duration) - (parseFloat(startTime) || 0))}
+                  </p>
+                </>
+              )}
             </div>
           )}
 
