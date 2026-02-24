@@ -12,7 +12,6 @@ import {
   Pause,
   Plus,
   Trash2,
-  GripVertical,
   ArrowLeft,
   Smartphone,
   Volume2,
@@ -42,265 +41,21 @@ import {
   arrayMove,
   SortableContext,
   horizontalListSortingStrategy,
-  useSortable,
 } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 
-/* ================================================================
-   Types
-   ================================================================ */
-
-interface TimelineClip {
-  id: string;
-  file: File;
-  name: string;
-  fullDuration: number;
-  inPoint: number;
-  outPoint: number;
-  thumbnailUrl: string;
-  objectUrl: string;
-}
-
-interface TextOverlay {
-  id: string;
-  text: string;
-  position: "top" | "center" | "bottom";
-  size: "s" | "m" | "l";
-  color: string;
-}
-
-/* ================================================================
-   Constants
-   ================================================================ */
-
-const PLATFORMS = [
-  { id: "tiktok", label: "TikTok", w: 1080, h: 1920, maxDur: 600, note: "15〜60秒推奨" },
-  { id: "reels", label: "Reels", w: 1080, h: 1920, maxDur: 90, note: "最大90秒" },
-  { id: "shorts", label: "Shorts", w: 1080, h: 1920, maxDur: 60, note: "最大60秒" },
-] as const;
-
-const CROP_POSITIONS = [
-  { label: "上", value: "top" },
-  { label: "中央", value: "center" },
-  { label: "下", value: "bottom" },
-] as const;
-
-const AUDIO_MODES = [
-  { label: "元音声を保持", value: "keep", icon: Volume2 },
-  { label: "BGMで置換", value: "replace", icon: Music },
-  { label: "BGMをミックス", value: "mix", icon: Volume2 },
-  { label: "ミュート", value: "mute", icon: VolumeX },
-] as const;
-
-const QUALITY = [
-  { label: "高画質", value: "high", vBit: "8000k", aBit: "192k", buf: "16000k" },
-  { label: "標準", value: "standard", vBit: "4000k", aBit: "128k", buf: "8000k" },
-  { label: "軽量", value: "compact", vBit: "2000k", aBit: "96k", buf: "4000k" },
-] as const;
-
-const CLIP_COLORS = [
-  "bg-blue-500", "bg-violet-500", "bg-emerald-500", "bg-amber-500",
-  "bg-rose-500", "bg-cyan-500", "bg-indigo-500", "bg-lime-500",
-];
-
-const TIMELINE_PX_PER_SEC = 8;
-
-const TEXT_SIZES: Record<string, number> = { s: 36, m: 52, l: 72 };
-
-const TEXT_COLORS = [
-  { label: "白", value: "#ffffff" },
-  { label: "黒", value: "#000000" },
-  { label: "黄", value: "#ffff00" },
-  { label: "赤", value: "#ff3333" },
-];
-
-const TEXT_PREVIEW_SIZES: Record<string, number> = { s: 10, m: 14, l: 19 };
-
-/* ================================================================
-   Helpers
-   ================================================================ */
-
-let _idCounter = 0;
-function uid(): string {
-  return `clip-${Date.now()}-${_idCounter++}`;
-}
-
-function ext(name: string): string {
-  const m = name.match(/\.[^.]+$/);
-  return m ? m[0] : ".mp4";
-}
-
-function fmt(sec: number): string {
-  const m = Math.floor(sec / 60);
-  const s = Math.floor(sec % 60);
-  const ms = Math.floor((sec % 1) * 10);
-  return `${m}:${String(s).padStart(2, "0")}.${ms}`;
-}
-
-function fmtSize(bytes: number): string {
-  if (bytes === 0) return "0 B";
-  const k = 1024;
-  const u = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + u[i];
-}
-
-async function loadClipMeta(file: File): Promise<{ duration: number; thumb: string; url: string }> {
-  return new Promise((resolve, reject) => {
-    const video = document.createElement("video");
-    video.preload = "auto";
-    video.muted = true;
-    video.playsInline = true;
-    const url = URL.createObjectURL(file);
-    video.src = url;
-
-    video.onloadeddata = () => {
-      video.currentTime = Math.min(1, video.duration * 0.1);
-    };
-
-    video.onseeked = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = 160;
-      canvas.height = 90;
-      const ctx = canvas.getContext("2d")!;
-      ctx.drawImage(video, 0, 0, 160, 90);
-      const thumb = canvas.toDataURL("image/jpeg", 0.6);
-      resolve({ duration: video.duration, thumb, url });
-    };
-
-    video.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("動画を読み込めませんでした"));
-    };
-
-    // Timeout fallback — some videos never fire onseeked
-    setTimeout(() => {
-      if (video.duration) {
-        resolve({ duration: video.duration, thumb: "", url });
-      }
-    }, 5000);
-  });
-}
-
-/** Render text to a transparent PNG using Canvas (supports Japanese via browser fonts) */
-async function renderTextPng(
-  text: string,
-  fontSize: number,
-  color: string,
-  canvasWidth: number,
-): Promise<{ bytes: Uint8Array; height: number }> {
-  const canvas = document.createElement("canvas");
-  canvas.width = canvasWidth;
-
-  const font = `bold ${fontSize}px "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Meiryo", sans-serif`;
-
-  const tmpCtx = canvas.getContext("2d")!;
-  tmpCtx.font = font;
-
-  const lines = text.split("\n").filter((l) => l.length > 0);
-  if (lines.length === 0) return { bytes: new Uint8Array(0), height: 0 };
-
-  const lineH = fontSize * 1.5;
-  const pad = fontSize * 0.5;
-  canvas.height = Math.ceil(lines.length * lineH + pad * 2);
-
-  const ctx = canvas.getContext("2d")!;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.font = font;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "top";
-
-  // Outline for readability
-  const outlineColor = color === "#000000" || color === "#000" ? "#ffffff" : "#000000";
-  ctx.strokeStyle = outlineColor;
-  ctx.lineWidth = Math.max(fontSize / 5, 3);
-  ctx.lineJoin = "round";
-  ctx.miterLimit = 2;
-
-  for (let i = 0; i < lines.length; i++) {
-    ctx.strokeText(lines[i], canvas.width / 2, pad + i * lineH);
-  }
-
-  ctx.fillStyle = color;
-  for (let i = 0; i < lines.length; i++) {
-    ctx.fillText(lines[i], canvas.width / 2, pad + i * lineH);
-  }
-
-  const blob = await new Promise<Blob>((res) =>
-    canvas.toBlob((b) => res(b!), "image/png"),
-  );
-  const buf = await blob.arrayBuffer();
-  return { bytes: new Uint8Array(buf), height: canvas.height };
-}
-
-/* ================================================================
-   SortableClip — draggable clip block on the timeline
-   ================================================================ */
-
-function SortableClip({
-  clip,
-  index,
-  isSelected,
-  totalDuration,
-  onClick,
-}: {
-  clip: TimelineClip;
-  index: number;
-  isSelected: boolean;
-  totalDuration: number;
-  onClick: () => void;
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: clip.id,
-  });
-
-  const clipDur = clip.outPoint - clip.inPoint;
-  const widthPx = Math.max(clipDur * TIMELINE_PX_PER_SEC, 64);
-  const color = CLIP_COLORS[index % CLIP_COLORS.length];
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    width: `${widthPx}px`,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 50 : undefined,
-  };
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      onClick={onClick}
-      className={`
-        relative flex-shrink-0 h-14 rounded-md cursor-pointer select-none overflow-hidden
-        border-2 transition-colors
-        ${isSelected ? "border-white ring-1 ring-white/30" : "border-transparent hover:border-white/40"}
-      `}
-      {...attributes}
-    >
-      {/* Color bar + thumbnail background */}
-      <div className={`absolute inset-0 ${color} opacity-80`} />
-      {clip.thumbnailUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={clip.thumbnailUrl}
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-luminosity"
-        />
-      )}
-      {/* Content */}
-      <div className="relative flex items-center h-full px-2 gap-1.5">
-        <div {...listeners} className="cursor-grab active:cursor-grabbing shrink-0">
-          <GripVertical className="h-3.5 w-3.5 text-white/70" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-medium text-white truncate leading-tight">{clip.name}</p>
-          <p className="text-[9px] text-white/70 leading-tight">{fmt(clipDur)}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
+import type { TimelineClip, TextOverlay } from "./types";
+import {
+  PLATFORMS,
+  CROP_POSITIONS,
+  AUDIO_MODES,
+  QUALITY,
+  TIMELINE_PX_PER_SEC,
+  TEXT_SIZES,
+  TEXT_COLORS,
+  TEXT_PREVIEW_SIZES,
+} from "./constants";
+import { uid, ext, fmt, loadClipMeta, renderTextPng } from "./helpers";
+import { SortableClip } from "./_components/sortable-clip";
 
 /* ================================================================
    Main Component
@@ -593,7 +348,6 @@ export default function SnsCreatorPage() {
     if (!url) return;
     setTiktokLoading(true);
     try {
-      // 1リクエストでページ取得→音源抽出→ダウンロードを完結させる
       const res = await fetch("/api/tiktok/download", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -601,7 +355,6 @@ export default function SnsCreatorPage() {
       });
 
       if (!res.ok) {
-        // エラー詳細をできるだけ取得する
         let msg = `TikTok音源の取得に失敗 (HTTP ${res.status})`;
         try {
           const text = await res.text();
@@ -609,14 +362,12 @@ export default function SnsCreatorPage() {
             const data = JSON.parse(text);
             msg = data.error || msg;
           } catch {
-            // JSONでない場合は先頭200文字を表示
             msg += `: ${text.slice(0, 200)}`;
           }
         } catch { /* body読み取り失敗 */ }
         throw new Error(msg);
       }
 
-      // 成功時はaudio/mpegバイナリ + ヘッダにメタデータ
       const title = decodeURIComponent(res.headers.get("X-Music-Title") || "TikTok音源");
       const author = decodeURIComponent(res.headers.get("X-Music-Author") || "不明");
 
