@@ -16,6 +16,8 @@ import {
   Smartphone,
   Volume2,
   ExternalLink,
+  Youtube,
+  Instagram,
   Shield,
   Zap,
   Globe,
@@ -52,7 +54,9 @@ const items: DialItem[] = [
   { title: "音声抽出",       href: "/video/audio",       icon: Music,        color: "#ec4899", category: "動画", description: "動画からMP3/WAV/AAC形式で音声だけを抽出・保存。", related: [13, 14], steps: ["動画をアップロード", "音声形式を選択", "音声をダウンロード"] },
   { title: "SNS動画作成",    href: "/video/sns",         icon: Smartphone,   color: "#6b7280", category: "動画", description: "複数クリップ編集・テロップ・BGMを1画面で。SNS投稿用の縦動画を作成。", related: [10, 13], steps: ["動画クリップを追加", "テロップ・BGMを設定", "SNS向けに書き出し"] },
   { title: "BGM追加",        href: "/video/bgm",         icon: Volume2,      color: "#a855f7", category: "動画", description: "動画に音楽を追加。元音声とのミックスや置換も対応。", related: [12, 11], steps: ["動画をアップロード", "音楽ファイルを追加", "ミックスしてダウンロード"] },
-  { title: "TikTok音源取得", href: "/video/tiktok-sound", icon: ExternalLink, color: "#06b6d4", category: "動画", description: "TikTok動画のURLから使用されている音源を取得・保存。", related: [13, 12], steps: ["TikTokのURLを貼り付け", "音源情報を確認", "MP3でダウンロード"] },
+  { title: "TikTok音源取得", href: "/video/tiktok-sound", icon: ExternalLink, color: "#06b6d4", category: "動画", description: "TikTok動画のURLから使用されている音源を取得・保存。", related: [15, 16], steps: ["TikTokのURLを貼り付け", "音源情報を確認", "MP3でダウンロード"] },
+  { title: "YouTube音源取得", href: "/video/youtube-sound", icon: Youtube, color: "#ff0000", category: "動画", description: "YouTube動画のURLから音声（BGM・楽曲・ナレーション）を抽出・保存。", related: [14, 16], steps: ["YouTubeのURLを貼り付け", "音源を自動取得", "M4A/WebMでダウンロード"] },
+  { title: "Instagram音源取得", href: "/video/instagram-sound", icon: Instagram, color: "#e1306c", category: "動画", description: "Instagramリール・動画投稿のURLから音源を取得・保存。", related: [14, 15], steps: ["InstagramのURLを貼り付け", "音源を自動取得", "MP4でダウンロード"] },
 ];
 
 /* ================================================================
