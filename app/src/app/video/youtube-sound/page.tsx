@@ -38,10 +38,39 @@ export default function YouTubeSoundPage() {
         return;
       }
 
+      const ct = res.headers.get("Content-Type") ?? "";
+
+      // Handle redirect response (y2mate returns a direct download link)
+      if (ct.includes("application/json")) {
+        const data = await res.json() as { redirect?: string; title?: string; author?: string; error?: string };
+        if (data.error) {
+          setError(data.error);
+          return;
+        }
+        if (data.redirect) {
+          // Download from the redirect URL
+          const dlRes = await fetch(data.redirect);
+          if (!dlRes.ok) {
+            setError("音源のダウンロードに失敗しました");
+            return;
+          }
+          const blob = await dlRes.blob();
+          const dlCt = dlRes.headers.get("Content-Type") ?? "audio/mpeg";
+          const ext = dlCt.includes("webm") ? ".webm" : dlCt.includes("mp4") ? ".m4a" : ".mp3";
+          setMusic({
+            title: data.title ?? "YouTube音源",
+            author: data.author ?? "不明",
+            blob,
+            ext,
+          });
+          return;
+        }
+      }
+
+      // Handle proxied audio response (Piped/Invidious/Innertube)
       const title = decodeURIComponent(res.headers.get("X-Music-Title") ?? "YouTube音源");
       const author = decodeURIComponent(res.headers.get("X-Music-Author") ?? "不明");
-      const ct = res.headers.get("Content-Type") ?? "audio/mp4";
-      const ext = ct.includes("webm") ? ".webm" : ".m4a";
+      const ext = ct.includes("webm") ? ".webm" : ct.includes("mpeg") ? ".mp3" : ".m4a";
       const blob = await res.blob();
 
       setMusic({ title, author, blob, ext });

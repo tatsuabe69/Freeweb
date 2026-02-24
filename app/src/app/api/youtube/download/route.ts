@@ -25,8 +25,6 @@ const INVIDIOUS_INSTANCES = [
   "https://invidious.privacyredirect.com",
 ];
 
-const INNERTUBE_API = "https://www.youtube.com/youtubei/v1/player";
-
 /**
  * POST /api/youtube/download
  * YouTubeのURLから音声ストリームを取得してプロキシ
@@ -50,8 +48,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const canonicalUrl = `https://www.youtube.com/watch?v=${videoId}`;
+
     // Try multiple strategies in order of reliability
     const result =
+      (await tryY2mateApi(videoId, canonicalUrl)) ??
       (await tryPipedApi(videoId)) ??
       (await tryInvidiousApi(videoId)) ??
       (await tryInnertubeApi(videoId));
@@ -66,9 +67,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // If result URL is a direct download link (y2mate dlink), redirect
+    if (result.url.startsWith("http") && result.mimeType === "redirect") {
+      return NextResponse.json({
+        redirect: result.url,
+        title: result.title,
+        author: result.author,
+      });
+    }
+
     // Download the audio stream via proxy
     const audioRes = await fetch(result.url, {
-      headers: { "User-Agent": UA },
+      headers: {
+        "User-Agent": UA,
+        Referer: "https://www.youtube.com/",
+        Origin: "https://www.youtube.com",
+      },
     });
 
     if (!audioRes.ok) {
@@ -88,8 +102,15 @@ export async function POST(request: NextRequest) {
 
     const contentType = result.mimeType.includes("webm")
       ? "audio/webm"
-      : "audio/mp4";
-    const fileExt = contentType === "audio/webm" ? ".webm" : ".m4a";
+      : result.mimeType.includes("mp3") || result.mimeType.includes("mpeg")
+        ? "audio/mpeg"
+        : "audio/mp4";
+    const fileExt =
+      contentType === "audio/webm"
+        ? ".webm"
+        : contentType === "audio/mpeg"
+          ? ".mp3"
+          : ".m4a";
 
     const safeName =
       sanitizeFilename(`${result.title} - ${result.author}`) + fileExt;
@@ -117,7 +138,114 @@ export async function POST(request: NextRequest) {
 }
 
 /* ================================================================
- * Strategy 1: Piped API (most reliable)
+ * Strategy 1: Y2mate API (two-step: analyze → convert)
+ * Most reliable — same approach used by y2mate.com
+ * ================================================================ */
+
+async function tryY2mateApi(
+  videoId: string,
+  canonicalUrl: string,
+): Promise<AudioResult | null> {
+  try {
+    // Step 1: Analyze — get available formats
+    const analyzeRes = await fetch(
+      "https://www.y2mate.com/mates/analyzeV2/ajax",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "User-Agent": UA,
+          Referer: "https://www.y2mate.com/",
+          Origin: "https://www.y2mate.com",
+        },
+        body: new URLSearchParams({
+          k_query: canonicalUrl,
+          k_page: "home",
+          hl: "ja",
+          q_auto: "0",
+        }).toString(),
+        signal: AbortSignal.timeout(15000),
+      },
+    );
+
+    if (!analyzeRes.ok) return null;
+
+    const analyzeData = (await analyzeRes.json()) as Record<string, unknown>;
+    if (analyzeData.status !== "ok") return null;
+
+    const title = (analyzeData.title as string) ?? "YouTube音源";
+    const author = (analyzeData.a as string) ?? "不明";
+
+    // Find the best MP3 link
+    const links = analyzeData.links as Record<string, unknown> | undefined;
+    if (!links) return null;
+
+    // Try mp3 first, then m4a
+    const mp3Links = links.mp3 as Record<string, Record<string, unknown>> | undefined;
+
+    let bestKey: string | null = null;
+
+    if (mp3Links) {
+      // Sort by quality (higher bitrate first)
+      const entries = Object.values(mp3Links);
+      // Prefer 128kbps mp3 (most reliable), then higher
+      const sorted = entries.sort((a, b) => {
+        const aQ = parseInt(String(a.q ?? "0"));
+        const bQ = parseInt(String(b.q ?? "0"));
+        return bQ - aQ;
+      });
+
+      for (const entry of sorted) {
+        if (entry.k) {
+          bestKey = entry.k as string;
+          break;
+        }
+      }
+    }
+
+    if (!bestKey) return null;
+
+    // Step 2: Convert — get download URL
+    const convertRes = await fetch(
+      "https://www.y2mate.com/mates/convertV2/index",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "User-Agent": UA,
+          Referer: "https://www.y2mate.com/",
+          Origin: "https://www.y2mate.com",
+        },
+        body: new URLSearchParams({
+          vid: videoId,
+          k: bestKey,
+        }).toString(),
+        signal: AbortSignal.timeout(30000),
+      },
+    );
+
+    if (!convertRes.ok) return null;
+
+    const convertData = (await convertRes.json()) as Record<string, unknown>;
+    if (convertData.status !== "ok") return null;
+
+    const dlink = convertData.dlink as string | undefined;
+    if (!dlink) return null;
+
+    // y2mate returns a direct download link — use redirect mode
+    return {
+      url: dlink,
+      mimeType: "redirect",
+      title,
+      author,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/* ================================================================
+ * Strategy 2: Piped API
  * https://github.com/TeamPiped/Piped
  * ================================================================ */
 
@@ -137,7 +265,6 @@ async function tryPipedApi(videoId: string): Promise<AudioResult | null> {
       >;
       if (audioStreams.length === 0) continue;
 
-      // Sort by bitrate (highest first), prefer m4a
       const sorted = [...audioStreams].sort((a, b) => {
         const aBit = (a.bitrate as number) ?? 0;
         const bBit = (b.bitrate as number) ?? 0;
@@ -162,7 +289,7 @@ async function tryPipedApi(videoId: string): Promise<AudioResult | null> {
 }
 
 /* ================================================================
- * Strategy 2: Invidious API
+ * Strategy 3: Invidious API
  * https://github.com/iv-org/invidious
  * ================================================================ */
 
@@ -184,7 +311,6 @@ async function tryInvidiousApi(videoId: string): Promise<AudioResult | null> {
         Record<string, unknown>
       >;
 
-      // Filter audio-only, sort by bitrate
       const audioFormats = formats
         .filter((f) => {
           const type = (f.type as string) ?? "";
@@ -216,7 +342,7 @@ async function tryInvidiousApi(videoId: string): Promise<AudioResult | null> {
 }
 
 /* ================================================================
- * Strategy 3: YouTube Innertube API (fallback)
+ * Strategy 4: YouTube Innertube API (last resort)
  * ================================================================ */
 
 async function tryInnertubeApi(videoId: string): Promise<AudioResult | null> {
@@ -257,15 +383,18 @@ async function tryInnertubeApi(videoId: string): Promise<AudioResult | null> {
 
   for (const client of clients) {
     try {
-      const res = await fetch(INNERTUBE_API, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "User-Agent": client.ua,
+      const res = await fetch(
+        "https://www.youtube.com/youtubei/v1/player",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "User-Agent": client.ua,
+          },
+          body: JSON.stringify(client.body),
+          signal: AbortSignal.timeout(10000),
         },
-        body: JSON.stringify(client.body),
-        signal: AbortSignal.timeout(10000),
-      });
+      );
 
       if (!res.ok) continue;
 
