@@ -97,9 +97,9 @@ export default function SnsCreatorPage() {
   const [origVol, setOrigVol] = useState(30);
   const [bgmVol, setBgmVol] = useState(70);
 
-  /* ── TikTok BGM ─────────────────────────────── */
-  const [tiktokUrl, setTiktokUrl] = useState("");
-  const [tiktokLoading, setTiktokLoading] = useState(false);
+  /* ── SNS BGM (TikTok / YouTube / Instagram) ── */
+  const [snsBgmUrl, setSnsBgmUrl] = useState("");
+  const [snsBgmLoading, setSnsBgmLoading] = useState(false);
 
   /* ── Text overlays (テロップ) ────────────────── */
   const [overlays, setOverlays] = useState<TextOverlay[]>([]);
@@ -303,48 +303,50 @@ export default function SnsCreatorPage() {
   /** Play all clips in sequence from the first clip */
   const playAll = useCallback(() => {
     if (clips.length === 0) return;
+    seqPlayRef.current = true;
+
     const bgm = bgmAudioRef.current;
     const useBgm = bgmFile && (audioMode === "replace" || audioMode === "mix");
     if (bgm && useBgm) {
       bgm.currentTime = bgmStartOffset;
+      bgm.play().catch(() => {});
     }
-    seqPlayRef.current = true;
-    setSelectedId(clips[0].id);
-    setPlaying(true);
-  }, [clips, bgmFile, audioMode, bgmStartOffset]);
 
-  // Auto-play when clip changes during sequential playback
-  // Also seek to inPoint on clip selection
+    const firstClip = clips[0];
+    if (selectedId === firstClip.id) {
+      // Already on first clip — play directly (effect won't re-fire)
+      const v = videoRef.current;
+      if (v) {
+        v.currentTime = firstClip.inPoint;
+        v.play().catch(() => {});
+      }
+    } else {
+      // Switch to first clip — onLoadedData handler will auto-play
+      setSelectedId(firstClip.id);
+    }
+    setPlaying(true);
+  }, [clips, selectedId, bgmFile, audioMode, bgmStartOffset]);
+
+  // Seek to inPoint when clip selection changes.
+  // Sequential auto-play after source change is handled by onLoadedData on the <video>.
+  // This effect handles: (a) same-source clips during sequential play, (b) normal clip selection.
   useEffect(() => {
     const v = videoRef.current;
     if (!v || !selectedClip) return;
 
-    const onReady = () => {
+    if (v.readyState >= 2) {
+      // Video already loaded (same source / element persisted)
+      v.currentTime = selectedClip.inPoint;
       if (seqPlayRef.current) {
-        // Sequential playback: seek to inPoint and play
-        v.currentTime = selectedClip.inPoint;
         v.play().catch(() => {});
-        const bgm = bgmAudioRef.current;
-        const useBgm = bgmFile && (audioMode === "replace" || audioMode === "mix");
-        if (bgm && useBgm && bgm.paused) {
-          bgm.play().catch(() => {});
-        }
         setPlaying(true);
       } else {
-        // Normal selection: just seek to inPoint
-        v.currentTime = selectedClip.inPoint;
         setCurrentTime(selectedClip.inPoint);
       }
-    };
-
-    if (v.readyState >= 2) {
-      onReady();
-    } else {
-      v.addEventListener("loadeddata", onReady, { once: true });
-      return () => v.removeEventListener("loadeddata", onReady);
     }
+    // If readyState < 2 (new source, element recreated), onLoadedData prop handles it
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedClip?.id, bgmFile, audioMode]);
+  }, [selectedClip?.id]);
 
   // Track time & handle sequential clip transitions + enforce outPoint
   useEffect(() => {
@@ -406,22 +408,6 @@ export default function SnsCreatorPage() {
     };
   }, [selectedClip, clips]);
 
-  /* ── Ctrl+Wheel zoom on timeline ──────────── */
-  useEffect(() => {
-    const el = timelineRef.current;
-    if (!el) return;
-    const onWheel = (e: WheelEvent) => {
-      if (!e.ctrlKey && !e.metaKey) return;
-      e.preventDefault();
-      const delta = -e.deltaY * 0.005;
-      setTimelineZoom((z) =>
-        Math.round(Math.max(TIMELINE_ZOOM_MIN, Math.min(TIMELINE_ZOOM_MAX, z + delta)) * 20) / 20,
-      );
-    };
-    el.addEventListener("wheel", onWheel, { passive: false });
-    return () => el.removeEventListener("wheel", onWheel);
-  }, []);
-
   /* ── BGM object URL & duration ──────────────── */
   useEffect(() => {
     if (!bgmFile) {
@@ -472,20 +458,43 @@ export default function SnsCreatorPage() {
     if (bgmInputRef.current) bgmInputRef.current.value = "";
   }, []);
 
-  /* ── TikTok BGM handler ─────────────────────── */
-  const handleTikTokBgm = async () => {
-    const url = tiktokUrl.trim();
-    if (!url) return;
-    setTiktokLoading(true);
+  /* ── SNS BGM handler (TikTok / YouTube / Instagram) ── */
+  const detectPlatform = (url: string): "tiktok" | "youtube" | "instagram" | null => {
     try {
-      const res = await fetch("/api/tiktok/download", {
+      const h = new URL(url).hostname;
+      if (/tiktok\.com$/.test(h)) return "tiktok";
+      if (/youtu\.?be(\.com)?$/.test(h)) return "youtube";
+      if (/instagram\.com$/.test(h)) return "instagram";
+    } catch { /* invalid URL */ }
+    return null;
+  };
+
+  const handleSnsBgm = async () => {
+    const url = snsBgmUrl.trim();
+    if (!url) return;
+    const plf = detectPlatform(url);
+    if (!plf) {
+      alert("TikTok、YouTube、またはInstagramのURLを入力してください");
+      return;
+    }
+    setSnsBgmLoading(true);
+    try {
+      const apiEndpoint = plf === "tiktok"
+        ? "/api/tiktok/download"
+        : plf === "youtube"
+          ? "/api/youtube/download"
+          : "/api/instagram/download";
+
+      const bodyKey = plf === "tiktok" ? "tiktokVideoUrl" : "url";
+
+      const res = await fetch(apiEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tiktokVideoUrl: url }),
+        body: JSON.stringify({ [bodyKey]: url }),
       });
 
       if (!res.ok) {
-        let msg = `TikTok音源の取得に失敗 (HTTP ${res.status})`;
+        let msg = `音源の取得に失敗 (HTTP ${res.status})`;
         try {
           const text = await res.text();
           try {
@@ -498,7 +507,7 @@ export default function SnsCreatorPage() {
         throw new Error(msg);
       }
 
-      const title = decodeURIComponent(res.headers.get("X-Music-Title") || "TikTok音源");
+      const title = decodeURIComponent(res.headers.get("X-Music-Title") || "音源");
       const author = decodeURIComponent(res.headers.get("X-Music-Author") || "不明");
 
       const blob = await res.blob();
@@ -506,16 +515,16 @@ export default function SnsCreatorPage() {
 
       setBgmFile(file);
       setBgmName(`${title} - ${author}`);
-      setTiktokUrl("");
+      setSnsBgmUrl("");
 
       if (audioMode === "keep" || audioMode === "mute") {
         setAudioMode("replace");
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "TikTok音源の取得に失敗しました";
+      const msg = err instanceof Error ? err.message : "音源の取得に失敗しました";
       alert(msg);
     } finally {
-      setTiktokLoading(false);
+      setSnsBgmLoading(false);
     }
   };
 
@@ -810,7 +819,7 @@ export default function SnsCreatorPage() {
     setResult(null);
     setPlaying(false);
     setOverlays([]);
-    setTiktokUrl("");
+    setSnsBgmUrl("");
   };
 
   /* ================================================================
@@ -985,31 +994,31 @@ export default function SnsCreatorPage() {
                       <Music className="h-3 w-3" /> ファイルからBGMを追加
                     </button>
 
-                    {/* TikTok BGM input */}
+                    {/* SNS BGM input (TikTok / YouTube / Instagram) */}
                     <div className="rounded-md border border-border/60 p-2 space-y-1.5">
                       <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                         <Link2 className="h-3 w-3" />
-                        <span>TikTokから音源を取得</span>
+                        <span>SNSから音源を取得</span>
                       </div>
                       <div className="flex gap-1">
                         <input
                           type="text"
-                          placeholder="TikTokのURLを貼り付け"
-                          value={tiktokUrl}
-                          onChange={(e) => setTiktokUrl(e.target.value)}
+                          placeholder="TikTok / YouTube / Instagram URL"
+                          value={snsBgmUrl}
+                          onChange={(e) => setSnsBgmUrl(e.target.value)}
                           onKeyDown={(e) => {
-                            if (e.key === "Enter") handleTikTokBgm();
+                            if (e.key === "Enter") handleSnsBgm();
                           }}
                           className="flex-1 min-w-0 rounded border bg-background px-2 py-1 text-[11px] placeholder:text-muted-foreground/50"
                         />
                         <Button
                           variant="ghost"
                           size="icon-xs"
-                          onClick={handleTikTokBgm}
-                          disabled={tiktokLoading || !tiktokUrl.trim()}
+                          onClick={handleSnsBgm}
+                          disabled={snsBgmLoading || !snsBgmUrl.trim()}
                           title="音源を取得"
                         >
-                          {tiktokLoading ? (
+                          {snsBgmLoading ? (
                             <Loader2 className="h-3 w-3 animate-spin" />
                           ) : (
                             <Search className="h-3 w-3" />
@@ -1017,7 +1026,7 @@ export default function SnsCreatorPage() {
                         </Button>
                       </div>
                       <p className="text-[9px] text-muted-foreground/60">
-                        短縮URL (vm.tiktok.com) にも対応
+                        TikTok・YouTube・Instagram対応
                       </p>
                     </div>
                   </div>
@@ -1049,6 +1058,25 @@ export default function SnsCreatorPage() {
                         style={{ transform: rotation ? `rotate(${rotation}deg)` : undefined }}
                         playsInline
                         muted={audioMode === "mute" || audioMode === "replace"}
+                        onLoadedData={() => {
+                          // Fires when a new source loads (element recreated via key change).
+                          // Handles sequential auto-play for different-file clips.
+                          const v = videoRef.current;
+                          if (!v || !selectedClip) return;
+                          if (seqPlayRef.current) {
+                            v.currentTime = selectedClip.inPoint;
+                            v.play().catch(() => {});
+                            setPlaying(true);
+                            const bgm = bgmAudioRef.current;
+                            const useBgm = bgmFile && (audioMode === "replace" || audioMode === "mix");
+                            if (bgm && useBgm && bgm.paused) {
+                              bgm.play().catch(() => {});
+                            }
+                          } else {
+                            v.currentTime = selectedClip.inPoint;
+                            setCurrentTime(selectedClip.inPoint);
+                          }
+                        }}
                       />
                       {/* Text overlay preview */}
                       {overlays.filter((o) => o.text.trim()).map((o) => (
@@ -1486,31 +1514,42 @@ export default function SnsCreatorPage() {
                 <span className="text-[10px] text-neutral-500 font-mono tabular-nums">
                   合計 {fmt(totalDuration)}
                 </span>
-                <div className="border-l border-neutral-700 h-4 mx-0.5" />
-                {/* Zoom controls */}
+                <div className="border-l border-neutral-700 h-4 mx-1" />
+                {/* Zoom controls — prominent buttons */}
                 <Button
                   variant="ghost"
-                  size="icon-xs"
+                  size="sm"
                   onClick={() => setTimelineZoom((z) => Math.max(TIMELINE_ZOOM_MIN, z - TIMELINE_ZOOM_STEP))}
                   disabled={timelineZoom <= TIMELINE_ZOOM_MIN}
-                  className="text-neutral-400 hover:text-neutral-200 h-5 w-5"
+                  className="text-neutral-300 hover:text-white hover:bg-neutral-700 h-6 w-6 p-0"
                   title="ズームアウト"
                 >
-                  <ZoomOut className="h-3 w-3" />
+                  <ZoomOut className="h-4 w-4" />
                 </Button>
-                <span className="text-[9px] text-neutral-500 font-mono w-8 text-center tabular-nums">
-                  {timelineZoom.toFixed(1)}x
-                </span>
+                {/* Zoom slider */}
+                <input
+                  type="range"
+                  min={TIMELINE_ZOOM_MIN}
+                  max={TIMELINE_ZOOM_MAX}
+                  step={0.1}
+                  value={timelineZoom}
+                  onChange={(e) => setTimelineZoom(Number(e.target.value))}
+                  className="w-16 h-1 accent-blue-400 cursor-pointer"
+                  title={`ズーム ${timelineZoom.toFixed(1)}x`}
+                />
                 <Button
                   variant="ghost"
-                  size="icon-xs"
+                  size="sm"
                   onClick={() => setTimelineZoom((z) => Math.min(TIMELINE_ZOOM_MAX, z + TIMELINE_ZOOM_STEP))}
                   disabled={timelineZoom >= TIMELINE_ZOOM_MAX}
-                  className="text-neutral-400 hover:text-neutral-200 h-5 w-5"
+                  className="text-neutral-300 hover:text-white hover:bg-neutral-700 h-6 w-6 p-0"
                   title="ズームイン"
                 >
-                  <ZoomIn className="h-3 w-3" />
+                  <ZoomIn className="h-4 w-4" />
                 </Button>
+                <span className="text-[10px] text-neutral-400 font-mono w-8 text-center tabular-nums">
+                  {timelineZoom.toFixed(1)}x
+                </span>
               </div>
             </div>
 
