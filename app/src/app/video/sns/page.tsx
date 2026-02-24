@@ -276,20 +276,21 @@ export default function SnsCreatorPage() {
   }, []);
 
   /* ── Preview transport ─────────────────────── */
+  // Play/pause: always uses sequential mode so playback continues through all clips
   const togglePlay = useCallback(() => {
     const v = videoRef.current;
     if (!v || !selectedClip) return;
     const bgm = bgmAudioRef.current;
     const useBgm = bgmFile && (audioMode === "replace" || audioMode === "mix");
     if (v.paused) {
+      seqPlayRef.current = true; // always sequential
       // If past outPoint or before inPoint, seek to inPoint first
       if (v.currentTime < selectedClip.inPoint || v.currentTime >= selectedClip.outPoint - 0.05) {
         v.currentTime = selectedClip.inPoint;
       }
       v.play();
       if (bgm && useBgm) {
-        if (!seqPlayRef.current) bgm.currentTime = bgmStartOffset;
-        bgm.play();
+        bgm.play().catch(() => {});
       }
       setPlaying(true);
     } else {
@@ -298,34 +299,7 @@ export default function SnsCreatorPage() {
       setPlaying(false);
       seqPlayRef.current = false;
     }
-  }, [bgmFile, audioMode, bgmStartOffset, selectedClip]);
-
-  /** Play all clips in sequence from the first clip */
-  const playAll = useCallback(() => {
-    if (clips.length === 0) return;
-    seqPlayRef.current = true;
-
-    const bgm = bgmAudioRef.current;
-    const useBgm = bgmFile && (audioMode === "replace" || audioMode === "mix");
-    if (bgm && useBgm) {
-      bgm.currentTime = bgmStartOffset;
-      bgm.play().catch(() => {});
-    }
-
-    const firstClip = clips[0];
-    if (selectedId === firstClip.id) {
-      // Already on first clip — play directly (effect won't re-fire)
-      const v = videoRef.current;
-      if (v) {
-        v.currentTime = firstClip.inPoint;
-        v.play().catch(() => {});
-      }
-    } else {
-      // Switch to first clip — onLoadedData handler will auto-play
-      setSelectedId(firstClip.id);
-    }
-    setPlaying(true);
-  }, [clips, selectedId, bgmFile, audioMode, bgmStartOffset]);
+  }, [bgmFile, audioMode, selectedClip]);
 
   // Seek to inPoint when clip selection changes.
   // Sequential auto-play after source change is handled by onLoadedData on the <video>.
@@ -1136,19 +1110,6 @@ export default function SnsCreatorPage() {
                       <Button variant="ghost" size="icon-xs" onClick={jumpToEnd} title="末尾へ">
                         <SkipForward className="h-3.5 w-3.5" />
                       </Button>
-                      <div className="border-l mx-1 h-4" />
-                      {clips.length > 1 && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={playAll}
-                          disabled={playing}
-                          className="text-[10px] h-6 px-2"
-                          title="全クリップを通して再生"
-                        >
-                          全再生
-                        </Button>
-                      )}
                       {/* Rotation controls */}
                       <div className="border-l mx-1 h-4" />
                       <Button
@@ -1461,26 +1422,59 @@ export default function SnsCreatorPage() {
                   </div>
                 </div>
 
-                {/* Selected clip info (trim via timeline handles) */}
+                {/* Selected clip — trimming controls */}
                 {selectedClip && (
-                  <div className="rounded-md bg-muted/30 p-2.5 space-y-1">
+                  <div className="rounded-md bg-muted/30 p-2.5 space-y-2">
                     <p className="text-[11px] font-medium truncate">{selectedClip.name}</p>
-                    <div className="grid grid-cols-3 gap-1 text-[10px] text-muted-foreground">
-                      <div>
-                        <span className="block text-[9px] uppercase tracking-wider opacity-60">In</span>
-                        <span className="font-mono">{fmt(selectedClip.inPoint)}</span>
+
+                    {/* In point slider */}
+                    <div>
+                      <div className="flex justify-between text-[10px] mb-0.5">
+                        <span className="text-muted-foreground">In</span>
+                        <span className="font-mono text-muted-foreground">{fmt(selectedClip.inPoint)}</span>
                       </div>
-                      <div>
-                        <span className="block text-[9px] uppercase tracking-wider opacity-60">Out</span>
-                        <span className="font-mono">{fmt(selectedClip.outPoint)}</span>
-                      </div>
-                      <div>
-                        <span className="block text-[9px] uppercase tracking-wider opacity-60">使用</span>
-                        <span className="font-mono">{fmt(selectedClip.outPoint - selectedClip.inPoint)}</span>
-                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max={selectedClip.fullDuration}
+                        step="0.01"
+                        value={selectedClip.inPoint}
+                        onChange={(e) => {
+                          const newIn = Math.min(Number(e.target.value), selectedClip.outPoint - 0.1);
+                          updateClip(selectedClip.id, { inPoint: Math.max(0, newIn) });
+                        }}
+                        className="w-full h-1 accent-primary"
+                      />
                     </div>
+
+                    {/* Out point slider */}
+                    <div>
+                      <div className="flex justify-between text-[10px] mb-0.5">
+                        <span className="text-muted-foreground">Out</span>
+                        <span className="font-mono text-muted-foreground">{fmt(selectedClip.outPoint)}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max={selectedClip.fullDuration}
+                        step="0.01"
+                        value={selectedClip.outPoint}
+                        onChange={(e) => {
+                          const newOut = Math.max(Number(e.target.value), selectedClip.inPoint + 0.1);
+                          updateClip(selectedClip.id, { outPoint: Math.min(selectedClip.fullDuration, newOut) });
+                        }}
+                        className="w-full h-1 accent-primary"
+                      />
+                    </div>
+
+                    {/* Duration info */}
+                    <div className="flex justify-between text-[10px] text-muted-foreground pt-1 border-t border-border/30">
+                      <span>使用時間</span>
+                      <span className="font-mono">{fmt(selectedClip.outPoint - selectedClip.inPoint)} / {fmt(selectedClip.fullDuration)}</span>
+                    </div>
+
                     <p className="text-[9px] text-muted-foreground/60">
-                      タイムラインでクリップ端をドラッグしてトリミング
+                      スライダーまたはタイムラインのクリップ端をドラッグ
                     </p>
                   </div>
                 )}

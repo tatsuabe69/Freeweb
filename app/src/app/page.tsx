@@ -56,11 +56,11 @@ const items: DialItem[] = [
 ];
 
 /* ================================================================
-   Half-circle dial on the left edge — compact layout
+   Half-circle dial — large, centered layout
    ================================================================ */
 
-const ARC_RADIUS = 240;           // radius of the half-circle (compact)
-const ITEM_SPACING = 24;          // degrees between items
+const ARC_RADIUS = 360;           // large radius
+const ITEM_SPACING = 26;          // degrees between items
 const VISIBLE_RANGE = 5;          // items visible above/below center
 
 /* Category tools for the grid */
@@ -92,7 +92,6 @@ export default function HomePage() {
     const clampedTarget = Math.max(0, Math.min(snapTarget, maxOffset));
 
     if (Math.abs(velocity) > 0.3) {
-      // Momentum
       const id = requestAnimationFrame(() => {
         setScrollOffset((o) => {
           const next = o + velocity;
@@ -104,7 +103,6 @@ export default function HomePage() {
       return () => cancelAnimationFrame(id);
     }
 
-    // Snap
     const diff = clampedTarget - scrollOffset;
     if (Math.abs(diff) > 0.3) {
       const id = requestAnimationFrame(() => {
@@ -152,7 +150,7 @@ export default function HomePage() {
     if (!isDragging || !dragRef.current) return;
     setIsDragging(false);
     const dy = e.clientY - dragRef.current.startY;
-    const dt = 1; // simplify
+    const dt = 1;
     setVelocity((-dy * 0.05) / dt);
     dragRef.current = null;
   };
@@ -160,238 +158,241 @@ export default function HomePage() {
   const CenterIcon = centerItem.icon;
 
   return (
-    <div className="min-h-[calc(100vh-60px)] flex overflow-hidden">
-      {/* ── Left: Half-circle dial (compact) ───── */}
-      <div
-        ref={containerRef}
-        className="relative select-none touch-none cursor-grab active:cursor-grabbing shrink-0"
-        style={{ width: ARC_RADIUS + 60 }}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-      >
-        {/* Arc background — subtle semicircle */}
+    <div className="min-h-[calc(100vh-60px)] flex justify-center overflow-hidden">
+      {/* ── Centered wrapper ── */}
+      <div className="flex items-stretch w-full max-w-5xl">
+        {/* ── Left: Half-circle dial (large) ───── */}
         <div
-          className="absolute rounded-full border border-border/15 pointer-events-none"
-          style={{
-            width: ARC_RADIUS * 2,
-            height: ARC_RADIUS * 2,
-            left: -ARC_RADIUS + 40,
-            top: "50%",
-            transform: "translateY(-50%)",
-          }}
-        />
-
-        {/* Center indicator line */}
-        <div
-          className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none z-30"
-          style={{ width: 40, height: 2 }}
+          ref={containerRef}
+          className="relative select-none touch-none cursor-grab active:cursor-grabbing shrink-0"
+          style={{ width: ARC_RADIUS + 80 }}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
         >
-          <div className="h-full w-full" style={{ background: `linear-gradient(to right, transparent, ${centerItem.color})` }} />
-        </div>
+          {/* Arc background — subtle semicircle */}
+          <div
+            className="absolute rounded-full border border-border/15 pointer-events-none"
+            style={{
+              width: ARC_RADIUS * 2,
+              height: ARC_RADIUS * 2,
+              left: -ARC_RADIUS + 50,
+              top: "50%",
+              transform: "translateY(-50%)",
+            }}
+          />
 
-        {/* Tick marks on the arc */}
-        {Array.from({ length: 36 }).map((_, i) => {
-          const tickAngle = (i * 10 - 180) * (Math.PI / 180);
-          const r = ARC_RADIUS - 4;
-          const x = 40 + Math.cos(tickAngle) * r;
-          const y = Math.sin(tickAngle) * r;
-          if (x < -10) return null;
-          return (
-            <div
-              key={i}
-              className="absolute pointer-events-none"
-              style={{
-                width: i % 3 === 0 ? 5 : 2,
-                height: 1,
-                backgroundColor: "var(--color-border)",
-                opacity: 0.2,
-                left: 40 + Math.cos(tickAngle) * r,
-                top: `calc(50% + ${y}px)`,
-              }}
-            />
-          );
-        })}
+          {/* Center indicator line */}
+          <div
+            className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none z-30"
+            style={{ width: 60, height: 2 }}
+          >
+            <div className="h-full w-full" style={{ background: `linear-gradient(to right, transparent, ${centerItem.color})` }} />
+          </div>
 
-        {/* Items placed on the arc — icons only, no text labels */}
-        {items.map((item, i) => {
-          const angleDeg = (i * ITEM_SPACING - scrollOffset);
-          if (Math.abs(angleDeg) > (VISIBLE_RANGE + 1) * ITEM_SPACING) return null;
-
-          const angleRad = (angleDeg * Math.PI) / 180;
-          const x = Math.cos(angleRad) * ARC_RADIUS;
-          const y = -Math.sin(angleRad) * ARC_RADIUS;
-
-          const proximity = Math.min(Math.abs(angleDeg) / (ITEM_SPACING * 2.5), 1);
-          const isCenter = i === centerIdx;
-          const scale = isCenter ? 1.2 : 1 - proximity * 0.4;
-          const opacity = isCenter ? 1 : Math.max(0.12, 1 - proximity * 0.95);
-
-          const Icon = item.icon;
-
-          return (
-            <Link
-              key={item.href + i}
-              href={item.href}
-              onClick={(e) => {
-                if (!isCenter) {
-                  e.preventDefault();
-                  setScrollOffset(i * ITEM_SPACING);
-                  setVelocity(0);
-                }
-              }}
-              className="absolute pointer-events-auto transition-transform duration-150"
-              style={{
-                left: 40 + x - 20,
-                top: `calc(50% + ${y}px - 20px)`,
-                transform: `scale(${scale})`,
-                opacity,
-                zIndex: isCenter ? 20 : 10 - Math.round(proximity * 10),
-              }}
-            >
+          {/* Tick marks on the arc */}
+          {Array.from({ length: 36 }).map((_, i) => {
+            const tickAngle = (i * 10 - 180) * (Math.PI / 180);
+            const r = ARC_RADIUS - 4;
+            const y = Math.sin(tickAngle) * r;
+            const xPos = 50 + Math.cos(tickAngle) * r;
+            if (xPos < -10) return null;
+            return (
               <div
-                className="flex items-center justify-center w-10 h-10 rounded-xl shrink-0 transition-all duration-300"
+                key={i}
+                className="absolute pointer-events-none"
                 style={{
-                  backgroundColor: isCenter ? item.color : "var(--color-muted)",
-                  boxShadow: isCenter ? `0 0 24px ${item.color}40` : "none",
+                  width: i % 3 === 0 ? 6 : 3,
+                  height: 1,
+                  backgroundColor: "var(--color-border)",
+                  opacity: 0.2,
+                  left: xPos,
+                  top: `calc(50% + ${y}px)`,
+                }}
+              />
+            );
+          })}
+
+          {/* Items placed on the arc — icons only */}
+          {items.map((item, i) => {
+            const angleDeg = (i * ITEM_SPACING - scrollOffset);
+            if (Math.abs(angleDeg) > (VISIBLE_RANGE + 1) * ITEM_SPACING) return null;
+
+            const angleRad = (angleDeg * Math.PI) / 180;
+            const x = Math.cos(angleRad) * ARC_RADIUS;
+            const y = -Math.sin(angleRad) * ARC_RADIUS;
+
+            const proximity = Math.min(Math.abs(angleDeg) / (ITEM_SPACING * 2.5), 1);
+            const isCenter = i === centerIdx;
+            const scale = isCenter ? 1.25 : 1 - proximity * 0.4;
+            const opacity = isCenter ? 1 : Math.max(0.12, 1 - proximity * 0.95);
+
+            const Icon = item.icon;
+
+            return (
+              <Link
+                key={item.href + i}
+                href={item.href}
+                onClick={(e) => {
+                  if (!isCenter) {
+                    e.preventDefault();
+                    setScrollOffset(i * ITEM_SPACING);
+                    setVelocity(0);
+                  }
+                }}
+                className="absolute pointer-events-auto transition-transform duration-150"
+                style={{
+                  left: 50 + x - 24,
+                  top: `calc(50% + ${y}px - 24px)`,
+                  transform: `scale(${scale})`,
+                  opacity,
+                  zIndex: isCenter ? 20 : 10 - Math.round(proximity * 10),
                 }}
               >
-                <Icon
-                  className="h-4.5 w-4.5 transition-colors duration-200"
-                  style={{ color: isCenter ? "#fff" : "var(--color-muted-foreground)" }}
-                />
-              </div>
-            </Link>
-          );
-        })}
-      </div>
+                <div
+                  className="flex items-center justify-center w-12 h-12 rounded-xl shrink-0 transition-all duration-300"
+                  style={{
+                    backgroundColor: isCenter ? item.color : "var(--color-muted)",
+                    boxShadow: isCenter ? `0 0 28px ${item.color}50` : "none",
+                  }}
+                >
+                  <Icon
+                    className="h-5 w-5 transition-colors duration-200"
+                    style={{ color: isCenter ? "#fff" : "var(--color-muted-foreground)" }}
+                  />
+                </div>
+              </Link>
+            );
+          })}
+        </div>
 
-      {/* ── Right: Content area (expanded) ────── */}
-      <div className="flex-1 flex flex-col justify-center px-8 lg:px-14 xl:px-20 py-10 min-w-0">
-        {/* Brand title */}
-        <h1 className="text-4xl md:text-5xl lg:text-6xl font-extralight tracking-tight leading-none mb-1.5">
-          Anything.
-        </h1>
-        <p className="text-xs md:text-sm text-muted-foreground font-light mb-8 tracking-wide">
-          PDF・動画・画像 — なんでも、ブラウザだけで。
-        </p>
+        {/* ── Right: Content area (centered text) ── */}
+        <div className="flex-1 flex flex-col items-center justify-center px-6 lg:px-10 py-10 min-w-0 text-center">
+          {/* Brand title */}
+          <h1 className="text-5xl md:text-6xl lg:text-7xl font-extralight tracking-tight leading-none mb-2">
+            Anything.
+          </h1>
+          <p className="text-xs md:text-sm text-muted-foreground font-light mb-8 tracking-wide">
+            PDF・動画・画像 — なんでも、ブラウザだけで。
+          </p>
 
-        {/* Thin divider */}
-        <div className="h-px w-12 mb-6 transition-colors duration-500" style={{ backgroundColor: centerItem.color + "60" }} />
+          {/* Thin divider */}
+          <div className="h-px w-12 mb-6 transition-colors duration-500 mx-auto" style={{ backgroundColor: centerItem.color + "60" }} />
 
-        {/* Selected tool detail */}
-        <div className="transition-all duration-300 max-w-2xl">
-          {/* Category badge */}
-          <div className="flex items-center gap-2 mb-1.5">
-            <span
-              className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-widest transition-colors duration-300"
-              style={{ backgroundColor: centerItem.color + "12", color: centerItem.color }}
+          {/* Selected tool detail */}
+          <div className="transition-all duration-300 w-full max-w-lg">
+            {/* Category badge + index */}
+            <div className="flex items-center justify-center gap-2 mb-1.5">
+              <span
+                className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-widest transition-colors duration-300"
+                style={{ backgroundColor: centerItem.color + "12", color: centerItem.color }}
+              >
+                {centerItem.category}
+              </span>
+              <span className="text-[10px] text-muted-foreground/40 font-mono">
+                {String(centerIdx + 1).padStart(2, "0")} / {String(totalItems).padStart(2, "0")}
+              </span>
+            </div>
+
+            {/* Tool name */}
+            <h2
+              className="text-3xl lg:text-4xl font-light tracking-tight mb-2 transition-colors duration-300"
+              style={{ color: centerItem.color }}
             >
-              {centerItem.category}
-            </span>
-            <span className="text-[10px] text-muted-foreground/40 font-mono">
-              {String(centerIdx + 1).padStart(2, "0")} / {String(totalItems).padStart(2, "0")}
-            </span>
-          </div>
+              {centerItem.title}
+            </h2>
 
-          {/* Tool name */}
-          <h2
-            className="text-2xl lg:text-3xl font-light tracking-tight mb-2 transition-colors duration-300"
-            style={{ color: centerItem.color }}
-          >
-            {centerItem.title}
-          </h2>
+            {/* Description */}
+            <p className="text-sm text-muted-foreground font-light leading-relaxed mb-5">
+              {centerItem.description}
+            </p>
 
-          {/* Description */}
-          <p className="text-sm text-muted-foreground font-light leading-relaxed mb-5 max-w-lg">
-            {centerItem.description}
-          </p>
-
-          {/* Steps */}
-          <div className="flex items-start gap-4 mb-6">
-            {centerItem.steps.map((step, idx) => (
-              <div key={idx} className="flex items-start gap-2 min-w-0 flex-1">
-                <span
-                  className="flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-semibold shrink-0 mt-0.5"
-                  style={{ backgroundColor: centerItem.color + "15", color: centerItem.color }}
-                >
-                  {idx + 1}
-                </span>
-                <span className="text-xs text-muted-foreground font-light leading-snug">
-                  {step}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {/* CTA */}
-          <Link
-            href={centerItem.href}
-            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium text-white transition-all duration-300 hover:opacity-90 hover:-translate-y-0.5"
-            style={{ backgroundColor: centerItem.color }}
-          >
-            <CenterIcon className="h-4 w-4" />
-            使ってみる
-          </Link>
-        </div>
-
-        {/* Category tools grid */}
-        <div className="mt-8">
-          <p className="text-[11px] text-muted-foreground/50 uppercase tracking-widest font-medium mb-3">
-            {centerItem.category}ツール一覧
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {categoryTools.map((tool) => {
-              const ToolIcon = tool.icon;
-              const isCurrent = tool.href === centerItem.href;
-              return (
-                <Link
-                  key={tool.href}
-                  href={tool.href}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all duration-200 group ${
-                    isCurrent
-                      ? "border-current bg-muted/40"
-                      : "border-border/30 hover:border-border hover:bg-muted/20"
-                  }`}
-                  style={isCurrent ? { borderColor: tool.color + "40" } : undefined}
-                >
-                  <div
-                    className="w-6 h-6 rounded-md flex items-center justify-center transition-colors duration-200"
-                    style={{ backgroundColor: tool.color + "15" }}
+            {/* Steps */}
+            <div className="flex items-start justify-center gap-4 mb-6">
+              {centerItem.steps.map((step, idx) => (
+                <div key={idx} className="flex flex-col items-center gap-1.5 min-w-0 flex-1 max-w-[140px]">
+                  <span
+                    className="flex items-center justify-center w-6 h-6 rounded-full text-[11px] font-semibold"
+                    style={{ backgroundColor: centerItem.color + "15", color: centerItem.color }}
                   >
-                    <ToolIcon className="h-3 w-3" style={{ color: tool.color }} />
-                  </div>
-                  <span className={`text-xs font-medium transition-colors ${
-                    isCurrent ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"
-                  }`}>
-                    {tool.title}
+                    {idx + 1}
                   </span>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
+                  <span className="text-[11px] text-muted-foreground font-light leading-snug">
+                    {step}
+                  </span>
+                </div>
+              ))}
+            </div>
 
-        {/* Features bar */}
-        <div className="mt-8 flex items-center gap-6">
-          <div className="flex items-center gap-1.5 text-muted-foreground/50">
-            <Shield className="h-3.5 w-3.5" />
-            <span className="text-[10px] font-light tracking-wide">データ送信なし</span>
+            {/* CTA */}
+            <Link
+              href={centerItem.href}
+              className="inline-flex items-center gap-2 px-7 py-2.5 rounded-lg text-sm font-medium text-white transition-all duration-300 hover:opacity-90 hover:-translate-y-0.5"
+              style={{ backgroundColor: centerItem.color }}
+            >
+              <CenterIcon className="h-4 w-4" />
+              使ってみる
+            </Link>
           </div>
-          <div className="flex items-center gap-1.5 text-muted-foreground/50">
-            <Zap className="h-3.5 w-3.5" />
-            <span className="text-[10px] font-light tracking-wide">高速処理</span>
-          </div>
-          <div className="flex items-center gap-1.5 text-muted-foreground/50">
-            <Globe className="h-3.5 w-3.5" />
-            <span className="text-[10px] font-light tracking-wide">ブラウザ内完結</span>
-          </div>
-        </div>
 
-        {/* Scroll hint */}
-        <p className="mt-6 text-[10px] text-muted-foreground/30 tracking-widest font-light">
-          scroll or drag the dial to explore
-        </p>
+          {/* Category tools grid */}
+          <div className="mt-8 w-full max-w-lg">
+            <p className="text-[11px] text-muted-foreground/50 uppercase tracking-widest font-medium mb-3">
+              {centerItem.category}ツール一覧
+            </p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {categoryTools.map((tool) => {
+                const ToolIcon = tool.icon;
+                const isCurrent = tool.href === centerItem.href;
+                return (
+                  <Link
+                    key={tool.href}
+                    href={tool.href}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all duration-200 group ${
+                      isCurrent
+                        ? "border-current bg-muted/40"
+                        : "border-border/30 hover:border-border hover:bg-muted/20"
+                    }`}
+                    style={isCurrent ? { borderColor: tool.color + "40" } : undefined}
+                  >
+                    <div
+                      className="w-6 h-6 rounded-md flex items-center justify-center transition-colors duration-200"
+                      style={{ backgroundColor: tool.color + "15" }}
+                    >
+                      <ToolIcon className="h-3 w-3" style={{ color: tool.color }} />
+                    </div>
+                    <span className={`text-xs font-medium transition-colors ${
+                      isCurrent ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"
+                    }`}>
+                      {tool.title}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Features bar */}
+          <div className="mt-8 flex items-center justify-center gap-6">
+            <div className="flex items-center gap-1.5 text-muted-foreground/50">
+              <Shield className="h-3.5 w-3.5" />
+              <span className="text-[10px] font-light tracking-wide">データ送信なし</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-muted-foreground/50">
+              <Zap className="h-3.5 w-3.5" />
+              <span className="text-[10px] font-light tracking-wide">高速処理</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-muted-foreground/50">
+              <Globe className="h-3.5 w-3.5" />
+              <span className="text-[10px] font-light tracking-wide">ブラウザ内完結</span>
+            </div>
+          </div>
+
+          {/* Scroll hint */}
+          <p className="mt-5 text-[10px] text-muted-foreground/30 tracking-widest font-light">
+            scroll or drag the dial to explore
+          </p>
+        </div>
       </div>
     </div>
   );
