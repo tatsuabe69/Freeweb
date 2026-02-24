@@ -29,24 +29,26 @@ interface DialItem {
   icon: LucideIcon;
   color: string;  // hex accent
   category: string;
+  description: string;
+  related: number[];  // indices of related tools
 }
 
 const items: DialItem[] = [
-  { title: "PDF 結合",       href: "/pdf/merge",         icon: Merge,        color: "#8b5cf6", category: "PDF" },
-  { title: "PDF 分割",       href: "/pdf/split",         icon: Scissors,     color: "#3b82f6", category: "PDF" },
-  { title: "PDF 圧縮",       href: "/pdf/compress",      icon: Minimize2,    color: "#10b981", category: "PDF" },
-  { title: "PDF 回転",       href: "/pdf/rotate",        icon: RotateCw,     color: "#f59e0b", category: "PDF" },
-  { title: "PDF → 画像",     href: "/pdf/to-image",      icon: Image,        color: "#f43f5e", category: "PDF" },
-  { title: "画像 → PDF",     href: "/pdf/from-image",    icon: FileImage,    color: "#6366f1", category: "PDF" },
-  { title: "PDF 並び替え",   href: "/pdf/reorder",        icon: ArrowUpDown,  color: "#d946ef", category: "PDF" },
-  { title: "動画圧縮",       href: "/video/compress",    icon: Minimize2,    color: "#0ea5e9", category: "動画" },
-  { title: "動画 → GIF",     href: "/video/to-gif",      icon: Film,         color: "#84cc16", category: "動画" },
-  { title: "動画トリミング", href: "/video/trim",         icon: Scissors,     color: "#f97316", category: "動画" },
-  { title: "SNSアスペクト比", href: "/video/aspect",      icon: Ratio,        color: "#14b8a6", category: "動画" },
-  { title: "音声抽出",       href: "/video/audio",       icon: Music,        color: "#ec4899", category: "動画" },
-  { title: "SNS動画作成",    href: "/video/sns",         icon: Smartphone,   color: "#6b7280", category: "動画" },
-  { title: "BGM追加",        href: "/video/bgm",         icon: Volume2,      color: "#a855f7", category: "動画" },
-  { title: "TikTok音源取得", href: "/video/tiktok-sound", icon: ExternalLink, color: "#06b6d4", category: "動画" },
+  { title: "PDF 結合",       href: "/pdf/merge",         icon: Merge,        color: "#8b5cf6", category: "PDF",  description: "複数のPDFファイルを1つに結合。ページ順の並び替えも可能。", related: [1, 6] },
+  { title: "PDF 分割",       href: "/pdf/split",         icon: Scissors,     color: "#3b82f6", category: "PDF",  description: "PDFを指定ページで分割。不要なページを削除して軽量化。", related: [0, 6] },
+  { title: "PDF 圧縮",       href: "/pdf/compress",      icon: Minimize2,    color: "#10b981", category: "PDF",  description: "画質を保ちながらファイルサイズを削減。メール添付に最適。", related: [0, 1] },
+  { title: "PDF 回転",       href: "/pdf/rotate",        icon: RotateCw,     color: "#f59e0b", category: "PDF",  description: "スキャンしたPDFの向きを90°/180°/270°で修正。", related: [6, 4] },
+  { title: "PDF → 画像",     href: "/pdf/to-image",      icon: Image,        color: "#f43f5e", category: "PDF",  description: "PDFの各ページをPNG/JPEG画像に変換。SNS投稿にも。", related: [5, 2] },
+  { title: "画像 → PDF",     href: "/pdf/from-image",    icon: FileImage,    color: "#6366f1", category: "PDF",  description: "複数の画像をまとめて1つのPDFドキュメントに変換。", related: [4, 0] },
+  { title: "PDF 並び替え",   href: "/pdf/reorder",       icon: ArrowUpDown,  color: "#d946ef", category: "PDF",  description: "ドラッグ&ドロップでPDFのページ順を自由に変更。", related: [0, 1] },
+  { title: "動画圧縮",       href: "/video/compress",    icon: Minimize2,    color: "#0ea5e9", category: "動画", description: "画質を維持しつつファイルサイズを大幅圧縮。共有しやすく。", related: [9, 12] },
+  { title: "動画 → GIF",     href: "/video/to-gif",      icon: Film,         color: "#84cc16", category: "動画", description: "動画の一部をアニメーションGIFに変換。チャットやSNSに。", related: [9, 7] },
+  { title: "動画トリミング", href: "/video/trim",        icon: Scissors,     color: "#f97316", category: "動画", description: "開始・終了時間を指定して動画の不要部分をカット。", related: [12, 7] },
+  { title: "SNSアスペクト比", href: "/video/aspect",     icon: Ratio,        color: "#14b8a6", category: "動画", description: "TikTok・Reels・Shorts向けに9:16等のアスペクト比に変換。", related: [12, 9] },
+  { title: "音声抽出",       href: "/video/audio",       icon: Music,        color: "#ec4899", category: "動画", description: "動画からMP3/WAV/AAC形式で音声だけを抽出・保存。", related: [13, 14] },
+  { title: "SNS動画作成",    href: "/video/sns",         icon: Smartphone,   color: "#6b7280", category: "動画", description: "複数クリップ編集・テロップ・BGMを1画面で。SNS投稿用の縦動画を作成。", related: [10, 13] },
+  { title: "BGM追加",        href: "/video/bgm",         icon: Volume2,      color: "#a855f7", category: "動画", description: "動画に音楽を追加。元音声とのミックスや置換も対応。", related: [12, 11] },
+  { title: "TikTok音源取得", href: "/video/tiktok-sound", icon: ExternalLink, color: "#06b6d4", category: "動画", description: "TikTok動画のURLから使用されている音源を取得・保存。", related: [13, 12] },
 ];
 
 /* ================================================================
@@ -272,22 +274,25 @@ export default function HomePage() {
       </div>
 
       {/* ── Right: Content area ───────────────────── */}
-      <div className="flex-1 flex flex-col justify-center px-8 lg:px-16 py-12">
+      <div className="flex-1 flex flex-col justify-center px-8 lg:px-16 py-12 min-w-0">
         {/* Title */}
-        <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-none mb-3">
+        <h1 className="text-5xl md:text-6xl lg:text-7xl font-extralight tracking-tight leading-none mb-2">
           Anything.
         </h1>
-        <p className="text-sm md:text-base text-muted-foreground mb-12">
+        <p className="text-sm md:text-base text-muted-foreground font-light mb-10 tracking-wide">
           PDF・動画・画像 — なんでも、ブラウザだけで。
         </p>
+
+        {/* Thin divider */}
+        <div className="h-px w-16 mb-8 transition-colors duration-500" style={{ backgroundColor: centerItem.color + "60" }} />
 
         {/* Selected tool detail */}
         <div className="transition-all duration-300">
           {/* Category badge */}
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-2">
             <span
-              className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-colors duration-300"
-              style={{ backgroundColor: centerItem.color + "20", color: centerItem.color }}
+              className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-widest transition-colors duration-300"
+              style={{ backgroundColor: centerItem.color + "15", color: centerItem.color }}
             >
               {centerItem.category}
             </span>
@@ -295,16 +300,21 @@ export default function HomePage() {
 
           {/* Tool name */}
           <h2
-            className="text-3xl lg:text-4xl font-bold tracking-tight mb-4 transition-colors duration-300"
+            className="text-3xl lg:text-4xl font-light tracking-tight mb-3 transition-colors duration-300"
             style={{ color: centerItem.color }}
           >
             {centerItem.title}
           </h2>
 
+          {/* Description */}
+          <p className="text-sm text-muted-foreground font-light leading-relaxed mb-6 max-w-md">
+            {centerItem.description}
+          </p>
+
           {/* CTA */}
           <Link
             href={centerItem.href}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white transition-all duration-300 hover:opacity-90 hover:-translate-y-0.5"
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium text-white transition-all duration-300 hover:opacity-90 hover:-translate-y-0.5"
             style={{ backgroundColor: centerItem.color }}
           >
             <centerItem.icon className="h-4 w-4" />
@@ -312,9 +322,42 @@ export default function HomePage() {
           </Link>
         </div>
 
+        {/* Related tools */}
+        {centerItem.related.length > 0 && (
+          <div className="mt-10">
+            <p className="text-[11px] text-muted-foreground/60 uppercase tracking-widest font-medium mb-3">
+              関連ツール
+            </p>
+            <div className="flex gap-2">
+              {centerItem.related.map((idx) => {
+                const rel = items[idx];
+                if (!rel) return null;
+                const RelIcon = rel.icon;
+                return (
+                  <Link
+                    key={rel.href}
+                    href={rel.href}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border/40 hover:border-border hover:bg-muted/30 transition-all duration-200 group"
+                  >
+                    <div
+                      className="w-7 h-7 rounded-md flex items-center justify-center transition-colors duration-200"
+                      style={{ backgroundColor: rel.color + "18" }}
+                    >
+                      <RelIcon className="h-3.5 w-3.5" style={{ color: rel.color }} />
+                    </div>
+                    <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+                      {rel.title}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Scroll hint */}
-        <p className="mt-16 text-xs text-muted-foreground/50">
-          左のダイヤルをスクロール or ドラッグで選択
+        <p className="mt-12 text-[10px] text-muted-foreground/40 tracking-widest font-light">
+          scroll or drag to explore
         </p>
       </div>
     </div>

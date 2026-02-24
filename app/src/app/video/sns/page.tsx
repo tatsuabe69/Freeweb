@@ -249,13 +249,13 @@ export default function SnsCreatorPage() {
     const { panel, startX, startY, startVal } = resizingRef.current;
     if (panel === "left") {
       const dx = e.clientX - startX;
-      setLeftPanelWidth(Math.max(160, Math.min(400, startVal + dx)));
+      setLeftPanelWidth(Math.max(48, Math.min(500, startVal + dx)));
     } else if (panel === "right") {
       const dx = e.clientX - startX;
-      setRightPanelWidth(Math.max(180, Math.min(450, startVal - dx)));
+      setRightPanelWidth(Math.max(48, Math.min(500, startVal - dx)));
     } else if (panel === "timeline") {
       const dy = e.clientY - startY;
-      setTimelineHeight(Math.max(100, Math.min(400, startVal - dy)));
+      setTimelineHeight(Math.max(80, Math.min(500, startVal - dy)));
     }
   }, []);
 
@@ -314,50 +314,37 @@ export default function SnsCreatorPage() {
   }, [clips, bgmFile, audioMode, bgmStartOffset]);
 
   // Auto-play when clip changes during sequential playback
+  // Also seek to inPoint on clip selection
   useEffect(() => {
     const v = videoRef.current;
     if (!v || !selectedClip) return;
 
-    const startPlayback = () => {
+    const onReady = () => {
       if (seqPlayRef.current) {
+        // Sequential playback: seek to inPoint and play
         v.currentTime = selectedClip.inPoint;
         v.play().catch(() => {});
-        // Ensure BGM keeps playing during sequential playback
         const bgm = bgmAudioRef.current;
         const useBgm = bgmFile && (audioMode === "replace" || audioMode === "mix");
         if (bgm && useBgm && bgm.paused) {
           bgm.play().catch(() => {});
         }
         setPlaying(true);
-      }
-    };
-
-    if (v.readyState >= 2) {
-      startPlayback();
-    } else {
-      v.addEventListener("loadeddata", startPlayback, { once: true });
-      return () => v.removeEventListener("loadeddata", startPlayback);
-    }
-  }, [selectedClip, bgmFile, audioMode]);
-
-  // Seek to inPoint when clip is selected
-  useEffect(() => {
-    const v = videoRef.current;
-    if (!v || !selectedClip) return;
-    const doSeek = () => {
-      if (!seqPlayRef.current) {
+      } else {
+        // Normal selection: just seek to inPoint
         v.currentTime = selectedClip.inPoint;
         setCurrentTime(selectedClip.inPoint);
       }
     };
+
     if (v.readyState >= 2) {
-      doSeek();
+      onReady();
     } else {
-      v.addEventListener("loadeddata", doSeek, { once: true });
-      return () => v.removeEventListener("loadeddata", doSeek);
+      v.addEventListener("loadeddata", onReady, { once: true });
+      return () => v.removeEventListener("loadeddata", onReady);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedClip?.id]);
+  }, [selectedClip?.id, bgmFile, audioMode]);
 
   // Track time & handle sequential clip transitions + enforce outPoint
   useEffect(() => {
@@ -861,7 +848,7 @@ export default function SnsCreatorPage() {
           {/* ── Main panels ──────────────────────── */}
           <div className="flex-1 flex flex-col lg:flex-row min-h-0">
             {/* ─── Left: Media Bin ─────────────────── */}
-            <div className="border-b lg:border-b-0 lg:border-r bg-card/50 flex flex-col" style={{ width: leftPanelWidth, minWidth: 160 }}>
+            <div className="border-b lg:border-b-0 lg:border-r bg-card/50 flex flex-col overflow-hidden" style={{ width: leftPanelWidth, minWidth: 48 }}>
               <div className="px-3 py-2 border-b flex items-center justify-between">
                 <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   メディア
@@ -1186,7 +1173,7 @@ export default function SnsCreatorPage() {
             </div>
 
             {/* ─── Right: Inspector / Settings ────── */}
-            <div className="border-t lg:border-t-0 lg:border-l bg-card/50 overflow-y-auto" style={{ width: rightPanelWidth, minWidth: 180 }}>
+            <div className="border-t lg:border-t-0 lg:border-l bg-card/50 overflow-y-auto overflow-x-hidden" style={{ width: rightPanelWidth, minWidth: 48 }}>
               {/* Settings header (collapsible on mobile) */}
               <button
                 onClick={() => setSettingsOpen(!settingsOpen)}
@@ -1484,7 +1471,7 @@ export default function SnsCreatorPage() {
           </div>
 
           {/* ── Timeline — Premiere Pro style ───── */}
-          <div className="bg-neutral-950 overflow-hidden" style={{ height: timelineHeight }}>
+          <div ref={timelineRef} className="bg-neutral-950 overflow-hidden" style={{ height: timelineHeight }}>
             {/* Timeline header */}
             <div className="flex items-center justify-between px-3 py-1 border-b border-neutral-800 bg-neutral-900">
               <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">
@@ -1550,7 +1537,7 @@ export default function SnsCreatorPage() {
               </div>
 
               {/* Scrollable tracks area */}
-              <div ref={timelineRef} className="flex-1 overflow-x-auto relative">
+              <div className="flex-1 overflow-x-auto relative">
                 <div style={{ width: `${Math.max(totalDuration * pxPerSec, 200)}px`, minWidth: "100%" }}>
                   {/* Ruler */}
                   <div
