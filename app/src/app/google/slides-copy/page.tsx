@@ -1,0 +1,431 @@
+"use client";
+
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Copy,
+  ArrowLeft,
+  Plus,
+  Trash2,
+  ExternalLink,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+  Settings,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
+import Link from "next/link";
+
+interface CopyResult {
+  title: string;
+  url: string;
+}
+
+interface ErrorResult {
+  message: string;
+}
+
+export default function SlidesCopyPage() {
+  const [gasUrl, setGasUrl] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("freeweb-gas-url") ?? "";
+    }
+    return "";
+  });
+  const [slideUrl, setSlideUrl] = useState("");
+  const [prefix, setPrefix] = useState("");
+  const [teams, setTeams] = useState<string[]>(["チーム1", "チーム2", "チーム3", "チーム4", "チーム5"]);
+  const [folderId, setFolderId] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [results, setResults] = useState<CopyResult[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [showSetup, setShowSetup] = useState(false);
+
+  const extractSlideId = (url: string): string | null => {
+    const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    return match ? match[1] : null;
+  };
+
+  const extractFolderId = (url: string): string => {
+    if (!url) return "";
+    const match = url.match(/\/folders\/([a-zA-Z0-9_-]+)/);
+    return match ? match[1] : url;
+  };
+
+  const addTeam = () => {
+    setTeams([...teams, `チーム${teams.length + 1}`]);
+  };
+
+  const removeTeam = (index: number) => {
+    if (teams.length <= 1) return;
+    setTeams(teams.filter((_, i) => i !== index));
+  };
+
+  const updateTeam = (index: number, value: string) => {
+    const next = [...teams];
+    next[index] = value;
+    setTeams(next);
+  };
+
+  const handleSaveGasUrl = (url: string) => {
+    setGasUrl(url);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("freeweb-gas-url", url);
+    }
+  };
+
+  const handleCopy = async () => {
+    if (!gasUrl.trim()) {
+      setError("GAS Web AppのURLを設定してください（下部のセットアップガイド参照）");
+      return;
+    }
+
+    const slideId = extractSlideId(slideUrl);
+    if (!slideId) {
+      setError("正しいGoogleスライドのURLを入力してください");
+      return;
+    }
+
+    const validTeams = teams.filter((t) => t.trim());
+    if (validTeams.length === 0) {
+      setError("チーム名を1つ以上入力してください");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setResults([]);
+
+    try {
+      const params = new URLSearchParams({
+        action: "copy",
+        slideId,
+        teams: validTeams.join(","),
+        prefix: prefix.trim(),
+        folderId: extractFolderId(folderId),
+      });
+
+      const res = await fetch(`${gasUrl.trim()}?${params.toString()}`);
+      const data = await res.json();
+
+      if (data.error) {
+        setError(data.error);
+        return;
+      }
+
+      setResults(data.results ?? []);
+    } catch {
+      setError("GAS Web Appとの通信に失敗しました。URLが正しいか、デプロイ設定を確認してください。");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const reset = () => {
+    setSlideUrl("");
+    setResults([]);
+    setError(null);
+  };
+
+  return (
+    <div className="mx-auto max-w-screen-xl px-6 lg:px-10 py-8">
+      <Link
+        href="/"
+        className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-8"
+      >
+        <ArrowLeft className="h-3.5 w-3.5" /> Anything
+      </Link>
+
+      <div className="flex items-center gap-3 mb-1">
+        <Copy className="h-5 w-5 text-[#34a853]" />
+        <h1 className="text-xl font-semibold tracking-tight">Googleスライド複製</h1>
+      </div>
+      <p className="text-sm text-muted-foreground mb-8">
+        テンプレートのスライドを複数チーム分まとめてコピー。研修・ワークショップの準備を効率化。
+      </p>
+
+      {results.length === 0 ? (
+        <div className="space-y-6">
+          {/* GAS URL設定 */}
+          <div className="rounded-xl border bg-card p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Settings className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">GAS Web App 接続設定</span>
+              </div>
+              {gasUrl && (
+                <span className="text-xs text-green-600 flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3" /> 設定済み
+                </span>
+              )}
+            </div>
+            <input
+              type="url"
+              value={gasUrl}
+              onChange={(e) => handleSaveGasUrl(e.target.value)}
+              placeholder="https://script.google.com/macros/s/xxxxx/exec"
+              className="w-full rounded-lg border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground/60"
+            />
+            <p className="text-xs text-muted-foreground">
+              初回のみ設定が必要です。GASのデプロイURLを貼り付けてください（ブラウザに保存されます）
+            </p>
+          </div>
+
+          {/* スライドURL */}
+          <div>
+            <label className="text-sm font-medium mb-2 block">コピー元のGoogleスライドURL</label>
+            <input
+              type="url"
+              value={slideUrl}
+              onChange={(e) => setSlideUrl(e.target.value)}
+              placeholder="https://docs.google.com/presentation/d/xxxxx/edit"
+              className="w-full rounded-lg border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground/60"
+              disabled={loading}
+            />
+          </div>
+
+          {/* プレフィックス */}
+          <div>
+            <label className="text-sm font-medium mb-2 block">
+              ファイル名プレフィックス
+              <span className="text-muted-foreground font-normal ml-1">(任意)</span>
+            </label>
+            <input
+              type="text"
+              value={prefix}
+              onChange={(e) => setPrefix(e.target.value)}
+              placeholder="例: 2026年度新人研修"
+              className="w-full rounded-lg border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground/60"
+              disabled={loading}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              設定すると「2026年度新人研修_チーム1」のような名前でコピーされます
+            </p>
+          </div>
+
+          {/* コピー先フォルダ */}
+          <div>
+            <label className="text-sm font-medium mb-2 block">
+              コピー先フォルダ
+              <span className="text-muted-foreground font-normal ml-1">(任意)</span>
+            </label>
+            <input
+              type="text"
+              value={folderId}
+              onChange={(e) => setFolderId(e.target.value)}
+              placeholder="Google DriveのフォルダURL or フォルダID"
+              className="w-full rounded-lg border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground/60"
+              disabled={loading}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              未設定の場合、マイドライブのルートにコピーされます
+            </p>
+          </div>
+
+          {/* チーム名リスト */}
+          <div>
+            <label className="text-sm font-medium mb-2 block">チーム名 / コピー名</label>
+            <div className="space-y-2">
+              {teams.map((team, i) => (
+                <div key={i} className="flex gap-2">
+                  <span className="flex items-center justify-center w-8 text-xs text-muted-foreground shrink-0">
+                    {i + 1}.
+                  </span>
+                  <input
+                    type="text"
+                    value={team}
+                    onChange={(e) => updateTeam(i, e.target.value)}
+                    placeholder={`コピー${i + 1}の名前`}
+                    className="flex-1 rounded-lg border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground/60"
+                    disabled={loading}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeTeam(i)}
+                    disabled={teams.length <= 1 || loading}
+                    className="shrink-0 text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+            <Button variant="outline" size="sm" onClick={addTeam} disabled={loading} className="mt-2 gap-1">
+              <Plus className="h-3.5 w-3.5" /> チームを追加
+            </Button>
+          </div>
+
+          {error && (
+            <div className="flex items-start gap-2 rounded-lg bg-destructive/10 border border-destructive/20 p-4">
+              <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+              <p className="text-sm text-destructive">{error}</p>
+            </div>
+          )}
+
+          {/* 実行ボタン */}
+          <Button
+            onClick={handleCopy}
+            disabled={!slideUrl.trim() || loading}
+            size="lg"
+            className="w-full gap-2"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" />
+                コピー作成中...
+              </>
+            ) : (
+              <>
+                <Copy className="h-5 w-5" />
+                {teams.filter((t) => t.trim()).length}件のコピーを作成
+              </>
+            )}
+          </Button>
+
+          {/* セットアップガイド */}
+          <div className="rounded-xl border bg-muted/30 p-5 space-y-3">
+            <button
+              onClick={() => setShowSetup(!showSetup)}
+              className="flex items-center justify-between w-full text-left"
+            >
+              <span className="text-sm font-medium">初回セットアップガイド（GAS Web Appの作成方法）</span>
+              {showSetup ? (
+                <ChevronUp className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              )}
+            </button>
+
+            {showSetup && (
+              <div className="text-sm text-muted-foreground space-y-4 pt-2">
+                <div>
+                  <p className="font-medium text-foreground mb-1">Step 1: GASプロジェクトを作成</p>
+                  <p>
+                    <a
+                      href="https://script.google.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-500 hover:underline inline-flex items-center gap-1"
+                    >
+                      Google Apps Script <ExternalLink className="h-3 w-3" />
+                    </a>
+                    {" "}を開いて「新しいプロジェクト」をクリック
+                  </p>
+                </div>
+
+                <div>
+                  <p className="font-medium text-foreground mb-1">Step 2: コードを貼り付け</p>
+                  <p className="mb-2">既存のコードを全て消して、以下をコピー&ペースト：</p>
+                  <pre className="bg-background border rounded-lg p-3 text-xs overflow-x-auto whitespace-pre">{`function doGet(e) {
+  var params = e.parameter;
+
+  if (params.action === "copy") {
+    var slideId = params.slideId;
+    var teams = params.teams.split(",");
+    var prefix = params.prefix || "";
+    var folderId = params.folderId || "";
+
+    var results = [];
+    var folder = folderId
+      ? DriveApp.getFolderById(folderId)
+      : null;
+
+    for (var i = 0; i < teams.length; i++) {
+      var name = prefix
+        ? prefix + "_" + teams[i]
+        : teams[i];
+      var copy = DriveApp.getFileById(slideId).makeCopy(name);
+      if (folder) {
+        folder.addFile(copy);
+        DriveApp.getRootFolder().removeFile(copy);
+      }
+      results.push({
+        title: name,
+        url: copy.getUrl()
+      });
+    }
+
+    return ContentService
+      .createTextOutput(JSON.stringify({ results: results }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  return ContentService
+    .createTextOutput(JSON.stringify({ error: "Invalid action" }))
+    .setMimeType(ContentService.MimeType.JSON);
+}`}</pre>
+                </div>
+
+                <div>
+                  <p className="font-medium text-foreground mb-1">Step 3: デプロイ</p>
+                  <ol className="list-decimal list-inside space-y-1 ml-1">
+                    <li>右上の「デプロイ」→「新しいデプロイ」をクリック</li>
+                    <li>種類で「ウェブアプリ」を選択</li>
+                    <li>アクセスできるユーザーを「自分のみ」に設定</li>
+                    <li>「デプロイ」をクリック</li>
+                    <li>初回はGoogleアカウントの認証を許可</li>
+                    <li>表示されたURLをコピー</li>
+                  </ol>
+                </div>
+
+                <div>
+                  <p className="font-medium text-foreground mb-1">Step 4: URLを上の入力欄に貼り付け</p>
+                  <p>
+                    コピーしたURLを「GAS Web App 接続設定」に貼り付ければ準備完了！
+                    URLはブラウザに保存されるので次回以降は入力不要です。
+                  </p>
+                </div>
+
+                <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-3">
+                  <p className="text-xs text-amber-700 dark:text-amber-400">
+                    <strong>注意:</strong> GASのウェブアプリURLには認証トークンが含まれるため、
+                    他人と共有しないでください。URLはあなたのブラウザにのみ保存されます。
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        /* 結果表示 */
+        <div className="space-y-6">
+          <div className="flex items-center gap-2 mb-2">
+            <CheckCircle2 className="h-5 w-5 text-green-500" />
+            <h2 className="text-lg font-medium">{results.length}件のコピーを作成しました</h2>
+          </div>
+
+          <div className="space-y-2">
+            {results.map((r, i) => (
+              <a
+                key={i}
+                href={r.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 rounded-xl border bg-card p-4 hover:bg-muted/50 transition-colors group"
+              >
+                <div className="w-8 h-8 rounded-lg bg-[#34a853]/10 flex items-center justify-center shrink-0">
+                  <span className="text-sm font-medium text-[#34a853]">{i + 1}</span>
+                </div>
+                <span className="text-sm font-medium flex-1 truncate">{r.title}</span>
+                <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
+              </a>
+            ))}
+          </div>
+
+          <div className="rounded-xl border p-5 space-y-2">
+            <p className="text-sm text-muted-foreground">
+              各リンクをクリックするとGoogleスライドが新しいタブで開きます。
+              コピーされたファイルはGoogleドライブで管理できます。
+            </p>
+          </div>
+
+          <Button variant="outline" onClick={reset}>
+            別のスライドをコピーする
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}

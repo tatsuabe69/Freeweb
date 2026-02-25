@@ -14,6 +14,7 @@ import {
   ExternalLink,
   Youtube,
   Instagram,
+  Copy,
   type LucideIcon,
 } from "lucide-react";
 
@@ -46,6 +47,7 @@ export const tools: ToolItem[] = [
   { title: "TikTok音源取得", href: "/video/tiktok-sound", icon: ExternalLink, color: "#06b6d4", category: "動画", description: "TikTok動画のURLから使用されている音源を取得・保存。", related: [15, 16], steps: ["TikTokのURLを貼り付け", "音源情報を確認", "MP3でダウンロード"] },
   { title: "YouTube音源取得", href: "/video/youtube-sound", icon: Youtube, color: "#ff0000", category: "動画", description: "YouTube動画のURLから音声（BGM・楽曲・ナレーション）を抽出・保存。", related: [14, 16], steps: ["YouTubeのURLを貼り付け", "音源を自動取得", "M4A/WebMでダウンロード"] },
   { title: "Instagram音源取得", href: "/video/instagram-sound", icon: Instagram, color: "#e1306c", category: "動画", description: "Instagramリール・動画投稿のURLから音源を取得・保存。", related: [14, 15], steps: ["InstagramのURLを貼り付け", "音源を自動取得", "MP4でダウンロード"] },
+  { title: "スライド複製", href: "/google/slides-copy", icon: Copy, color: "#34a853", category: "Google", description: "テンプレートのGoogleスライドを複数チーム分まとめてコピー。研修準備を効率化。", related: [], steps: ["スライドURLを入力", "チーム名を設定", "まとめてコピー作成"] },
 ];
 
 export function getCategoryTools(category: string) {
