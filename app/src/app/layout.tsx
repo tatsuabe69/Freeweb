@@ -29,6 +29,16 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          {/* Rich depth background */}
+          <div className="bg-depth" aria-hidden="true">
+            <div className="bg-depth-wash" />
+            <div className="bg-orb bg-orb-1" />
+            <div className="bg-orb bg-orb-2" />
+            <div className="bg-orb bg-orb-3" />
+            <div className="bg-depth-grid" />
+            <div className="bg-depth-vignette" />
+          </div>
+
           <div className="flex min-h-screen flex-col">
             <Header />
             <main className="flex-1">{children}</main>
