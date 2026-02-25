@@ -7,13 +7,15 @@ import {
   ArrowLeft,
   Plus,
   Trash2,
-  ExternalLink,
   Loader2,
   CheckCircle2,
   AlertCircle,
   Settings,
   ChevronDown,
   ChevronUp,
+  ClipboardCopy,
+  Check,
+  ExternalLink,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -41,6 +43,7 @@ export default function SlidesCopyPage() {
   const [results, setResults] = useState<CopyResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [showSetup, setShowSetup] = useState(false);
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
 
   const extractSlideId = (url: string): string | null => {
     const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
@@ -392,6 +395,11 @@ export default function SlidesCopyPage() {
         folder.addFile(copy);
         DriveApp.getRootFolder().removeFile(copy);
       }
+      // リンクを知っている全員が編集可
+      copy.setSharing(
+        DriveApp.Access.ANYONE_WITH_LINK,
+        DriveApp.Permission.EDIT
+      );
       results.push({
         title: name,
         url: copy.getUrl()
@@ -445,26 +453,69 @@ export default function SlidesCopyPage() {
 
           <div className="space-y-2">
             {results.map((r, i) => (
-              <a
+              <div
                 key={i}
-                href={r.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 rounded-xl border bg-card p-4 hover:bg-muted/50 transition-colors group"
+                className="flex items-center gap-3 rounded-xl border bg-card p-4"
               >
                 <div className="w-8 h-8 rounded-lg bg-[#34a853]/10 flex items-center justify-center shrink-0">
                   <span className="text-sm font-medium text-[#34a853]">{i + 1}</span>
                 </div>
-                <span className="text-sm font-medium flex-1 truncate">{r.title}</span>
-                <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
-              </a>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{r.title}</p>
+                  <p className="text-xs text-muted-foreground truncate">{r.url}</p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0 gap-1.5"
+                  onClick={() => {
+                    navigator.clipboard.writeText(r.url);
+                    setCopiedIdx(i);
+                    setTimeout(() => setCopiedIdx(null), 2000);
+                  }}
+                >
+                  {copiedIdx === i ? (
+                    <>
+                      <Check className="h-3.5 w-3.5 text-green-500" />
+                      コピー済み
+                    </>
+                  ) : (
+                    <>
+                      <ClipboardCopy className="h-3.5 w-3.5" />
+                      URLコピー
+                    </>
+                  )}
+                </Button>
+              </div>
             ))}
           </div>
 
+          <Button
+            variant="outline"
+            className="w-full gap-2"
+            onClick={() => {
+              const text = results.map((r) => `${r.title}\n${r.url}`).join("\n\n");
+              navigator.clipboard.writeText(text);
+              setCopiedIdx(-1);
+              setTimeout(() => setCopiedIdx(null), 2000);
+            }}
+          >
+            {copiedIdx === -1 ? (
+              <>
+                <Check className="h-4 w-4 text-green-500" />
+                全てコピーしました
+              </>
+            ) : (
+              <>
+                <ClipboardCopy className="h-4 w-4" />
+                全てのURLをまとめてコピー
+              </>
+            )}
+          </Button>
+
           <div className="rounded-xl border p-5 space-y-2">
             <p className="text-sm text-muted-foreground">
-              各リンクをクリックするとGoogleスライドが新しいタブで開きます。
-              コピーされたファイルはGoogleドライブで管理できます。
+              共有設定:「リンクを知っている全員が編集可」で作成済み。URLを共有するだけでチームメンバーが編集できます。
             </p>
           </div>
 
