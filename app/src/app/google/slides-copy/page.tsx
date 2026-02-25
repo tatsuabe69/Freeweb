@@ -179,7 +179,7 @@ export default function SlidesCopyPage() {
       </Link>
 
       <div className="flex items-center gap-3 mb-1">
-        <Copy className="h-5 w-5 text-[#34a853]" />
+        <Copy className="h-5 w-5 text-[#fbbc04]" />
         <h1 className="text-xl font-semibold tracking-tight">Googleスライド複製</h1>
       </div>
       <p className="text-sm text-muted-foreground mb-8">
@@ -457,8 +457,8 @@ export default function SlidesCopyPage() {
                 key={i}
                 className="flex items-center gap-3 rounded-xl border bg-card p-4"
               >
-                <div className="w-8 h-8 rounded-lg bg-[#34a853]/10 flex items-center justify-center shrink-0">
-                  <span className="text-sm font-medium text-[#34a853]">{i + 1}</span>
+                <div className="w-8 h-8 rounded-lg bg-[#fbbc04]/10 flex items-center justify-center shrink-0">
+                  <span className="text-sm font-medium text-[#fbbc04]">{i + 1}</span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{r.title}</p>
