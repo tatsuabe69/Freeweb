@@ -217,41 +217,43 @@ export default function DesignDial() {
         <div className="flex-1 flex flex-col justify-center px-6 lg:px-10 py-10 min-w-0">
           <div className="h-px w-full mb-6 transition-colors duration-500" style={{ backgroundColor: centerItem.color + "25" }} />
 
-          <div className="flex flex-col lg:flex-row lg:items-start gap-6 lg:gap-10 transition-all duration-300">
-            <div className="shrink-0">
-              <div className="flex items-center gap-2 mb-1.5">
-                <span
-                  className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-widest transition-colors duration-300"
-                  style={{ backgroundColor: centerItem.color + "12", color: centerItem.color }}
-                >
-                  {centerItem.category}
-                </span>
-                <span className="text-[10px] text-muted-foreground/40 font-mono">
-                  {String(centerIdx + 1).padStart(2, "0")} / {String(totalItems).padStart(2, "0")}
-                </span>
-              </div>
-
-              <h2
-                className="text-2xl lg:text-3xl font-light tracking-tight mb-3 transition-colors duration-300 whitespace-nowrap"
-                style={{ color: centerItem.color }}
+          {/* ── 上段: タイトル ── */}
+          <div className="transition-all duration-300">
+            <div className="flex items-center gap-2 mb-1.5">
+              <span
+                className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-widest transition-colors duration-300"
+                style={{ backgroundColor: centerItem.color + "12", color: centerItem.color }}
               >
-                {centerItem.title}
-              </h2>
-
-              <p className="text-sm text-muted-foreground font-light leading-relaxed mb-4">
-                {centerItem.description}
-              </p>
-
-              <Link
-                href={centerItem.href}
-                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium text-white transition-all duration-300 hover:opacity-90 hover:-translate-y-0.5"
-                style={{ backgroundColor: centerItem.color }}
-              >
-                <CenterIcon className="h-4 w-4" />
-                使ってみる
-              </Link>
+                {centerItem.category}
+              </span>
+              <span className="text-[10px] text-muted-foreground/40 font-mono">
+                {String(centerIdx + 1).padStart(2, "0")} / {String(totalItems).padStart(2, "0")}
+              </span>
             </div>
 
+            <h2
+              className="text-2xl lg:text-3xl font-light tracking-tight mb-3 transition-colors duration-300 whitespace-nowrap"
+              style={{ color: centerItem.color }}
+            >
+              {centerItem.title}
+            </h2>
+
+            <p className="text-sm text-muted-foreground font-light leading-relaxed mb-4">
+              {centerItem.description}
+            </p>
+
+            <Link
+              href={centerItem.href}
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium text-white transition-all duration-300 hover:opacity-90 hover:-translate-y-0.5"
+              style={{ backgroundColor: centerItem.color }}
+            >
+              <CenterIcon className="h-4 w-4" />
+              使ってみる
+            </Link>
+          </div>
+
+          {/* ── 中段: 使い方 + 関連ツール ── */}
+          <div className="mt-6 flex flex-col lg:flex-row lg:items-start gap-6 lg:gap-10 transition-all duration-300">
             <div className="flex-1 min-w-0">
               <p className="text-[11px] text-muted-foreground/50 uppercase tracking-widest font-medium mb-3">
                 使い方
@@ -278,7 +280,7 @@ export default function DesignDial() {
                 <p className="text-[11px] text-muted-foreground/50 uppercase tracking-widest font-medium mb-2">
                   関連ツール
                 </p>
-                <div className="flex lg:flex-col gap-2">
+                <div className="flex flex-wrap gap-2">
                   {centerItem.related.map((idx) => {
                     const rel = tools[idx];
                     if (!rel) return null;
