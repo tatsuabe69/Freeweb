@@ -43,16 +43,7 @@ export default function DesignBento() {
     <div className="min-h-[calc(100vh-60px)] flex flex-col">
       {/* Header */}
       <div className="px-6 lg:px-12 pt-8 pb-2">
-        <div className="flex items-baseline justify-between max-w-6xl mx-auto">
-          <div>
-            <h1 className="text-4xl md:text-5xl font-extralight tracking-tight">
-              Anything.
-            </h1>
-            <p className="text-sm text-muted-foreground font-light mt-1">
-              PDF・動画・画像 — なんでも、ブラウザだけで。
-            </p>
-          </div>
-
+        <div className="flex items-baseline justify-end max-w-6xl mx-auto">
           {/* Category tabs */}
           <div className="flex gap-1 bg-muted/30 rounded-lg p-1">
             {categories.map((cat) => (

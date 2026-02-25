@@ -58,16 +58,6 @@ export default function DesignCarousel() {
 
   return (
     <div className="min-h-[calc(100vh-60px)] flex flex-col">
-      {/* Header */}
-      <div className="text-center pt-8 pb-4">
-        <h1 className="text-4xl md:text-5xl font-extralight tracking-tight">
-          Anything.
-        </h1>
-        <p className="text-sm text-muted-foreground font-light mt-2">
-          PDF・動画・画像 — なんでも、ブラウザだけで。
-        </p>
-      </div>
-
       {/* Carousel area */}
       <div className="flex-1 flex flex-col items-center justify-center relative px-4">
         {/* Navigation arrows */}

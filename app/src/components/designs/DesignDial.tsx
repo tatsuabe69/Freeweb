@@ -215,18 +215,6 @@ export default function DesignDial() {
 
         {/* ── Right: Content area ── */}
         <div className="flex-1 flex flex-col justify-center px-6 lg:px-10 py-10 min-w-0">
-          <div className="flex items-baseline gap-6 mb-2">
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-extralight tracking-tight leading-none">
-              Anything.
-            </h1>
-            <p className="text-xs md:text-sm text-muted-foreground font-light tracking-wide hidden md:block">
-              PDF・動画・画像 — なんでも、ブラウザだけで。
-            </p>
-          </div>
-          <p className="text-xs text-muted-foreground font-light tracking-wide mb-8 md:hidden">
-            PDF・動画・画像 — なんでも、ブラウザだけで。
-          </p>
-
           <div className="h-px w-full mb-6 transition-colors duration-500" style={{ backgroundColor: centerItem.color + "25" }} />
 
           <div className="flex flex-col lg:flex-row lg:items-start gap-6 lg:gap-10 transition-all duration-300">

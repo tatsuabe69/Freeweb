@@ -106,8 +106,46 @@ export default function SlidesCopyPage() {
         folderId: extractFolderId(folderId),
       });
 
-      const res = await fetch(`${gasUrl.trim()}?${params.toString()}`);
-      const data = await res.json();
+      const url = `${gasUrl.trim()}?${params.toString()}`;
+
+      // GAS Web Apps redirect from script.google.com to
+      // script.googleusercontent.com. On some browsers the 302 lacks
+      // CORS headers, so a normal fetch fails. Fall back to JSONP-style
+      // script injection when fetch throws a network error.
+      let data: { results?: CopyResult[]; error?: string };
+
+      try {
+        const res = await fetch(url);
+        data = await res.json();
+      } catch {
+        // fetch blocked by CORS – use callback approach
+        data = await new Promise((resolve, reject) => {
+          const cbName = `__gas_cb_${Date.now()}`;
+          const timeout = setTimeout(() => {
+            cleanup();
+            reject(new Error("timeout"));
+          }, 30000);
+
+          function cleanup() {
+            clearTimeout(timeout);
+            delete (window as unknown as Record<string, unknown>)[cbName];
+            script.remove();
+          }
+
+          (window as unknown as Record<string, unknown>)[cbName] = (d: typeof data) => {
+            cleanup();
+            resolve(d);
+          };
+
+          const script = document.createElement("script");
+          script.src = `${url}&callback=${cbName}`;
+          script.onerror = () => {
+            cleanup();
+            reject(new Error("script"));
+          };
+          document.body.appendChild(script);
+        });
+      }
 
       if (data.error) {
         setError(data.error);
@@ -116,7 +154,7 @@ export default function SlidesCopyPage() {
 
       setResults(data.results ?? []);
     } catch {
-      setError("GAS Web Appとの通信に失敗しました。URLが正しいか、デプロイ設定を確認してください。");
+      setError("GAS Web Appとの通信に失敗しました。デプロイ設定で「アクセスできるユーザー」が「全員」になっているか確認してください。");
     } finally {
       setLoading(false);
     }
@@ -320,6 +358,19 @@ export default function SlidesCopyPage() {
                   <p className="mb-2">既存のコードを全て消して、以下をコピー&ペースト：</p>
                   <pre className="bg-background border rounded-lg p-3 text-xs overflow-x-auto whitespace-pre">{`function doGet(e) {
   var params = e.parameter;
+  var callback = params.callback || "";
+
+  function jsonResp(obj) {
+    var json = JSON.stringify(obj);
+    if (callback) {
+      return ContentService
+        .createTextOutput(callback + "(" + json + ")")
+        .setMimeType(ContentService.MimeType.JAVASCRIPT);
+    }
+    return ContentService
+      .createTextOutput(json)
+      .setMimeType(ContentService.MimeType.JSON);
+  }
 
   if (params.action === "copy") {
     var slideId = params.slideId;
@@ -347,14 +398,10 @@ export default function SlidesCopyPage() {
       });
     }
 
-    return ContentService
-      .createTextOutput(JSON.stringify({ results: results }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return jsonResp({ results: results });
   }
 
-  return ContentService
-    .createTextOutput(JSON.stringify({ error: "Invalid action" }))
-    .setMimeType(ContentService.MimeType.JSON);
+  return jsonResp({ error: "Invalid action" });
 }`}</pre>
                 </div>
 
@@ -363,7 +410,7 @@ export default function SlidesCopyPage() {
                   <ol className="list-decimal list-inside space-y-1 ml-1">
                     <li>右上の「デプロイ」→「新しいデプロイ」をクリック</li>
                     <li>種類で「ウェブアプリ」を選択</li>
-                    <li>アクセスできるユーザーを「自分のみ」に設定</li>
+                    <li>アクセスできるユーザーを<strong className="text-foreground">「全員」</strong>に設定</li>
                     <li>「デプロイ」をクリック</li>
                     <li>初回はGoogleアカウントの認証を許可</li>
                     <li>表示されたURLをコピー</li>
