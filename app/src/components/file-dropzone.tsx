@@ -87,12 +87,12 @@ export function FileDropzone({
         onClick={() => inputRef.current?.click()}
         className={`
           relative flex flex-col items-center justify-center
-          min-h-[160px] rounded-lg border border-dashed
-          cursor-pointer transition-all duration-200
+          min-h-[160px] rounded-xl border border-dashed
+          cursor-pointer transition-all duration-200 backdrop-blur-md
           ${
             isDragOver
-              ? "border-primary bg-primary/5"
-              : "border-border hover:border-primary/40 hover:bg-muted/30"
+              ? "border-primary bg-primary/8 shadow-lg shadow-primary/5"
+              : "border-border hover:border-primary/40 hover:bg-card/40 hover:shadow-md"
           }
         `}
         role="button"
@@ -128,7 +128,7 @@ export function FileDropzone({
           {files.map((file, index) => (
             <div
               key={`${file.name}-${index}`}
-              className="flex items-center gap-3 rounded-lg border p-3 bg-card"
+              className="flex items-center gap-3 rounded-lg border p-3 bg-card shadow-sm"
             >
               <FileIcon className="h-5 w-5 text-muted-foreground shrink-0" />
               <div className="flex-1 min-w-0">

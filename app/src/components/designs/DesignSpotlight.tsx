@@ -122,7 +122,7 @@ export default function DesignSpotlight() {
           {/* Up arrow */}
           <button
             onClick={prev}
-            className="mb-6 w-8 h-8 rounded-full border border-border/30 flex items-center justify-center hover:bg-muted/30 transition-all"
+            className="mb-6 w-8 h-8 rounded-full border border-border/30 bg-card/40 backdrop-blur-md flex items-center justify-center hover:bg-card/60 hover:shadow-lg transition-all"
           >
             <ChevronUp className="h-4 w-4 text-muted-foreground" />
           </button>
@@ -138,7 +138,7 @@ export default function DesignSpotlight() {
               className="w-24 h-24 md:w-28 md:h-28 rounded-3xl flex items-center justify-center mb-6 transition-all duration-500"
               style={{
                 backgroundColor: item.color,
-                boxShadow: `0 20px 60px ${item.color}40, 0 0 120px ${item.color}15`,
+                boxShadow: `0 20px 60px ${item.color}40, 0 0 120px ${item.color}15, inset 0 2px 0 rgba(255,255,255,0.2)`,
               }}
             >
               <Icon className="h-10 w-10 md:h-12 md:w-12 text-white" />
@@ -204,7 +204,7 @@ export default function DesignSpotlight() {
           {/* Down arrow */}
           <button
             onClick={next}
-            className="mt-6 w-8 h-8 rounded-full border border-border/30 flex items-center justify-center hover:bg-muted/30 transition-all"
+            className="mt-6 w-8 h-8 rounded-full border border-border/30 bg-card/40 backdrop-blur-md flex items-center justify-center hover:bg-card/60 hover:shadow-lg transition-all"
           >
             <ChevronDown className="h-4 w-4 text-muted-foreground" />
           </button>

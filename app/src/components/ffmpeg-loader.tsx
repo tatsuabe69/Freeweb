@@ -22,7 +22,7 @@ export function FFmpegLoader({
   if (loaded) return null;
 
   return (
-    <div className="rounded-lg border border-border/60 bg-card p-5 space-y-3">
+    <div className="rounded-xl border border-border/60 bg-card p-5 space-y-3 shadow-sm">
       <div className="flex items-center gap-3">
         <Download className="h-4 w-4 text-primary/70" />
         <div>

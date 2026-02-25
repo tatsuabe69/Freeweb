@@ -80,13 +80,13 @@ export default function DesignCarousel() {
         {/* Navigation arrows */}
         <button
           onClick={prev}
-          className="absolute left-4 md:left-12 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full border border-border/40 bg-background/80 backdrop-blur-sm flex items-center justify-center hover:bg-muted/50 transition-all"
+          className="absolute left-4 md:left-12 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full border border-border/30 bg-card/60 backdrop-blur-xl shadow-lg flex items-center justify-center hover:bg-muted/50 transition-all"
         >
           <ChevronLeft className="h-5 w-5 text-muted-foreground" />
         </button>
         <button
           onClick={next}
-          className="absolute right-4 md:right-12 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full border border-border/40 bg-background/80 backdrop-blur-sm flex items-center justify-center hover:bg-muted/50 transition-all"
+          className="absolute right-4 md:right-12 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full border border-border/30 bg-card/60 backdrop-blur-xl shadow-lg flex items-center justify-center hover:bg-muted/50 transition-all"
         >
           <ChevronRight className="h-5 w-5 text-muted-foreground" />
         </button>
@@ -125,12 +125,12 @@ export default function DesignCarousel() {
                 }}
               >
                 <div
-                  className={`w-full h-full rounded-2xl border backdrop-blur-sm p-6 flex flex-col items-center justify-center gap-4 transition-all duration-500 ${
+                  className={`w-full h-full rounded-2xl border backdrop-blur-xl backdrop-saturate-150 p-6 flex flex-col items-center justify-center gap-4 transition-all duration-500 ${
                     isActive
-                      ? "border-border/60 bg-background/95 shadow-2xl"
-                      : "border-border/20 bg-muted/30"
+                      ? "border-border/60 bg-card shadow-2xl"
+                      : "border-border/20 bg-card/25"
                   }`}
-                  style={isActive ? { boxShadow: `0 20px 60px ${tool.color}20, 0 0 40px ${tool.color}10` } : undefined}
+                  style={isActive ? { boxShadow: `0 20px 60px ${tool.color}25, 0 0 40px ${tool.color}12, inset 0 1px 0 rgba(255,255,255,0.1)` } : { boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)' }}
                 >
                   {/* Icon */}
                   <div

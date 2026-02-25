@@ -118,7 +118,7 @@ export default function DesignDial() {
           onPointerUp={handlePointerUp}
         >
           <div
-            className="absolute rounded-full border border-border/15 pointer-events-none"
+            className="absolute rounded-full border border-border/20 pointer-events-none shadow-[0_0_80px_rgba(0,0,0,0.03)]"
             style={{
               width: ARC_RADIUS * 2,
               height: ARC_RADIUS * 2,
@@ -193,10 +193,10 @@ export default function DesignDial() {
                 }}
               >
                 <div
-                  className="flex items-center justify-center w-12 h-12 rounded-xl shrink-0 transition-all duration-300"
+                  className="flex items-center justify-center w-12 h-12 rounded-xl shrink-0 transition-all duration-300 backdrop-blur-md"
                   style={{
                     backgroundColor: isCenter ? item.color : "var(--color-muted)",
-                    boxShadow: isCenter ? `0 0 24px ${item.color}50` : "none",
+                    boxShadow: isCenter ? `0 0 24px ${item.color}50, 0 4px 12px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.15)` : "0 2px 8px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.06)",
                   }}
                 >
                   <Icon
@@ -287,7 +287,7 @@ export default function DesignDial() {
                       <Link
                         key={rel.href}
                         href={rel.href}
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border/30 hover:border-border hover:bg-muted/20 transition-all duration-200 group"
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border/30 bg-card/30 hover:bg-card/60 hover:border-border hover:shadow-md transition-all duration-200 group"
                       >
                         <div
                           className="w-6 h-6 rounded-md flex items-center justify-center transition-colors duration-200"
@@ -320,8 +320,8 @@ export default function DesignDial() {
                     href={tool.href}
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all duration-200 group ${
                       isCurrent
-                        ? "border-current bg-muted/40"
-                        : "border-border/30 hover:border-border hover:bg-muted/20"
+                        ? "border-current bg-card/50 shadow-md"
+                        : "border-border/30 bg-card/20 hover:bg-card/50 hover:border-border hover:shadow-md"
                     }`}
                     style={isCurrent ? { borderColor: tool.color + "40" } : undefined}
                   >

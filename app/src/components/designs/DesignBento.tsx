@@ -68,10 +68,11 @@ export default function DesignBento() {
         <div className="max-w-6xl mx-auto grid grid-cols-4 grid-rows-3 gap-3 h-full" style={{ minHeight: "calc(100vh - 240px)" }}>
           {/* Featured card (spans 2 cols, 3 rows) */}
           <div
-            className="col-span-2 row-span-3 rounded-2xl border border-border/40 p-8 flex flex-col justify-between relative overflow-hidden transition-all duration-500 group"
+            className="col-span-2 row-span-3 rounded-2xl border p-8 flex flex-col justify-between relative overflow-hidden transition-all duration-500 group"
             style={{
-              background: `linear-gradient(135deg, ${item.color}08, ${item.color}03)`,
-              borderColor: item.color + "25",
+              background: `linear-gradient(135deg, ${item.color}12, ${item.color}06, transparent)`,
+              borderColor: item.color + "30",
+              boxShadow: `0 8px 32px ${item.color}10, 0 2px 8px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.1)`,
             }}
           >
             {/* Background glow */}
@@ -149,8 +150,8 @@ export default function DesignBento() {
                 onClick={() => handleSelect(globalIdx)}
                 className={`rounded-xl border p-4 flex flex-col justify-between text-left transition-all duration-300 group relative overflow-hidden ${
                   isActive
-                    ? "border-border/60 bg-background shadow-md"
-                    : "border-border/20 bg-muted/10 hover:bg-muted/30 hover:border-border/40"
+                    ? "border-border/60 bg-card shadow-lg"
+                    : "border-border/20 bg-card/30 hover:bg-card/60 hover:border-border/40 hover:shadow-md"
                 }`}
                 style={isActive ? { borderColor: tool.color + "40" } : undefined}
               >
