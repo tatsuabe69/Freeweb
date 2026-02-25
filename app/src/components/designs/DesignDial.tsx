@@ -218,7 +218,7 @@ export default function DesignDial() {
           <div className="h-px w-full mb-6 transition-colors duration-500" style={{ backgroundColor: centerItem.color + "25" }} />
 
           <div className="flex flex-col lg:flex-row lg:items-start gap-6 lg:gap-10 transition-all duration-300">
-            <div className="shrink-0 lg:w-56">
+            <div className="shrink-0">
               <div className="flex items-center gap-2 mb-1.5">
                 <span
                   className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-widest transition-colors duration-300"
