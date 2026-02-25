@@ -105,37 +105,37 @@ export default function DesignDial() {
 
   const CenterIcon = centerItem.icon;
 
-  /* ── Star field via box-shadow (performant) ── */
-  const starShadows = useMemo(() => {
-    const layers: string[] = [];
-    for (let layer = 0; layer < 3; layer++) {
-      const count = layer === 0 ? 200 : layer === 1 ? 80 : 25;
-      const shadows: string[] = [];
-      for (let i = 0; i < count; i++) {
-        const seed = layer * 1000 + i;
-        const x = ((seed * 997) % 2000);
-        const y = ((seed * 991 + 500) % 2000);
-        shadows.push(`${x}px ${y}px var(--star-c)`);
-      }
-      layers.push(shadows.join(", "));
-    }
-    return layers;
-  }, []);
+  /* ── Cyber grid nodes (deterministic positions) ── */
+  const cyberNodes = useMemo(() =>
+    Array.from({ length: 12 }, (_, i) => ({
+      x: ((i * 127 + 30) % 90) + 5,
+      y: ((i * 89 + 15) % 85) + 5,
+      delay: (i * 0.7) % 3,
+      dur: 2.5 + (i * 0.4) % 2,
+    })),
+  []);
 
   return (
     <div className="min-h-[calc(100vh-60px)] flex justify-center overflow-hidden relative">
-      {/* ── Space Background ── */}
-      <div className="design-bg design-bg-space" aria-hidden="true">
-        <div className="space-stars">
-          <div className="space-star-layer space-star-sm" style={{ boxShadow: starShadows[0] }} />
-          <div className="space-star-layer space-star-twinkle" style={{ boxShadow: starShadows[1] }} />
-          <div className="space-star-layer space-star-lg space-star-twinkle" style={{ boxShadow: starShadows[2], animationDelay: "-2s" }} />
-        </div>
-        <div className="space-nebula space-nebula-1" />
-        <div className="space-nebula space-nebula-2" />
-        <div className="space-nebula space-nebula-3" />
-        <div className="space-shooting" />
-        <div className="space-shooting space-shooting-2" />
+      {/* ── Cyber Grid Background ── */}
+      <div className="design-bg design-bg-cyber" aria-hidden="true">
+        <div className="cyber-grid" />
+        <div className="cyber-floor" />
+        <div className="cyber-glow cyber-glow-1" />
+        <div className="cyber-glow cyber-glow-2" />
+        <div className="cyber-scan" />
+        {cyberNodes.map((n, i) => (
+          <div
+            key={i}
+            className="cyber-node"
+            style={{
+              left: `${n.x}%`,
+              top: `${n.y}%`,
+              animationDelay: `${n.delay}s`,
+              animationDuration: `${n.dur}s`,
+            }}
+          />
+        ))}
       </div>
 
       <div className="flex items-stretch w-full max-w-6xl">

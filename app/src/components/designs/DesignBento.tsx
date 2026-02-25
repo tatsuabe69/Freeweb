@@ -41,12 +41,14 @@ export default function DesignBento() {
 
   return (
     <div className="min-h-[calc(100vh-60px)] flex flex-col relative">
-      {/* ── Aurora Background ── */}
-      <div className="design-bg design-bg-aurora" aria-hidden="true">
-        <div className="aurora-stars" />
-        <div className="aurora-band aurora-band-1" />
-        <div className="aurora-band aurora-band-2" />
-        <div className="aurora-band aurora-band-3" />
+      {/* ── Holographic Background ── */}
+      <div className="design-bg design-bg-holo" aria-hidden="true">
+        <div className="holo-geo" />
+        <div className="holo-band holo-band-1" />
+        <div className="holo-band holo-band-2" />
+        <div className="holo-band holo-band-3" />
+        <div className="holo-orb holo-orb-1" />
+        <div className="holo-orb holo-orb-2" />
       </div>
 
       {/* Header */}

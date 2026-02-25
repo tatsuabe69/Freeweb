@@ -65,18 +65,12 @@ export default function DesignCarousel() {
   const item = tools[activeIdx];
   const Icon = item.icon;
 
-  /* ── Falling leaves data ── */
-  const leaves = useMemo(() =>
-    Array.from({ length: 14 }, (_, i) => ({
-      x: (i * 29 + 5) % 100,
-      size: 12 + (i * 5) % 14,
-      delay: (i * 2.1) % 12,
-      dur: 10 + (i * 3) % 10,
-      type: i % 4,
-      r: (i * 47) % 360,
-      dx: -50 + (i * 23) % 100,
-      s: 0.7 + (i * 13 % 7) / 10,
-      o: 0.3 + (i * 11 % 5) / 10,
+  /* ── Network particles data ── */
+  const particles = useMemo(() =>
+    Array.from({ length: 16 }, (_, i) => ({
+      x: (i * 31 + 8) % 96 + 2,
+      delay: (i * 1.8) % 14,
+      dur: 10 + (i * 3) % 12,
     })),
   []);
 
@@ -90,25 +84,23 @@ export default function DesignCarousel() {
 
   return (
     <div className="min-h-[calc(100vh-60px)] flex flex-col relative">
-      {/* ── Falling Leaves Background ── */}
-      <div className="design-bg design-bg-leaves" aria-hidden="true">
-        <div className="leaves-glow leaves-glow-1" />
-        <div className="leaves-glow leaves-glow-2" />
-        {leaves.map((l, i) => (
+      {/* ── Digital Network Background ── */}
+      <div className="design-bg design-bg-network" aria-hidden="true">
+        <div className="network-dots" />
+        <div className="network-glow network-glow-1" />
+        <div className="network-glow network-glow-2" />
+        <div className="network-radar" />
+        <div className="network-ring" style={{ width: 200, height: 200 }} />
+        <div className="network-ring" style={{ width: 600, height: 600 }} />
+        {particles.map((p, i) => (
           <div
             key={i}
-            className={`leaf leaf-${l.type}`}
+            className="network-particle"
             style={{
-              left: `${l.x}%`,
-              width: l.size,
-              height: l.size,
-              animationDelay: `${l.delay}s`,
-              animationDuration: `${l.dur}s`,
-              "--leaf-r": `${l.r}deg`,
-              "--leaf-dx": `${l.dx}px`,
-              "--leaf-s": l.s,
-              "--leaf-o": l.o,
-            } as React.CSSProperties}
+              left: `${p.x}%`,
+              animationDelay: `${p.delay}s`,
+              animationDuration: `${p.dur}s`,
+            }}
           />
         ))}
       </div>

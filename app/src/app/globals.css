@@ -60,7 +60,7 @@
   --secondary: oklch(0.96 0.005 260 / 0.55);
   --secondary-foreground: oklch(0.25 0.02 260);
   --muted: oklch(0.96 0.005 260 / 0.45);
-  --muted-foreground: oklch(0.50 0.01 260);
+  --muted-foreground: oklch(0.38 0.015 260);
   --accent: oklch(0.96 0.008 260 / 0.5);
   --accent-foreground: oklch(0.25 0.02 260);
   --destructive: oklch(0.577 0.245 27.325);
@@ -314,260 +314,341 @@
   pointer-events: none;
 }
 
-/* ── 1. Space / Cosmic (Dial) ── */
+/* ── 1. Cyber Grid (Dial) ── */
 
-.design-bg-space {
-  background: radial-gradient(ellipse at 30% 80%, oklch(0.92 0.04 280), oklch(0.96 0.02 260), oklch(0.98 0.01 250));
+.design-bg-cyber {
+  background: linear-gradient(160deg, oklch(0.95 0.02 220), oklch(0.97 0.01 240), oklch(0.96 0.015 260));
 }
-.dark .design-bg-space {
-  background: radial-gradient(ellipse at 30% 80%, oklch(0.10 0.06 280), oklch(0.05 0.03 260), oklch(0.02 0.01 240));
+.dark .design-bg-cyber {
+  background: linear-gradient(160deg, oklch(0.06 0.03 220), oklch(0.04 0.02 240), oklch(0.07 0.03 260));
 }
 
-.space-stars {
+/* Grid lines */
+.cyber-grid {
   position: absolute;
   inset: 0;
+  background-image:
+    linear-gradient(oklch(0.55 0.08 210 / 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, oklch(0.55 0.08 210 / 0.06) 1px, transparent 1px);
+  background-size: 60px 60px;
 }
-.space-star-layer {
+.dark .cyber-grid {
+  background-image:
+    linear-gradient(oklch(0.40 0.12 210 / 0.14) 1px, transparent 1px),
+    linear-gradient(90deg, oklch(0.40 0.12 210 / 0.14) 1px, transparent 1px);
+}
+
+/* Perspective floor grid */
+.cyber-floor {
   position: absolute;
-  width: 2px;
-  height: 2px;
-  border-radius: 50%;
-  background: transparent;
-  top: 0;
-  left: 0;
+  bottom: 0;
+  left: -50%;
+  right: -50%;
+  height: 55%;
+  background-image:
+    linear-gradient(oklch(0.50 0.10 200 / 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, oklch(0.50 0.10 200 / 0.05) 1px, transparent 1px);
+  background-size: 80px 40px;
+  transform: perspective(500px) rotateX(60deg);
+  transform-origin: center bottom;
+  mask-image: linear-gradient(to top, white 0%, transparent 70%);
+  -webkit-mask-image: linear-gradient(to top, white 0%, transparent 70%);
 }
-.space-star-sm {
-  width: 1px;
-  height: 1px;
-}
-.space-star-lg {
-  width: 3px;
-  height: 3px;
-}
-.space-star-twinkle {
-  animation: twinkle 4s ease-in-out infinite alternate;
+.dark .cyber-floor {
+  background-image:
+    linear-gradient(oklch(0.40 0.12 200 / 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, oklch(0.40 0.12 200 / 0.12) 1px, transparent 1px);
 }
 
-/* Star color */
-.space-star-layer { --star-c: oklch(0.45 0.01 260); }
-.dark .space-star-layer { --star-c: oklch(0.95 0.01 260); }
-
-.space-nebula {
+/* Glow orbs */
+.cyber-glow {
   position: absolute;
   border-radius: 50%;
   filter: blur(80px);
-  animation: orb-float 30s ease-in-out infinite;
-}
-.space-nebula-1 {
-  width: 500px; height: 500px;
-  top: 5%; right: -8%;
-  background: radial-gradient(circle, oklch(0.82 0.12 300) 0%, transparent 70%);
-  opacity: 0.25;
-}
-.space-nebula-2 {
-  width: 400px; height: 400px;
-  bottom: 15%; left: 5%;
-  background: radial-gradient(circle, oklch(0.85 0.10 250) 0%, transparent 70%);
-  opacity: 0.2;
-  animation-delay: -10s;
-  animation-duration: 25s;
-}
-.space-nebula-3 {
-  width: 300px; height: 300px;
-  top: 45%; left: 40%;
-  background: radial-gradient(circle, oklch(0.88 0.08 200) 0%, transparent 70%);
-  opacity: 0.15;
-  animation-delay: -18s;
-  animation-duration: 35s;
-}
-
-.dark .space-nebula-1 {
-  background: radial-gradient(circle, oklch(0.30 0.18 300) 0%, transparent 70%);
-  opacity: 0.45;
-}
-.dark .space-nebula-2 {
-  background: radial-gradient(circle, oklch(0.25 0.15 250) 0%, transparent 70%);
-  opacity: 0.35;
-}
-.dark .space-nebula-3 {
-  background: radial-gradient(circle, oklch(0.28 0.12 200) 0%, transparent 70%);
-  opacity: 0.3;
-}
-
-.space-shooting {
-  position: absolute;
-  width: 100px;
-  height: 2px;
-  top: 12%;
-  right: -120px;
-  background: linear-gradient(to left, transparent, oklch(0.70 0.05 260));
-  border-radius: 2px;
-  opacity: 0;
-  animation: shooting-star 9s linear infinite;
-  animation-delay: 2s;
-}
-.dark .space-shooting {
-  background: linear-gradient(to left, transparent, oklch(0.95 0.02 260));
-}
-.space-shooting-2 {
-  top: 35%;
-  right: -80px;
-  width: 70px;
-  animation-delay: 6s;
-  animation-duration: 12s;
-}
-
-@keyframes twinkle {
-  0% { opacity: 0.3; }
-  100% { opacity: 1; }
-}
-@keyframes shooting-star {
-  0% { transform: translate(0, 0) rotate(-35deg); opacity: 0; }
-  1% { opacity: 0.9; }
-  6% { transform: translate(-500px, 250px) rotate(-35deg); opacity: 0; }
-  100% { opacity: 0; }
-}
-
-/* ── 2. Falling Leaves (Carousel) ── */
-
-.design-bg-leaves {
-  background: linear-gradient(180deg, oklch(0.95 0.02 70) 0%, oklch(0.97 0.015 50) 50%, oklch(0.96 0.01 80) 100%);
-}
-.dark .design-bg-leaves {
-  background: linear-gradient(180deg, oklch(0.12 0.02 40) 0%, oklch(0.10 0.015 30) 50%, oklch(0.11 0.01 50) 100%);
-}
-
-.leaves-glow {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(100px);
   animation: orb-float 20s ease-in-out infinite;
 }
-.leaves-glow-1 {
+.cyber-glow-1 {
   width: 500px; height: 500px;
-  top: -10%; right: 10%;
-  background: radial-gradient(circle, oklch(0.88 0.10 60) 0%, transparent 70%);
-  opacity: 0.3;
+  top: -10%; right: 5%;
+  background: radial-gradient(circle, oklch(0.80 0.12 200) 0%, transparent 70%);
+  opacity: 0.18;
 }
-.leaves-glow-2 {
+.cyber-glow-2 {
   width: 400px; height: 400px;
   bottom: 10%; left: -5%;
-  background: radial-gradient(circle, oklch(0.85 0.12 30) 0%, transparent 70%);
-  opacity: 0.2;
+  background: radial-gradient(circle, oklch(0.75 0.15 230) 0%, transparent 70%);
+  opacity: 0.14;
   animation-delay: -8s;
   animation-duration: 25s;
 }
-.dark .leaves-glow-1 {
-  background: radial-gradient(circle, oklch(0.30 0.10 50) 0%, transparent 70%);
-  opacity: 0.35;
+.dark .cyber-glow-1 {
+  background: radial-gradient(circle, oklch(0.28 0.16 200) 0%, transparent 70%);
+  opacity: 0.45;
 }
-.dark .leaves-glow-2 {
-  background: radial-gradient(circle, oklch(0.25 0.10 30) 0%, transparent 70%);
-  opacity: 0.3;
+.dark .cyber-glow-2 {
+  background: radial-gradient(circle, oklch(0.22 0.18 230) 0%, transparent 70%);
+  opacity: 0.38;
 }
 
-.leaf {
+/* Scanning line */
+.cyber-scan {
   position: absolute;
-  top: -40px;
-  width: 20px;
-  height: 20px;
-  border-radius: 2px 50% 50% 50%;
-  opacity: 0;
-  animation: leaf-fall linear infinite;
+  left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, oklch(0.60 0.15 200 / 0.4), transparent);
+  animation: cyber-scan-move 7s linear infinite;
+}
+.dark .cyber-scan {
+  background: linear-gradient(90deg, transparent, oklch(0.50 0.18 200 / 0.6), transparent);
+  height: 2px;
+  box-shadow: 0 0 20px oklch(0.45 0.15 200 / 0.3);
+}
+
+/* Pulsing nodes at grid intersections */
+.cyber-node {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: oklch(0.65 0.12 200);
+  box-shadow: 0 0 8px oklch(0.60 0.12 200 / 0.4);
+  animation: node-pulse 3s ease-in-out infinite;
   will-change: transform;
 }
-.leaf-0 { background: oklch(0.68 0.14 55); }
-.leaf-1 { background: oklch(0.58 0.16 35); }
-.leaf-2 { background: oklch(0.72 0.11 80); }
-.leaf-3 { background: oklch(0.62 0.13 25); }
-.dark .leaf-0 { background: oklch(0.50 0.10 55); }
-.dark .leaf-1 { background: oklch(0.42 0.12 35); }
-.dark .leaf-2 { background: oklch(0.55 0.08 80); }
-.dark .leaf-3 { background: oklch(0.45 0.10 25); }
-
-@keyframes leaf-fall {
-  0% {
-    transform: translate(0, 0) rotate(var(--leaf-r, 0deg)) scale(var(--leaf-s, 1));
-    opacity: 0;
-  }
-  3% { opacity: var(--leaf-o, 0.5); }
-  50% {
-    transform: translate(var(--leaf-dx, 60px), 50vh) rotate(calc(var(--leaf-r, 0deg) + 360deg)) scale(var(--leaf-s, 1));
-  }
-  97% { opacity: var(--leaf-o, 0.5); }
-  100% {
-    transform: translate(calc(var(--leaf-dx, 60px) * -0.5), calc(100vh + 40px)) rotate(calc(var(--leaf-r, 0deg) + 720deg)) scale(calc(var(--leaf-s, 1) * 0.8));
-    opacity: 0;
-  }
+.dark .cyber-node {
+  background: oklch(0.55 0.18 200);
+  box-shadow: 0 0 12px oklch(0.50 0.18 200 / 0.6);
 }
 
-/* ── 3. Aurora / Northern Lights (Grid) ── */
-
-.design-bg-aurora {
-  background: linear-gradient(180deg, oklch(0.96 0.015 260) 0%, oklch(0.97 0.01 250) 40%, oklch(0.96 0.005 240) 100%);
+@keyframes cyber-scan-move {
+  0% { top: -2px; opacity: 0; }
+  5% { opacity: 1; }
+  95% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
 }
-.dark .design-bg-aurora {
-  background: linear-gradient(180deg, oklch(0.07 0.02 260) 0%, oklch(0.10 0.015 250) 40%, oklch(0.08 0.01 260) 100%);
+@keyframes node-pulse {
+  0%, 100% { opacity: 0.2; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.8); }
 }
 
-.aurora-stars {
+/* ── 2. Digital Network (Carousel) ── */
+
+.design-bg-network {
+  background: linear-gradient(180deg, oklch(0.96 0.015 270), oklch(0.97 0.01 280), oklch(0.95 0.02 260));
+}
+.dark .design-bg-network {
+  background: linear-gradient(180deg, oklch(0.06 0.025 270), oklch(0.04 0.02 280), oklch(0.07 0.025 260));
+}
+
+/* Dot grid / node map */
+.network-dots {
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(circle, oklch(0.50 0.01 260 / 0.06) 1px, transparent 1px);
-  background-size: 48px 48px;
+  background-image: radial-gradient(circle, oklch(0.50 0.08 270 / 0.08) 1.5px, transparent 1.5px);
+  background-size: 44px 44px;
 }
-.dark .aurora-stars {
-  background-image: radial-gradient(circle, oklch(0.80 0.01 260 / 0.12) 1px, transparent 1px);
+.dark .network-dots {
+  background-image: radial-gradient(circle, oklch(0.50 0.12 270 / 0.18) 1.5px, transparent 1.5px);
 }
 
-.aurora-band {
+/* Glow orbs */
+.network-glow {
   position: absolute;
-  left: -20%;
-  right: -20%;
-  height: 180px;
-  filter: blur(50px);
-  opacity: 0.25;
-  animation: aurora-wave ease-in-out infinite;
-  will-change: transform;
+  border-radius: 50%;
+  filter: blur(80px);
+  animation: orb-float 22s ease-in-out infinite;
 }
-.aurora-band-1 {
-  top: 8%;
-  background: linear-gradient(90deg, transparent 5%, oklch(0.70 0.18 160) 25%, oklch(0.65 0.15 180) 50%, oklch(0.60 0.12 200) 75%, transparent 95%);
-  animation-duration: 14s;
-}
-.aurora-band-2 {
-  top: 18%;
-  background: linear-gradient(90deg, transparent 10%, oklch(0.65 0.12 280) 30%, oklch(0.70 0.15 300) 55%, oklch(0.65 0.10 160) 80%, transparent 95%);
-  animation-duration: 18s;
-  animation-delay: -6s;
+.network-glow-1 {
+  width: 500px; height: 500px;
+  top: 10%; left: -8%;
+  background: radial-gradient(circle, oklch(0.82 0.10 270) 0%, transparent 70%);
   opacity: 0.18;
 }
-.aurora-band-3 {
-  top: 3%;
-  background: linear-gradient(90deg, transparent 15%, oklch(0.75 0.12 140) 40%, oklch(0.70 0.16 170) 65%, transparent 90%);
-  animation-duration: 22s;
-  animation-delay: -12s;
+.network-glow-2 {
+  width: 450px; height: 450px;
+  bottom: -5%; right: 5%;
+  background: radial-gradient(circle, oklch(0.78 0.12 300) 0%, transparent 70%);
   opacity: 0.15;
+  animation-delay: -10s;
+  animation-duration: 28s;
+}
+.dark .network-glow-1 {
+  background: radial-gradient(circle, oklch(0.28 0.14 270) 0%, transparent 70%);
+  opacity: 0.42;
+}
+.dark .network-glow-2 {
+  background: radial-gradient(circle, oklch(0.25 0.15 300) 0%, transparent 70%);
+  opacity: 0.36;
 }
 
-.dark .aurora-band { opacity: 0.45; }
-.dark .aurora-band-1 {
-  background: linear-gradient(90deg, transparent 5%, oklch(0.45 0.20 160) 25%, oklch(0.40 0.18 180) 50%, oklch(0.35 0.15 200) 75%, transparent 95%);
+/* Floating data particles */
+.network-particle {
+  position: absolute;
+  bottom: -10px;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: oklch(0.60 0.12 270);
+  opacity: 0;
+  animation: network-float linear infinite;
+  will-change: transform;
 }
-.dark .aurora-band-2 {
-  background: linear-gradient(90deg, transparent 10%, oklch(0.38 0.15 280) 30%, oklch(0.42 0.18 300) 55%, oklch(0.40 0.12 160) 80%, transparent 95%);
-  opacity: 0.35;
-}
-.dark .aurora-band-3 {
-  background: linear-gradient(90deg, transparent 15%, oklch(0.50 0.14 140) 40%, oklch(0.45 0.18 170) 65%, transparent 90%);
-  opacity: 0.3;
+.dark .network-particle {
+  background: oklch(0.55 0.16 270);
+  box-shadow: 0 0 6px oklch(0.50 0.15 270 / 0.4);
 }
 
-@keyframes aurora-wave {
-  0%, 100% { transform: translateX(0) scaleY(1) skewX(0deg); }
-  25% { transform: translateX(6%) scaleY(1.4) skewX(2deg); }
-  50% { transform: translateX(-4%) scaleY(0.7) skewX(-1deg); }
-  75% { transform: translateX(5%) scaleY(1.3) skewX(1deg); }
+/* Radar sweep */
+.network-radar {
+  position: absolute;
+  width: 400px; height: 400px;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 1px solid oklch(0.55 0.08 270 / 0.05);
+}
+.network-radar::after {
+  content: "";
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 50%; height: 2px;
+  transform-origin: left center;
+  background: linear-gradient(to right, oklch(0.60 0.12 270 / 0.2), transparent);
+  animation: radar-sweep 6s linear infinite;
+}
+.dark .network-radar {
+  border-color: oklch(0.45 0.10 270 / 0.1);
+}
+.dark .network-radar::after {
+  background: linear-gradient(to right, oklch(0.50 0.16 270 / 0.4), transparent);
+}
+
+/* Inner ring */
+.network-ring {
+  position: absolute;
+  top: 50%; left: 50%;
+  border-radius: 50%;
+  border: 1px solid oklch(0.55 0.06 270 / 0.04);
+  transform: translate(-50%, -50%);
+}
+.dark .network-ring {
+  border-color: oklch(0.45 0.08 270 / 0.08);
+}
+
+@keyframes network-float {
+  0% { transform: translateY(0); opacity: 0; }
+  5% { opacity: 0.5; }
+  90% { opacity: 0.12; }
+  100% { transform: translateY(calc(-100vh - 20px)); opacity: 0; }
+}
+@keyframes radar-sweep {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ── 3. Holographic / Prism (Grid) ── */
+
+.design-bg-holo {
+  background: linear-gradient(135deg, oklch(0.96 0.015 250), oklch(0.97 0.01 260), oklch(0.95 0.02 280));
+}
+.dark .design-bg-holo {
+  background: linear-gradient(135deg, oklch(0.06 0.025 250), oklch(0.05 0.02 260), oklch(0.08 0.03 280));
+}
+
+/* Triangular geometric grid */
+.holo-geo {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(60deg, oklch(0.50 0.06 260 / 0.04) 1px, transparent 1px),
+    linear-gradient(-60deg, oklch(0.50 0.06 260 / 0.04) 1px, transparent 1px),
+    linear-gradient(0deg, oklch(0.50 0.06 260 / 0.03) 1px, transparent 1px);
+  background-size: 50px 86px;
+}
+.dark .holo-geo {
+  background-image:
+    linear-gradient(60deg, oklch(0.42 0.08 260 / 0.10) 1px, transparent 1px),
+    linear-gradient(-60deg, oklch(0.42 0.08 260 / 0.10) 1px, transparent 1px),
+    linear-gradient(0deg, oklch(0.42 0.08 260 / 0.07) 1px, transparent 1px);
+}
+
+/* Prismatic gradient bands */
+.holo-band {
+  position: absolute;
+  left: -20%; right: -20%;
+  height: 150px;
+  filter: blur(40px);
+  opacity: 0.10;
+  animation: holo-shift ease-in-out infinite;
+  will-change: transform;
+}
+.holo-band-1 {
+  top: 15%;
+  background: linear-gradient(90deg, transparent, oklch(0.75 0.14 350), oklch(0.70 0.16 20), oklch(0.75 0.12 50), transparent);
+  animation-duration: 16s;
+}
+.holo-band-2 {
+  top: 42%;
+  background: linear-gradient(90deg, transparent, oklch(0.70 0.12 180), oklch(0.75 0.14 210), oklch(0.70 0.10 240), transparent);
+  animation-duration: 20s;
+  animation-delay: -7s;
+  opacity: 0.07;
+}
+.holo-band-3 {
+  top: 68%;
+  background: linear-gradient(90deg, transparent, oklch(0.75 0.10 280), oklch(0.70 0.14 310), oklch(0.75 0.12 340), transparent);
+  animation-duration: 24s;
+  animation-delay: -14s;
+  opacity: 0.05;
+}
+
+.dark .holo-band { opacity: 0.28; }
+.dark .holo-band-1 {
+  background: linear-gradient(90deg, transparent, oklch(0.38 0.18 350), oklch(0.35 0.20 20), oklch(0.38 0.16 50), transparent);
+}
+.dark .holo-band-2 {
+  background: linear-gradient(90deg, transparent, oklch(0.35 0.15 180), oklch(0.38 0.18 210), oklch(0.35 0.12 240), transparent);
+  opacity: 0.22;
+}
+.dark .holo-band-3 {
+  background: linear-gradient(90deg, transparent, oklch(0.38 0.14 280), oklch(0.35 0.17 310), oklch(0.38 0.15 340), transparent);
+  opacity: 0.16;
+}
+
+/* Iridescent orbs (conic gradient for rainbow) */
+.holo-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  animation: orb-float 18s ease-in-out infinite;
+}
+.holo-orb-1 {
+  width: 300px; height: 300px;
+  top: 20%; right: 10%;
+  background: conic-gradient(from 0deg, oklch(0.82 0.12 0), oklch(0.82 0.12 120), oklch(0.82 0.12 240), oklch(0.82 0.12 360));
+  opacity: 0.10;
+}
+.holo-orb-2 {
+  width: 250px; height: 250px;
+  bottom: 15%; left: 15%;
+  background: conic-gradient(from 90deg, oklch(0.80 0.10 60), oklch(0.80 0.10 180), oklch(0.80 0.10 300), oklch(0.80 0.10 420));
+  opacity: 0.07;
+  animation-delay: -6s;
+  animation-duration: 24s;
+}
+.dark .holo-orb-1 {
+  background: conic-gradient(from 0deg, oklch(0.35 0.16 0), oklch(0.35 0.16 120), oklch(0.35 0.16 240), oklch(0.35 0.16 360));
+  opacity: 0.28;
+}
+.dark .holo-orb-2 {
+  background: conic-gradient(from 90deg, oklch(0.32 0.14 60), oklch(0.32 0.14 180), oklch(0.32 0.14 300), oklch(0.32 0.14 420));
+  opacity: 0.22;
+}
+
+@keyframes holo-shift {
+  0%, 100% { transform: translateX(0) scaleX(1); }
+  33% { transform: translateX(8%) scaleX(1.1); }
+  66% { transform: translateX(-5%) scaleX(0.95); }
 }
 
 /* ── 4. Ocean / Deep Sea (Tile) ── */
