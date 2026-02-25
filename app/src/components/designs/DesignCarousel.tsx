@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Shield, Zap, Globe } from "lucide-react";
 import { tools } from "@/lib/tools";
@@ -65,15 +65,6 @@ export default function DesignCarousel() {
   const item = tools[activeIdx];
   const Icon = item.icon;
 
-  /* ── Network particles data ── */
-  const particles = useMemo(() =>
-    Array.from({ length: 16 }, (_, i) => ({
-      x: (i * 31 + 8) % 96 + 2,
-      delay: (i * 1.8) % 14,
-      dur: 10 + (i * 3) % 12,
-    })),
-  []);
-
   // Get visible cards (5 around active)
   const getOffset = (idx: number) => {
     let diff = idx - activeIdx;
@@ -84,25 +75,10 @@ export default function DesignCarousel() {
 
   return (
     <div className="min-h-[calc(100vh-60px)] flex flex-col relative">
-      {/* ── Digital Network Background ── */}
-      <div className="design-bg design-bg-network" aria-hidden="true">
-        <div className="network-dots" />
-        <div className="network-glow network-glow-1" />
-        <div className="network-glow network-glow-2" />
-        <div className="network-radar" />
-        <div className="network-ring" style={{ width: 200, height: 200 }} />
-        <div className="network-ring" style={{ width: 600, height: 600 }} />
-        {particles.map((p, i) => (
-          <div
-            key={i}
-            className="network-particle"
-            style={{
-              left: `${p.x}%`,
-              animationDelay: `${p.delay}s`,
-              animationDuration: `${p.dur}s`,
-            }}
-          />
-        ))}
+      {/* ── Background ── */}
+      <div className="design-bg dbg-carousel" aria-hidden="true">
+        <div className="design-orb" />
+        <div className="design-orb design-orb-2" />
       </div>
 
       {/* Carousel area */}

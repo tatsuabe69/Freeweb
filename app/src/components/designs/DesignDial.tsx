@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { Shield, Zap, Globe } from "lucide-react";
 import { tools, getCategoryTools } from "@/lib/tools";
@@ -105,37 +105,12 @@ export default function DesignDial() {
 
   const CenterIcon = centerItem.icon;
 
-  /* ── Cyber grid nodes (deterministic positions) ── */
-  const cyberNodes = useMemo(() =>
-    Array.from({ length: 12 }, (_, i) => ({
-      x: ((i * 127 + 30) % 90) + 5,
-      y: ((i * 89 + 15) % 85) + 5,
-      delay: (i * 0.7) % 3,
-      dur: 2.5 + (i * 0.4) % 2,
-    })),
-  []);
-
   return (
     <div className="min-h-[calc(100vh-60px)] flex justify-center overflow-hidden relative">
-      {/* ── Cyber Grid Background ── */}
-      <div className="design-bg design-bg-cyber" aria-hidden="true">
-        <div className="cyber-grid" />
-        <div className="cyber-floor" />
-        <div className="cyber-glow cyber-glow-1" />
-        <div className="cyber-glow cyber-glow-2" />
-        <div className="cyber-scan" />
-        {cyberNodes.map((n, i) => (
-          <div
-            key={i}
-            className="cyber-node"
-            style={{
-              left: `${n.x}%`,
-              top: `${n.y}%`,
-              animationDelay: `${n.delay}s`,
-              animationDuration: `${n.dur}s`,
-            }}
-          />
-        ))}
+      {/* ── Background ── */}
+      <div className="design-bg dbg-dial" aria-hidden="true">
+        <div className="design-orb" />
+        <div className="design-orb design-orb-2" />
       </div>
 
       <div className="flex items-stretch w-full max-w-6xl">

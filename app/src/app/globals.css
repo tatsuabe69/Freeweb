@@ -178,7 +178,7 @@
   }
 }
 
-/* ── Rich background with depth ── */
+/* ── Background ── */
 
 .bg-depth {
   position: fixed;
@@ -188,111 +188,33 @@
   pointer-events: none;
 }
 
-/* Subtle noise texture overlay */
-.bg-depth::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  opacity: 0.025;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-repeat: repeat;
-  background-size: 256px 256px;
-}
-.dark .bg-depth::after {
-  opacity: 0.04;
-}
-
-/* Dot grid for subtle structure */
-.bg-depth-grid {
-  position: absolute;
-  inset: 0;
-  background-image: radial-gradient(circle, oklch(0.50 0.01 260 / 0.08) 1px, transparent 1px);
-  background-size: 32px 32px;
-}
-.dark .bg-depth-grid {
-  background-image: radial-gradient(circle, oklch(0.60 0.02 260 / 0.06) 1px, transparent 1px);
-}
-
-/* Gradient orbs – light mode */
 .bg-orb {
   position: absolute;
   border-radius: 50%;
   filter: blur(100px);
-  opacity: 0.3;
   animation: orb-float 20s ease-in-out infinite;
 }
-
 .bg-orb-1 {
-  width: 600px;
-  height: 600px;
-  top: -10%;
-  right: -5%;
-  background: radial-gradient(circle, oklch(0.85 0.12 260) 0%, transparent 70%);
-  animation-delay: 0s;
-}
-.bg-orb-2 {
-  width: 500px;
-  height: 500px;
-  bottom: -5%;
-  left: -8%;
-  background: radial-gradient(circle, oklch(0.88 0.08 180) 0%, transparent 70%);
-  animation-delay: -7s;
-  animation-duration: 25s;
-}
-.bg-orb-3 {
-  width: 400px;
-  height: 400px;
-  top: 40%;
-  left: 50%;
-  background: radial-gradient(circle, oklch(0.90 0.10 320) 0%, transparent 70%);
-  animation-delay: -13s;
-  animation-duration: 30s;
-  opacity: 0.2;
-}
-
-/* Gradient orbs – dark mode */
-.dark .bg-orb-1 {
-  background: radial-gradient(circle, oklch(0.30 0.12 260) 0%, transparent 70%);
-  opacity: 0.4;
-}
-.dark .bg-orb-2 {
-  background: radial-gradient(circle, oklch(0.25 0.08 180) 0%, transparent 70%);
-  opacity: 0.35;
-}
-.dark .bg-orb-3 {
-  background: radial-gradient(circle, oklch(0.28 0.10 320) 0%, transparent 70%);
+  width: 550px; height: 550px;
+  top: -10%; right: -5%;
+  background: radial-gradient(circle, oklch(0.85 0.10 260) 0%, transparent 70%);
   opacity: 0.25;
 }
-
-/* Vignette for depth framing */
-.bg-depth-vignette {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse at center, transparent 50%, oklch(0.985 0.002 260 / 0.6) 100%);
+.bg-orb-2 {
+  width: 450px; height: 450px;
+  bottom: -5%; left: -8%;
+  background: radial-gradient(circle, oklch(0.88 0.08 200) 0%, transparent 70%);
+  opacity: 0.20;
+  animation-delay: -8s;
+  animation-duration: 26s;
 }
-.dark .bg-depth-vignette {
-  background: radial-gradient(ellipse at center, transparent 40%, oklch(0.08 0.015 260 / 0.7) 100%);
+.dark .bg-orb-1 {
+  background: radial-gradient(circle, oklch(0.28 0.12 260) 0%, transparent 70%);
+  opacity: 0.35;
 }
-
-/* Top gradient wash */
-.bg-depth-wash {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 50vh;
-  background: linear-gradient(
-    180deg,
-    oklch(0.96 0.015 260 / 0.5) 0%,
-    transparent 100%
-  );
-}
-.dark .bg-depth-wash {
-  background: linear-gradient(
-    180deg,
-    oklch(0.15 0.025 260 / 0.6) 0%,
-    transparent 100%
-  );
+.dark .bg-orb-2 {
+  background: radial-gradient(circle, oklch(0.24 0.08 200) 0%, transparent 70%);
+  opacity: 0.30;
 }
 
 @keyframes orb-float {
@@ -301,11 +223,8 @@
   66% { transform: translate(-20px, 15px) scale(0.95); }
 }
 
-/* ══════════════════════════════════════════════
-   Design-specific Backgrounds
-   ══════════════════════════════════════════════ */
+/* ── Design Backgrounds (gradient + 2 orbs each) ── */
 
-/* Shared base */
 .design-bg {
   position: fixed;
   inset: 0;
@@ -313,459 +232,45 @@
   overflow: hidden;
   pointer-events: none;
 }
-
-/* ── 1. Cyber Grid (Dial) ── */
-
-.design-bg-cyber {
-  background: linear-gradient(160deg, oklch(0.95 0.02 220), oklch(0.97 0.01 240), oklch(0.96 0.015 260));
-}
-.dark .design-bg-cyber {
-  background: linear-gradient(160deg, oklch(0.06 0.03 220), oklch(0.04 0.02 240), oklch(0.07 0.03 260));
-}
-
-/* Grid lines */
-.cyber-grid {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(oklch(0.55 0.08 210 / 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, oklch(0.55 0.08 210 / 0.06) 1px, transparent 1px);
-  background-size: 60px 60px;
-}
-.dark .cyber-grid {
-  background-image:
-    linear-gradient(oklch(0.40 0.12 210 / 0.14) 1px, transparent 1px),
-    linear-gradient(90deg, oklch(0.40 0.12 210 / 0.14) 1px, transparent 1px);
-}
-
-/* Perspective floor grid */
-.cyber-floor {
-  position: absolute;
-  bottom: 0;
-  left: -50%;
-  right: -50%;
-  height: 55%;
-  background-image:
-    linear-gradient(oklch(0.50 0.10 200 / 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, oklch(0.50 0.10 200 / 0.05) 1px, transparent 1px);
-  background-size: 80px 40px;
-  transform: perspective(500px) rotateX(60deg);
-  transform-origin: center bottom;
-  mask-image: linear-gradient(to top, white 0%, transparent 70%);
-  -webkit-mask-image: linear-gradient(to top, white 0%, transparent 70%);
-}
-.dark .cyber-floor {
-  background-image:
-    linear-gradient(oklch(0.40 0.12 200 / 0.12) 1px, transparent 1px),
-    linear-gradient(90deg, oklch(0.40 0.12 200 / 0.12) 1px, transparent 1px);
-}
-
-/* Glow orbs */
-.cyber-glow {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  animation: orb-float 20s ease-in-out infinite;
-}
-.cyber-glow-1 {
-  width: 500px; height: 500px;
-  top: -10%; right: 5%;
-  background: radial-gradient(circle, oklch(0.80 0.12 200) 0%, transparent 70%);
-  opacity: 0.18;
-}
-.cyber-glow-2 {
-  width: 400px; height: 400px;
-  bottom: 10%; left: -5%;
-  background: radial-gradient(circle, oklch(0.75 0.15 230) 0%, transparent 70%);
-  opacity: 0.14;
-  animation-delay: -8s;
-  animation-duration: 25s;
-}
-.dark .cyber-glow-1 {
-  background: radial-gradient(circle, oklch(0.28 0.16 200) 0%, transparent 70%);
-  opacity: 0.45;
-}
-.dark .cyber-glow-2 {
-  background: radial-gradient(circle, oklch(0.22 0.18 230) 0%, transparent 70%);
-  opacity: 0.38;
-}
-
-/* Scanning line */
-.cyber-scan {
-  position: absolute;
-  left: 0; right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, oklch(0.60 0.15 200 / 0.4), transparent);
-  animation: cyber-scan-move 7s linear infinite;
-}
-.dark .cyber-scan {
-  background: linear-gradient(90deg, transparent, oklch(0.50 0.18 200 / 0.6), transparent);
-  height: 2px;
-  box-shadow: 0 0 20px oklch(0.45 0.15 200 / 0.3);
-}
-
-/* Pulsing nodes at grid intersections */
-.cyber-node {
-  position: absolute;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: oklch(0.65 0.12 200);
-  box-shadow: 0 0 8px oklch(0.60 0.12 200 / 0.4);
-  animation: node-pulse 3s ease-in-out infinite;
-  will-change: transform;
-}
-.dark .cyber-node {
-  background: oklch(0.55 0.18 200);
-  box-shadow: 0 0 12px oklch(0.50 0.18 200 / 0.6);
-}
-
-@keyframes cyber-scan-move {
-  0% { top: -2px; opacity: 0; }
-  5% { opacity: 1; }
-  95% { opacity: 1; }
-  100% { top: 100%; opacity: 0; }
-}
-@keyframes node-pulse {
-  0%, 100% { opacity: 0.2; transform: scale(1); }
-  50% { opacity: 0.7; transform: scale(1.8); }
-}
-
-/* ── 2. Digital Network (Carousel) ── */
-
-.design-bg-network {
-  background: linear-gradient(180deg, oklch(0.96 0.015 270), oklch(0.97 0.01 280), oklch(0.95 0.02 260));
-}
-.dark .design-bg-network {
-  background: linear-gradient(180deg, oklch(0.06 0.025 270), oklch(0.04 0.02 280), oklch(0.07 0.025 260));
-}
-
-/* Dot grid / node map */
-.network-dots {
-  position: absolute;
-  inset: 0;
-  background-image: radial-gradient(circle, oklch(0.50 0.08 270 / 0.08) 1.5px, transparent 1.5px);
-  background-size: 44px 44px;
-}
-.dark .network-dots {
-  background-image: radial-gradient(circle, oklch(0.50 0.12 270 / 0.18) 1.5px, transparent 1.5px);
-}
-
-/* Glow orbs */
-.network-glow {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  animation: orb-float 22s ease-in-out infinite;
-}
-.network-glow-1 {
-  width: 500px; height: 500px;
-  top: 10%; left: -8%;
-  background: radial-gradient(circle, oklch(0.82 0.10 270) 0%, transparent 70%);
-  opacity: 0.18;
-}
-.network-glow-2 {
-  width: 450px; height: 450px;
-  bottom: -5%; right: 5%;
-  background: radial-gradient(circle, oklch(0.78 0.12 300) 0%, transparent 70%);
-  opacity: 0.15;
-  animation-delay: -10s;
-  animation-duration: 28s;
-}
-.dark .network-glow-1 {
-  background: radial-gradient(circle, oklch(0.28 0.14 270) 0%, transparent 70%);
-  opacity: 0.42;
-}
-.dark .network-glow-2 {
-  background: radial-gradient(circle, oklch(0.25 0.15 300) 0%, transparent 70%);
-  opacity: 0.36;
-}
-
-/* Floating data particles */
-.network-particle {
-  position: absolute;
-  bottom: -10px;
-  width: 3px;
-  height: 3px;
-  border-radius: 50%;
-  background: oklch(0.60 0.12 270);
-  opacity: 0;
-  animation: network-float linear infinite;
-  will-change: transform;
-}
-.dark .network-particle {
-  background: oklch(0.55 0.16 270);
-  box-shadow: 0 0 6px oklch(0.50 0.15 270 / 0.4);
-}
-
-/* Radar sweep */
-.network-radar {
-  position: absolute;
-  width: 400px; height: 400px;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  border: 1px solid oklch(0.55 0.08 270 / 0.05);
-}
-.network-radar::after {
-  content: "";
-  position: absolute;
-  top: 50%; left: 50%;
-  width: 50%; height: 2px;
-  transform-origin: left center;
-  background: linear-gradient(to right, oklch(0.60 0.12 270 / 0.2), transparent);
-  animation: radar-sweep 6s linear infinite;
-}
-.dark .network-radar {
-  border-color: oklch(0.45 0.10 270 / 0.1);
-}
-.dark .network-radar::after {
-  background: linear-gradient(to right, oklch(0.50 0.16 270 / 0.4), transparent);
-}
-
-/* Inner ring */
-.network-ring {
-  position: absolute;
-  top: 50%; left: 50%;
-  border-radius: 50%;
-  border: 1px solid oklch(0.55 0.06 270 / 0.04);
-  transform: translate(-50%, -50%);
-}
-.dark .network-ring {
-  border-color: oklch(0.45 0.08 270 / 0.08);
-}
-
-@keyframes network-float {
-  0% { transform: translateY(0); opacity: 0; }
-  5% { opacity: 0.5; }
-  90% { opacity: 0.12; }
-  100% { transform: translateY(calc(-100vh - 20px)); opacity: 0; }
-}
-@keyframes radar-sweep {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* ── 3. Holographic / Prism (Grid) ── */
-
-.design-bg-holo {
-  background: linear-gradient(135deg, oklch(0.96 0.015 250), oklch(0.97 0.01 260), oklch(0.95 0.02 280));
-}
-.dark .design-bg-holo {
-  background: linear-gradient(135deg, oklch(0.06 0.025 250), oklch(0.05 0.02 260), oklch(0.08 0.03 280));
-}
-
-/* Triangular geometric grid */
-.holo-geo {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(60deg, oklch(0.50 0.06 260 / 0.04) 1px, transparent 1px),
-    linear-gradient(-60deg, oklch(0.50 0.06 260 / 0.04) 1px, transparent 1px),
-    linear-gradient(0deg, oklch(0.50 0.06 260 / 0.03) 1px, transparent 1px);
-  background-size: 50px 86px;
-}
-.dark .holo-geo {
-  background-image:
-    linear-gradient(60deg, oklch(0.42 0.08 260 / 0.10) 1px, transparent 1px),
-    linear-gradient(-60deg, oklch(0.42 0.08 260 / 0.10) 1px, transparent 1px),
-    linear-gradient(0deg, oklch(0.42 0.08 260 / 0.07) 1px, transparent 1px);
-}
-
-/* Prismatic gradient bands */
-.holo-band {
-  position: absolute;
-  left: -20%; right: -20%;
-  height: 150px;
-  filter: blur(40px);
-  opacity: 0.10;
-  animation: holo-shift ease-in-out infinite;
-  will-change: transform;
-}
-.holo-band-1 {
-  top: 15%;
-  background: linear-gradient(90deg, transparent, oklch(0.75 0.14 350), oklch(0.70 0.16 20), oklch(0.75 0.12 50), transparent);
-  animation-duration: 16s;
-}
-.holo-band-2 {
-  top: 42%;
-  background: linear-gradient(90deg, transparent, oklch(0.70 0.12 180), oklch(0.75 0.14 210), oklch(0.70 0.10 240), transparent);
-  animation-duration: 20s;
-  animation-delay: -7s;
-  opacity: 0.07;
-}
-.holo-band-3 {
-  top: 68%;
-  background: linear-gradient(90deg, transparent, oklch(0.75 0.10 280), oklch(0.70 0.14 310), oklch(0.75 0.12 340), transparent);
-  animation-duration: 24s;
-  animation-delay: -14s;
-  opacity: 0.05;
-}
-
-.dark .holo-band { opacity: 0.28; }
-.dark .holo-band-1 {
-  background: linear-gradient(90deg, transparent, oklch(0.38 0.18 350), oklch(0.35 0.20 20), oklch(0.38 0.16 50), transparent);
-}
-.dark .holo-band-2 {
-  background: linear-gradient(90deg, transparent, oklch(0.35 0.15 180), oklch(0.38 0.18 210), oklch(0.35 0.12 240), transparent);
-  opacity: 0.22;
-}
-.dark .holo-band-3 {
-  background: linear-gradient(90deg, transparent, oklch(0.38 0.14 280), oklch(0.35 0.17 310), oklch(0.38 0.15 340), transparent);
-  opacity: 0.16;
-}
-
-/* Iridescent orbs (conic gradient for rainbow) */
-.holo-orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(60px);
-  animation: orb-float 18s ease-in-out infinite;
-}
-.holo-orb-1 {
-  width: 300px; height: 300px;
-  top: 20%; right: 10%;
-  background: conic-gradient(from 0deg, oklch(0.82 0.12 0), oklch(0.82 0.12 120), oklch(0.82 0.12 240), oklch(0.82 0.12 360));
-  opacity: 0.10;
-}
-.holo-orb-2 {
-  width: 250px; height: 250px;
-  bottom: 15%; left: 15%;
-  background: conic-gradient(from 90deg, oklch(0.80 0.10 60), oklch(0.80 0.10 180), oklch(0.80 0.10 300), oklch(0.80 0.10 420));
-  opacity: 0.07;
-  animation-delay: -6s;
-  animation-duration: 24s;
-}
-.dark .holo-orb-1 {
-  background: conic-gradient(from 0deg, oklch(0.35 0.16 0), oklch(0.35 0.16 120), oklch(0.35 0.16 240), oklch(0.35 0.16 360));
-  opacity: 0.28;
-}
-.dark .holo-orb-2 {
-  background: conic-gradient(from 90deg, oklch(0.32 0.14 60), oklch(0.32 0.14 180), oklch(0.32 0.14 300), oklch(0.32 0.14 420));
-  opacity: 0.22;
-}
-
-@keyframes holo-shift {
-  0%, 100% { transform: translateX(0) scaleX(1); }
-  33% { transform: translateX(8%) scaleX(1.1); }
-  66% { transform: translateX(-5%) scaleX(0.95); }
-}
-
-/* ── 4. Ocean / Deep Sea (Tile) ── */
-
-.design-bg-ocean {
-  background: linear-gradient(180deg, oklch(0.93 0.03 220) 0%, oklch(0.95 0.025 210) 40%, oklch(0.92 0.03 200) 100%);
-}
-.dark .design-bg-ocean {
-  background: linear-gradient(180deg, oklch(0.08 0.04 230) 0%, oklch(0.12 0.05 220) 40%, oklch(0.10 0.05 210) 100%);
-}
-
-.ocean-glow {
+.design-orb {
   position: absolute;
   border-radius: 50%;
   filter: blur(100px);
-  animation: orb-float 20s ease-in-out infinite;
+  animation: orb-float 22s ease-in-out infinite;
 }
-.ocean-glow-1 {
-  width: 600px; height: 600px;
-  top: -15%; left: 20%;
-  background: radial-gradient(circle, oklch(0.88 0.08 210) 0%, transparent 70%);
-  opacity: 0.25;
-}
-.ocean-glow-2 {
-  width: 400px; height: 400px;
-  bottom: 10%; right: 10%;
-  background: radial-gradient(circle, oklch(0.85 0.10 190) 0%, transparent 70%);
-  opacity: 0.2;
-  animation-delay: -10s;
+.design-orb-2 {
+  animation-delay: -9s;
   animation-duration: 28s;
 }
-.dark .ocean-glow-1 {
-  background: radial-gradient(circle, oklch(0.25 0.10 220) 0%, transparent 70%);
-  opacity: 0.4;
-}
-.dark .ocean-glow-2 {
-  background: radial-gradient(circle, oklch(0.22 0.12 200) 0%, transparent 70%);
-  opacity: 0.35;
-}
 
-.ocean-wave {
-  position: absolute;
-  left: -10%;
-  right: -10%;
-  height: 250px;
-  border-radius: 45%;
-  opacity: 0.08;
-  animation: ocean-drift ease-in-out infinite;
-  will-change: transform;
-}
-.ocean-wave-1 {
-  bottom: -130px;
-  background: oklch(0.60 0.10 210);
-  animation-duration: 11s;
-}
-.ocean-wave-2 {
-  bottom: -160px;
-  background: oklch(0.55 0.08 220);
-  animation-duration: 15s;
-  animation-delay: -4s;
-  opacity: 0.06;
-}
-.ocean-wave-3 {
-  bottom: -180px;
-  background: oklch(0.65 0.06 200);
-  animation-duration: 19s;
-  animation-delay: -9s;
-  opacity: 0.05;
-}
-.dark .ocean-wave { opacity: 0.15; }
-.dark .ocean-wave-1 { background: oklch(0.30 0.10 220); }
-.dark .ocean-wave-2 { background: oklch(0.25 0.08 230); opacity: 0.12; }
-.dark .ocean-wave-3 { background: oklch(0.35 0.06 210); opacity: 0.08; }
+/* Dial – blue/teal */
+.dbg-dial { background: linear-gradient(135deg, oklch(0.96 0.015 210), oklch(0.97 0.01 240)); }
+.dark .dbg-dial { background: linear-gradient(135deg, oklch(0.07 0.025 210), oklch(0.05 0.02 240)); }
+.dbg-dial .design-orb:first-child { width: 500px; height: 500px; top: -8%; right: -3%; background: radial-gradient(circle, oklch(0.82 0.10 200) 0%, transparent 70%); opacity: 0.20; }
+.dbg-dial .design-orb-2 { width: 400px; height: 400px; bottom: 8%; left: -5%; background: radial-gradient(circle, oklch(0.78 0.12 240) 0%, transparent 70%); opacity: 0.15; }
+.dark .dbg-dial .design-orb:first-child { background: radial-gradient(circle, oklch(0.28 0.12 200) 0%, transparent 70%); opacity: 0.38; }
+.dark .dbg-dial .design-orb-2 { background: radial-gradient(circle, oklch(0.24 0.14 240) 0%, transparent 70%); opacity: 0.30; }
 
-.ocean-bubble {
-  position: absolute;
-  bottom: -20px;
-  border-radius: 50%;
-  border: 1px solid oklch(0.60 0.06 220 / 0.25);
-  background: oklch(0.80 0.04 220 / 0.08);
-  opacity: 0;
-  animation: bubble-rise linear infinite;
-  will-change: transform;
-}
-.dark .ocean-bubble {
-  border-color: oklch(0.50 0.08 220 / 0.3);
-  background: oklch(0.40 0.08 220 / 0.12);
-}
+/* Carousel – violet/purple */
+.dbg-carousel { background: linear-gradient(160deg, oklch(0.96 0.015 270), oklch(0.97 0.01 290)); }
+.dark .dbg-carousel { background: linear-gradient(160deg, oklch(0.06 0.025 270), oklch(0.05 0.02 290)); }
+.dbg-carousel .design-orb:first-child { width: 500px; height: 500px; top: 10%; left: -6%; background: radial-gradient(circle, oklch(0.82 0.10 270) 0%, transparent 70%); opacity: 0.18; }
+.dbg-carousel .design-orb-2 { width: 420px; height: 420px; bottom: -3%; right: 5%; background: radial-gradient(circle, oklch(0.78 0.12 300) 0%, transparent 70%); opacity: 0.14; }
+.dark .dbg-carousel .design-orb:first-child { background: radial-gradient(circle, oklch(0.28 0.14 270) 0%, transparent 70%); opacity: 0.40; }
+.dark .dbg-carousel .design-orb-2 { background: radial-gradient(circle, oklch(0.24 0.15 300) 0%, transparent 70%); opacity: 0.32; }
 
-.ocean-caustics {
-  position: absolute;
-  inset: 0;
-  opacity: 0.03;
-  background:
-    repeating-conic-gradient(oklch(0.80 0.06 210 / 0.3) 0% 25%, transparent 0% 50%) 0 0 / 80px 80px,
-    repeating-conic-gradient(oklch(0.80 0.06 210 / 0.3) 0% 25%, transparent 0% 50%) 40px 40px / 80px 80px;
-  animation: caustics-shift 10s ease-in-out infinite alternate;
-}
-.dark .ocean-caustics { opacity: 0.05; }
+/* Grid – rose/warm */
+.dbg-grid { background: linear-gradient(145deg, oklch(0.96 0.015 340), oklch(0.97 0.01 10)); }
+.dark .dbg-grid { background: linear-gradient(145deg, oklch(0.07 0.025 340), oklch(0.05 0.02 10)); }
+.dbg-grid .design-orb:first-child { width: 480px; height: 480px; top: -5%; right: 8%; background: radial-gradient(circle, oklch(0.82 0.10 350) 0%, transparent 70%); opacity: 0.18; }
+.dbg-grid .design-orb-2 { width: 380px; height: 380px; bottom: 10%; left: -3%; background: radial-gradient(circle, oklch(0.80 0.12 20) 0%, transparent 70%); opacity: 0.14; }
+.dark .dbg-grid .design-orb:first-child { background: radial-gradient(circle, oklch(0.30 0.14 350) 0%, transparent 70%); opacity: 0.36; }
+.dark .dbg-grid .design-orb-2 { background: radial-gradient(circle, oklch(0.26 0.14 20) 0%, transparent 70%); opacity: 0.28; }
 
-@keyframes ocean-drift {
-  0%, 100% { transform: translateX(0) rotate(0deg); }
-  50% { transform: translateX(4%) rotate(2deg); }
-}
-@keyframes bubble-rise {
-  0% {
-    transform: translate(0, 0) scale(1);
-    opacity: 0;
-  }
-  8% { opacity: 0.5; }
-  85% { opacity: 0.25; }
-  100% {
-    transform: translate(var(--bub-dx, 20px), calc(-100vh - 30px)) scale(1.4);
-    opacity: 0;
-  }
-}
-@keyframes caustics-shift {
-  0% { transform: translate(0, 0) scale(1); }
-  100% { transform: translate(15px, 10px) scale(1.05); }
-}
+/* Tile – teal/cyan */
+.dbg-tile { background: linear-gradient(180deg, oklch(0.96 0.02 180), oklch(0.97 0.015 210)); }
+.dark .dbg-tile { background: linear-gradient(180deg, oklch(0.07 0.03 180), oklch(0.05 0.02 210)); }
+.dbg-tile .design-orb:first-child { width: 520px; height: 520px; top: -12%; left: 15%; background: radial-gradient(circle, oklch(0.85 0.08 190) 0%, transparent 70%); opacity: 0.22; }
+.dbg-tile .design-orb-2 { width: 400px; height: 400px; bottom: 5%; right: -3%; background: radial-gradient(circle, oklch(0.82 0.10 170) 0%, transparent 70%); opacity: 0.16; }
+.dark .dbg-tile .design-orb:first-child { background: radial-gradient(circle, oklch(0.26 0.10 200) 0%, transparent 70%); opacity: 0.38; }
+.dark .dbg-tile .design-orb-2 { background: radial-gradient(circle, oklch(0.22 0.12 180) 0%, transparent 70%); opacity: 0.30; }

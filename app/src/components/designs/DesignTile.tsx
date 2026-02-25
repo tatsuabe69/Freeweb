@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Shield, Zap, Globe } from "lucide-react";
 import { tools } from "@/lib/tools";
@@ -11,41 +11,12 @@ export default function DesignTile() {
   const [activeCat, setActiveCat] = useState<string | null>(null);
   const filtered = activeCat ? tools.filter((t) => t.category === activeCat) : tools;
 
-  /* ── Ocean bubbles ── */
-  const bubbles = useMemo(() =>
-    Array.from({ length: 18 }, (_, i) => ({
-      x: (i * 37 + 13) % 100,
-      size: 6 + (i * 7) % 18,
-      delay: (i * 1.7) % 14,
-      dur: 12 + (i * 3) % 10,
-      dx: -30 + (i * 17) % 60,
-    })),
-  []);
-
   return (
     <div className="min-h-[calc(100vh-60px)] flex flex-col relative">
-      {/* ── Ocean Background ── */}
-      <div className="design-bg design-bg-ocean" aria-hidden="true">
-        <div className="ocean-glow ocean-glow-1" />
-        <div className="ocean-glow ocean-glow-2" />
-        <div className="ocean-wave ocean-wave-1" />
-        <div className="ocean-wave ocean-wave-2" />
-        <div className="ocean-wave ocean-wave-3" />
-        <div className="ocean-caustics" />
-        {bubbles.map((b, i) => (
-          <div
-            key={i}
-            className="ocean-bubble"
-            style={{
-              left: `${b.x}%`,
-              width: b.size,
-              height: b.size,
-              animationDelay: `${b.delay}s`,
-              animationDuration: `${b.dur}s`,
-              "--bub-dx": `${b.dx}px`,
-            } as React.CSSProperties}
-          />
-        ))}
+      {/* ── Background ── */}
+      <div className="design-bg dbg-tile" aria-hidden="true">
+        <div className="design-orb" />
+        <div className="design-orb design-orb-2" />
       </div>
 
       {/* ── Header ── */}
