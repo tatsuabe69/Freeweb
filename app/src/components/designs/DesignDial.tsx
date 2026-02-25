@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { Shield, Zap, Globe } from "lucide-react";
 import { tools, getCategoryTools } from "@/lib/tools";
@@ -105,8 +105,39 @@ export default function DesignDial() {
 
   const CenterIcon = centerItem.icon;
 
+  /* ── Star field via box-shadow (performant) ── */
+  const starShadows = useMemo(() => {
+    const layers: string[] = [];
+    for (let layer = 0; layer < 3; layer++) {
+      const count = layer === 0 ? 200 : layer === 1 ? 80 : 25;
+      const shadows: string[] = [];
+      for (let i = 0; i < count; i++) {
+        const seed = layer * 1000 + i;
+        const x = ((seed * 997) % 2000);
+        const y = ((seed * 991 + 500) % 2000);
+        shadows.push(`${x}px ${y}px var(--star-c)`);
+      }
+      layers.push(shadows.join(", "));
+    }
+    return layers;
+  }, []);
+
   return (
-    <div className="min-h-[calc(100vh-60px)] flex justify-center overflow-hidden">
+    <div className="min-h-[calc(100vh-60px)] flex justify-center overflow-hidden relative">
+      {/* ── Space Background ── */}
+      <div className="design-bg design-bg-space" aria-hidden="true">
+        <div className="space-stars">
+          <div className="space-star-layer space-star-sm" style={{ boxShadow: starShadows[0] }} />
+          <div className="space-star-layer space-star-twinkle" style={{ boxShadow: starShadows[1] }} />
+          <div className="space-star-layer space-star-lg space-star-twinkle" style={{ boxShadow: starShadows[2], animationDelay: "-2s" }} />
+        </div>
+        <div className="space-nebula space-nebula-1" />
+        <div className="space-nebula space-nebula-2" />
+        <div className="space-nebula space-nebula-3" />
+        <div className="space-shooting" />
+        <div className="space-shooting space-shooting-2" />
+      </div>
+
       <div className="flex items-stretch w-full max-w-6xl">
         {/* ── Left: Half-circle dial ── */}
         <div

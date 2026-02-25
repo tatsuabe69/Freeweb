@@ -300,3 +300,391 @@
   33% { transform: translate(30px, -20px) scale(1.05); }
   66% { transform: translate(-20px, 15px) scale(0.95); }
 }
+
+/* ══════════════════════════════════════════════
+   Design-specific Backgrounds
+   ══════════════════════════════════════════════ */
+
+/* Shared base */
+.design-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* ── 1. Space / Cosmic (Dial) ── */
+
+.design-bg-space {
+  background: radial-gradient(ellipse at 30% 80%, oklch(0.92 0.04 280), oklch(0.96 0.02 260), oklch(0.98 0.01 250));
+}
+.dark .design-bg-space {
+  background: radial-gradient(ellipse at 30% 80%, oklch(0.10 0.06 280), oklch(0.05 0.03 260), oklch(0.02 0.01 240));
+}
+
+.space-stars {
+  position: absolute;
+  inset: 0;
+}
+.space-star-layer {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: transparent;
+  top: 0;
+  left: 0;
+}
+.space-star-sm {
+  width: 1px;
+  height: 1px;
+}
+.space-star-lg {
+  width: 3px;
+  height: 3px;
+}
+.space-star-twinkle {
+  animation: twinkle 4s ease-in-out infinite alternate;
+}
+
+/* Star color */
+.space-star-layer { --star-c: oklch(0.45 0.01 260); }
+.dark .space-star-layer { --star-c: oklch(0.95 0.01 260); }
+
+.space-nebula {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  animation: orb-float 30s ease-in-out infinite;
+}
+.space-nebula-1 {
+  width: 500px; height: 500px;
+  top: 5%; right: -8%;
+  background: radial-gradient(circle, oklch(0.82 0.12 300) 0%, transparent 70%);
+  opacity: 0.25;
+}
+.space-nebula-2 {
+  width: 400px; height: 400px;
+  bottom: 15%; left: 5%;
+  background: radial-gradient(circle, oklch(0.85 0.10 250) 0%, transparent 70%);
+  opacity: 0.2;
+  animation-delay: -10s;
+  animation-duration: 25s;
+}
+.space-nebula-3 {
+  width: 300px; height: 300px;
+  top: 45%; left: 40%;
+  background: radial-gradient(circle, oklch(0.88 0.08 200) 0%, transparent 70%);
+  opacity: 0.15;
+  animation-delay: -18s;
+  animation-duration: 35s;
+}
+
+.dark .space-nebula-1 {
+  background: radial-gradient(circle, oklch(0.30 0.18 300) 0%, transparent 70%);
+  opacity: 0.45;
+}
+.dark .space-nebula-2 {
+  background: radial-gradient(circle, oklch(0.25 0.15 250) 0%, transparent 70%);
+  opacity: 0.35;
+}
+.dark .space-nebula-3 {
+  background: radial-gradient(circle, oklch(0.28 0.12 200) 0%, transparent 70%);
+  opacity: 0.3;
+}
+
+.space-shooting {
+  position: absolute;
+  width: 100px;
+  height: 2px;
+  top: 12%;
+  right: -120px;
+  background: linear-gradient(to left, transparent, oklch(0.70 0.05 260));
+  border-radius: 2px;
+  opacity: 0;
+  animation: shooting-star 9s linear infinite;
+  animation-delay: 2s;
+}
+.dark .space-shooting {
+  background: linear-gradient(to left, transparent, oklch(0.95 0.02 260));
+}
+.space-shooting-2 {
+  top: 35%;
+  right: -80px;
+  width: 70px;
+  animation-delay: 6s;
+  animation-duration: 12s;
+}
+
+@keyframes twinkle {
+  0% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+@keyframes shooting-star {
+  0% { transform: translate(0, 0) rotate(-35deg); opacity: 0; }
+  1% { opacity: 0.9; }
+  6% { transform: translate(-500px, 250px) rotate(-35deg); opacity: 0; }
+  100% { opacity: 0; }
+}
+
+/* ── 2. Falling Leaves (Carousel) ── */
+
+.design-bg-leaves {
+  background: linear-gradient(180deg, oklch(0.95 0.02 70) 0%, oklch(0.97 0.015 50) 50%, oklch(0.96 0.01 80) 100%);
+}
+.dark .design-bg-leaves {
+  background: linear-gradient(180deg, oklch(0.12 0.02 40) 0%, oklch(0.10 0.015 30) 50%, oklch(0.11 0.01 50) 100%);
+}
+
+.leaves-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  animation: orb-float 20s ease-in-out infinite;
+}
+.leaves-glow-1 {
+  width: 500px; height: 500px;
+  top: -10%; right: 10%;
+  background: radial-gradient(circle, oklch(0.88 0.10 60) 0%, transparent 70%);
+  opacity: 0.3;
+}
+.leaves-glow-2 {
+  width: 400px; height: 400px;
+  bottom: 10%; left: -5%;
+  background: radial-gradient(circle, oklch(0.85 0.12 30) 0%, transparent 70%);
+  opacity: 0.2;
+  animation-delay: -8s;
+  animation-duration: 25s;
+}
+.dark .leaves-glow-1 {
+  background: radial-gradient(circle, oklch(0.30 0.10 50) 0%, transparent 70%);
+  opacity: 0.35;
+}
+.dark .leaves-glow-2 {
+  background: radial-gradient(circle, oklch(0.25 0.10 30) 0%, transparent 70%);
+  opacity: 0.3;
+}
+
+.leaf {
+  position: absolute;
+  top: -40px;
+  width: 20px;
+  height: 20px;
+  border-radius: 2px 50% 50% 50%;
+  opacity: 0;
+  animation: leaf-fall linear infinite;
+  will-change: transform;
+}
+.leaf-0 { background: oklch(0.68 0.14 55); }
+.leaf-1 { background: oklch(0.58 0.16 35); }
+.leaf-2 { background: oklch(0.72 0.11 80); }
+.leaf-3 { background: oklch(0.62 0.13 25); }
+.dark .leaf-0 { background: oklch(0.50 0.10 55); }
+.dark .leaf-1 { background: oklch(0.42 0.12 35); }
+.dark .leaf-2 { background: oklch(0.55 0.08 80); }
+.dark .leaf-3 { background: oklch(0.45 0.10 25); }
+
+@keyframes leaf-fall {
+  0% {
+    transform: translate(0, 0) rotate(var(--leaf-r, 0deg)) scale(var(--leaf-s, 1));
+    opacity: 0;
+  }
+  3% { opacity: var(--leaf-o, 0.5); }
+  50% {
+    transform: translate(var(--leaf-dx, 60px), 50vh) rotate(calc(var(--leaf-r, 0deg) + 360deg)) scale(var(--leaf-s, 1));
+  }
+  97% { opacity: var(--leaf-o, 0.5); }
+  100% {
+    transform: translate(calc(var(--leaf-dx, 60px) * -0.5), calc(100vh + 40px)) rotate(calc(var(--leaf-r, 0deg) + 720deg)) scale(calc(var(--leaf-s, 1) * 0.8));
+    opacity: 0;
+  }
+}
+
+/* ── 3. Aurora / Northern Lights (Grid) ── */
+
+.design-bg-aurora {
+  background: linear-gradient(180deg, oklch(0.96 0.015 260) 0%, oklch(0.97 0.01 250) 40%, oklch(0.96 0.005 240) 100%);
+}
+.dark .design-bg-aurora {
+  background: linear-gradient(180deg, oklch(0.07 0.02 260) 0%, oklch(0.10 0.015 250) 40%, oklch(0.08 0.01 260) 100%);
+}
+
+.aurora-stars {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, oklch(0.50 0.01 260 / 0.06) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+.dark .aurora-stars {
+  background-image: radial-gradient(circle, oklch(0.80 0.01 260 / 0.12) 1px, transparent 1px);
+}
+
+.aurora-band {
+  position: absolute;
+  left: -20%;
+  right: -20%;
+  height: 180px;
+  filter: blur(50px);
+  opacity: 0.25;
+  animation: aurora-wave ease-in-out infinite;
+  will-change: transform;
+}
+.aurora-band-1 {
+  top: 8%;
+  background: linear-gradient(90deg, transparent 5%, oklch(0.70 0.18 160) 25%, oklch(0.65 0.15 180) 50%, oklch(0.60 0.12 200) 75%, transparent 95%);
+  animation-duration: 14s;
+}
+.aurora-band-2 {
+  top: 18%;
+  background: linear-gradient(90deg, transparent 10%, oklch(0.65 0.12 280) 30%, oklch(0.70 0.15 300) 55%, oklch(0.65 0.10 160) 80%, transparent 95%);
+  animation-duration: 18s;
+  animation-delay: -6s;
+  opacity: 0.18;
+}
+.aurora-band-3 {
+  top: 3%;
+  background: linear-gradient(90deg, transparent 15%, oklch(0.75 0.12 140) 40%, oklch(0.70 0.16 170) 65%, transparent 90%);
+  animation-duration: 22s;
+  animation-delay: -12s;
+  opacity: 0.15;
+}
+
+.dark .aurora-band { opacity: 0.45; }
+.dark .aurora-band-1 {
+  background: linear-gradient(90deg, transparent 5%, oklch(0.45 0.20 160) 25%, oklch(0.40 0.18 180) 50%, oklch(0.35 0.15 200) 75%, transparent 95%);
+}
+.dark .aurora-band-2 {
+  background: linear-gradient(90deg, transparent 10%, oklch(0.38 0.15 280) 30%, oklch(0.42 0.18 300) 55%, oklch(0.40 0.12 160) 80%, transparent 95%);
+  opacity: 0.35;
+}
+.dark .aurora-band-3 {
+  background: linear-gradient(90deg, transparent 15%, oklch(0.50 0.14 140) 40%, oklch(0.45 0.18 170) 65%, transparent 90%);
+  opacity: 0.3;
+}
+
+@keyframes aurora-wave {
+  0%, 100% { transform: translateX(0) scaleY(1) skewX(0deg); }
+  25% { transform: translateX(6%) scaleY(1.4) skewX(2deg); }
+  50% { transform: translateX(-4%) scaleY(0.7) skewX(-1deg); }
+  75% { transform: translateX(5%) scaleY(1.3) skewX(1deg); }
+}
+
+/* ── 4. Ocean / Deep Sea (Tile) ── */
+
+.design-bg-ocean {
+  background: linear-gradient(180deg, oklch(0.93 0.03 220) 0%, oklch(0.95 0.025 210) 40%, oklch(0.92 0.03 200) 100%);
+}
+.dark .design-bg-ocean {
+  background: linear-gradient(180deg, oklch(0.08 0.04 230) 0%, oklch(0.12 0.05 220) 40%, oklch(0.10 0.05 210) 100%);
+}
+
+.ocean-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  animation: orb-float 20s ease-in-out infinite;
+}
+.ocean-glow-1 {
+  width: 600px; height: 600px;
+  top: -15%; left: 20%;
+  background: radial-gradient(circle, oklch(0.88 0.08 210) 0%, transparent 70%);
+  opacity: 0.25;
+}
+.ocean-glow-2 {
+  width: 400px; height: 400px;
+  bottom: 10%; right: 10%;
+  background: radial-gradient(circle, oklch(0.85 0.10 190) 0%, transparent 70%);
+  opacity: 0.2;
+  animation-delay: -10s;
+  animation-duration: 28s;
+}
+.dark .ocean-glow-1 {
+  background: radial-gradient(circle, oklch(0.25 0.10 220) 0%, transparent 70%);
+  opacity: 0.4;
+}
+.dark .ocean-glow-2 {
+  background: radial-gradient(circle, oklch(0.22 0.12 200) 0%, transparent 70%);
+  opacity: 0.35;
+}
+
+.ocean-wave {
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  height: 250px;
+  border-radius: 45%;
+  opacity: 0.08;
+  animation: ocean-drift ease-in-out infinite;
+  will-change: transform;
+}
+.ocean-wave-1 {
+  bottom: -130px;
+  background: oklch(0.60 0.10 210);
+  animation-duration: 11s;
+}
+.ocean-wave-2 {
+  bottom: -160px;
+  background: oklch(0.55 0.08 220);
+  animation-duration: 15s;
+  animation-delay: -4s;
+  opacity: 0.06;
+}
+.ocean-wave-3 {
+  bottom: -180px;
+  background: oklch(0.65 0.06 200);
+  animation-duration: 19s;
+  animation-delay: -9s;
+  opacity: 0.05;
+}
+.dark .ocean-wave { opacity: 0.15; }
+.dark .ocean-wave-1 { background: oklch(0.30 0.10 220); }
+.dark .ocean-wave-2 { background: oklch(0.25 0.08 230); opacity: 0.12; }
+.dark .ocean-wave-3 { background: oklch(0.35 0.06 210); opacity: 0.08; }
+
+.ocean-bubble {
+  position: absolute;
+  bottom: -20px;
+  border-radius: 50%;
+  border: 1px solid oklch(0.60 0.06 220 / 0.25);
+  background: oklch(0.80 0.04 220 / 0.08);
+  opacity: 0;
+  animation: bubble-rise linear infinite;
+  will-change: transform;
+}
+.dark .ocean-bubble {
+  border-color: oklch(0.50 0.08 220 / 0.3);
+  background: oklch(0.40 0.08 220 / 0.12);
+}
+
+.ocean-caustics {
+  position: absolute;
+  inset: 0;
+  opacity: 0.03;
+  background:
+    repeating-conic-gradient(oklch(0.80 0.06 210 / 0.3) 0% 25%, transparent 0% 50%) 0 0 / 80px 80px,
+    repeating-conic-gradient(oklch(0.80 0.06 210 / 0.3) 0% 25%, transparent 0% 50%) 40px 40px / 80px 80px;
+  animation: caustics-shift 10s ease-in-out infinite alternate;
+}
+.dark .ocean-caustics { opacity: 0.05; }
+
+@keyframes ocean-drift {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  50% { transform: translateX(4%) rotate(2deg); }
+}
+@keyframes bubble-rise {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0;
+  }
+  8% { opacity: 0.5; }
+  85% { opacity: 0.25; }
+  100% {
+    transform: translate(var(--bub-dx, 20px), calc(-100vh - 30px)) scale(1.4);
+    opacity: 0;
+  }
+}
+@keyframes caustics-shift {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(15px, 10px) scale(1.05); }
+}

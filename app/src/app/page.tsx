@@ -8,13 +8,13 @@ import { Palette } from "lucide-react";
 const DesignDial = dynamic(() => import("@/components/designs/DesignDial"), { ssr: false });
 const DesignCarousel = dynamic(() => import("@/components/designs/DesignCarousel"), { ssr: false });
 const DesignBento = dynamic(() => import("@/components/designs/DesignBento"), { ssr: false });
-const DesignSpotlight = dynamic(() => import("@/components/designs/DesignSpotlight"), { ssr: false });
+const DesignTile = dynamic(() => import("@/components/designs/DesignTile"), { ssr: false });
 
 const DESIGNS = [
   { id: "dial",      label: "Dial",      component: DesignDial },
   { id: "carousel",  label: "Carousel",  component: DesignCarousel },
   { id: "bento",     label: "Grid",      component: DesignBento },
-  { id: "spotlight", label: "Spotlight",  component: DesignSpotlight },
+  { id: "tile",      label: "Tile",      component: DesignTile },
 ] as const;
 
 const STORAGE_KEY = "freeweb-design";

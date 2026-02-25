@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Shield, Zap, Globe } from "lucide-react";
 import { tools } from "@/lib/tools";
@@ -65,6 +65,21 @@ export default function DesignCarousel() {
   const item = tools[activeIdx];
   const Icon = item.icon;
 
+  /* ── Falling leaves data ── */
+  const leaves = useMemo(() =>
+    Array.from({ length: 14 }, (_, i) => ({
+      x: (i * 29 + 5) % 100,
+      size: 12 + (i * 5) % 14,
+      delay: (i * 2.1) % 12,
+      dur: 10 + (i * 3) % 10,
+      type: i % 4,
+      r: (i * 47) % 360,
+      dx: -50 + (i * 23) % 100,
+      s: 0.7 + (i * 13 % 7) / 10,
+      o: 0.3 + (i * 11 % 5) / 10,
+    })),
+  []);
+
   // Get visible cards (5 around active)
   const getOffset = (idx: number) => {
     let diff = idx - activeIdx;
@@ -74,7 +89,30 @@ export default function DesignCarousel() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-60px)] flex flex-col">
+    <div className="min-h-[calc(100vh-60px)] flex flex-col relative">
+      {/* ── Falling Leaves Background ── */}
+      <div className="design-bg design-bg-leaves" aria-hidden="true">
+        <div className="leaves-glow leaves-glow-1" />
+        <div className="leaves-glow leaves-glow-2" />
+        {leaves.map((l, i) => (
+          <div
+            key={i}
+            className={`leaf leaf-${l.type}`}
+            style={{
+              left: `${l.x}%`,
+              width: l.size,
+              height: l.size,
+              animationDelay: `${l.delay}s`,
+              animationDuration: `${l.dur}s`,
+              "--leaf-r": `${l.r}deg`,
+              "--leaf-dx": `${l.dx}px`,
+              "--leaf-s": l.s,
+              "--leaf-o": l.o,
+            } as React.CSSProperties}
+          />
+        ))}
+      </div>
+
       {/* Carousel area */}
       <div className="flex-1 flex flex-col items-center justify-center relative px-4">
         {/* Navigation arrows */}

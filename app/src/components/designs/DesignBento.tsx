@@ -40,7 +40,15 @@ export default function DesignBento() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-60px)] flex flex-col">
+    <div className="min-h-[calc(100vh-60px)] flex flex-col relative">
+      {/* ── Aurora Background ── */}
+      <div className="design-bg design-bg-aurora" aria-hidden="true">
+        <div className="aurora-stars" />
+        <div className="aurora-band aurora-band-1" />
+        <div className="aurora-band aurora-band-2" />
+        <div className="aurora-band aurora-band-3" />
+      </div>
+
       {/* Header */}
       <div className="px-6 lg:px-12 pt-8 pb-2">
         <div className="flex items-baseline justify-end max-w-6xl mx-auto">
