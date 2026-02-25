@@ -232,7 +232,7 @@ export default function DesignDial() {
               </div>
 
               <h2
-                className="text-2xl lg:text-3xl font-light tracking-tight mb-3 transition-colors duration-300"
+                className="text-2xl lg:text-3xl font-light tracking-tight mb-3 transition-colors duration-300 whitespace-nowrap"
                 style={{ color: centerItem.color }}
               >
                 {centerItem.title}
