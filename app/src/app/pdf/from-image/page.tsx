@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PDFDocument } from "pdf-lib";
 import { FileDropzone } from "@/components/file-dropzone";
+import { CroppableImage } from "@/components/image-cropper";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Download, FileImage, ArrowLeft } from "lucide-react";
@@ -12,6 +13,7 @@ type PageSize = "fit" | "a4" | "letter";
 
 export default function ImageToPdfPage() {
   const [files, setFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
   const [processing, setProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<Uint8Array | null>(null);
@@ -23,26 +25,50 @@ export default function ImageToPdfPage() {
     letter: { width: 612, height: 792 },
   };
 
+  // Generate previews when files change
+  useEffect(() => {
+    const urls = files.map((f) => URL.createObjectURL(f));
+    setPreviews(urls);
+    return () => urls.forEach((u) => URL.revokeObjectURL(u));
+  }, [files]);
+
+  const handleCropped = (index: number, croppedDataUrl: string) => {
+    setPreviews((prev) => {
+      const next = [...prev];
+      next[index] = croppedDataUrl;
+      return next;
+    });
+  };
+
   const handleConvert = async () => {
-    if (files.length === 0) return;
+    if (previews.length === 0) return;
     setProcessing(true);
     setProgress(0);
 
     try {
       const pdf = await PDFDocument.create();
 
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const arrayBuffer = await file.arrayBuffer();
-        const bytes = new Uint8Array(arrayBuffer);
+      for (let i = 0; i < previews.length; i++) {
+        const src = previews[i];
+        let bytes: Uint8Array;
+        let isPng: boolean;
 
-        let image;
-        const type = file.type.toLowerCase();
-        if (type === "image/png") {
-          image = await pdf.embedPng(bytes);
+        if (src.startsWith("data:")) {
+          // Cropped image – data URL
+          isPng = src.startsWith("data:image/png");
+          const base64 = src.split(",")[1];
+          const binary = atob(base64);
+          bytes = new Uint8Array(binary.length);
+          for (let j = 0; j < binary.length; j++) bytes[j] = binary.charCodeAt(j);
         } else {
-          image = await pdf.embedJpg(bytes);
+          // Original file – object URL
+          const file = files[i];
+          const arrayBuffer = await file.arrayBuffer();
+          bytes = new Uint8Array(arrayBuffer);
+          isPng = file.type.toLowerCase() === "image/png";
         }
+
+        const image = isPng ? await pdf.embedPng(bytes) : await pdf.embedJpg(bytes);
 
         const size = pageSizes[pageSize];
         if (size) {
@@ -69,7 +95,7 @@ export default function ImageToPdfPage() {
           });
         }
 
-        setProgress(Math.round(((i + 1) / files.length) * 100));
+        setProgress(Math.round(((i + 1) / previews.length) * 100));
       }
 
       const pdfBytes = await pdf.save();
@@ -97,6 +123,7 @@ export default function ImageToPdfPage() {
 
   const reset = () => {
     setFiles([]);
+    setPreviews([]);
     setResult(null);
     setProgress(0);
   };
@@ -115,7 +142,7 @@ export default function ImageToPdfPage() {
         <h1 className="text-xl font-semibold tracking-tight">画像 → PDF</h1>
       </div>
       <p className="text-sm text-muted-foreground mb-8">
-        JPG・PNG画像をPDFドキュメントに変換します。すべての処理はブラウザ内で完結します。
+        JPG・PNG画像をPDFドキュメントに変換します。変換前にトリミングも可能。すべての処理はブラウザ内で完結します。
       </p>
 
       {!result ? (
@@ -129,35 +156,55 @@ export default function ImageToPdfPage() {
             description="JPG・PNGに対応 — 複数の画像で複数ページのPDFを作成できます"
           />
 
-          {files.length > 0 && (
-            <div className="space-y-4 rounded-xl border bg-card p-4">
-              <div>
-                <label className="text-sm font-medium">ページサイズ</label>
-                <div className="flex gap-2 mt-1">
-                  <Button
-                    variant={pageSize === "fit" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setPageSize("fit")}
-                  >
-                    画像に合わせる
-                  </Button>
-                  <Button
-                    variant={pageSize === "a4" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setPageSize("a4")}
-                  >
-                    A4
-                  </Button>
-                  <Button
-                    variant={pageSize === "letter" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setPageSize("letter")}
-                  >
-                    Letter
-                  </Button>
+          {previews.length > 0 && (
+            <>
+              <div className="space-y-4 rounded-xl border bg-card p-4">
+                <div>
+                  <label className="text-sm font-medium">ページサイズ</label>
+                  <div className="flex gap-2 mt-1">
+                    <Button
+                      variant={pageSize === "fit" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setPageSize("fit")}
+                    >
+                      画像に合わせる
+                    </Button>
+                    <Button
+                      variant={pageSize === "a4" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setPageSize("a4")}
+                    >
+                      A4
+                    </Button>
+                    <Button
+                      variant={pageSize === "letter" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setPageSize("letter")}
+                    >
+                      Letter
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
+
+              <div>
+                <p className="text-xs text-muted-foreground mb-2">
+                  画像にホバーして「トリミング」で切り抜きできます
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {previews.map((src, i) => (
+                    <div key={i}>
+                      <p className="text-xs text-muted-foreground mb-1">{files[i]?.name ?? `画像 ${i + 1}`}</p>
+                      <CroppableImage
+                        src={src}
+                        index={i}
+                        onCropped={handleCropped}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
           )}
 
           {processing && (

@@ -45,6 +45,23 @@ export default function DesignCarousel() {
     return () => window.removeEventListener("keydown", handler);
   });
 
+  // Mouse wheel horizontal scroll
+  useEffect(() => {
+    let lastWheel = 0;
+    const handler = (e: WheelEvent) => {
+      const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+      if (Math.abs(delta) < 30) return;
+      const now = Date.now();
+      if (now - lastWheel < 300) return;
+      lastWheel = now;
+      e.preventDefault();
+      if (delta > 0) next();
+      else prev();
+    };
+    window.addEventListener("wheel", handler, { passive: false });
+    return () => window.removeEventListener("wheel", handler);
+  });
+
   const item = tools[activeIdx];
   const Icon = item.icon;
 

@@ -4,9 +4,10 @@ import { useState, useEffect, useRef } from "react";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { FileDropzone } from "@/components/file-dropzone";
+import { CroppableImage } from "@/components/image-cropper";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Image as ImageIcon, ArrowLeft } from "lucide-react";
+import { Image as ImageIcon, ArrowLeft, Download } from "lucide-react";
 import Link from "next/link";
 
 type ImageFormat = "png" | "jpeg" | "webp";
@@ -18,8 +19,9 @@ export default function PdfToImagePage() {
   const [progress, setProgress] = useState(0);
   const [format, setFormat] = useState<ImageFormat>("png");
   const [dpi, setDpi] = useState<DPI>(150);
-  const [done, setDone] = useState(false);
   const [totalPages, setTotalPages] = useState(0);
+  /** data URLs of converted pages (editable via crop) */
+  const [pageImages, setPageImages] = useState<string[]>([]);
   const pdfjsRef = useRef<typeof import("pdfjs-dist") | null>(null);
 
   useEffect(() => {
@@ -31,7 +33,7 @@ export default function PdfToImagePage() {
 
   const handleFilesChange = async (newFiles: File[]) => {
     setFiles(newFiles);
-    setDone(false);
+    setPageImages([]);
     if (newFiles.length === 1 && pdfjsRef.current) {
       try {
         const arrayBuffer = await newFiles[0].arrayBuffer();
@@ -56,8 +58,8 @@ export default function PdfToImagePage() {
       const arrayBuffer = await files[0].arrayBuffer();
       const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
       const numPages = pdf.numPages;
-      const zip = new JSZip();
       const scale = dpi / 72;
+      const images: string[] = [];
 
       for (let i = 1; i <= numPages; i++) {
         const page = await pdf.getPage(i);
@@ -71,17 +73,12 @@ export default function PdfToImagePage() {
 
         const mimeType = format === "jpeg" ? "image/jpeg" : `image/${format}`;
         const quality = format === "jpeg" ? 0.92 : undefined;
-        const dataUrl = canvas.toDataURL(mimeType, quality);
-        const base64 = dataUrl.split(",")[1];
-        const ext = format === "jpeg" ? "jpg" : format;
-        zip.file(`page_${i}.${ext}`, base64, { base64: true });
+        images.push(canvas.toDataURL(mimeType, quality));
 
         setProgress(Math.round((i / numPages) * 100));
       }
 
-      const zipBlob = await zip.generateAsync({ type: "blob" });
-      saveAs(zipBlob, "pdf_images.zip");
-      setDone(true);
+      setPageImages(images);
     } catch (error) {
       console.error("Conversion failed:", error);
       alert("PDFの変換に失敗しました。ファイルを確認してもう一度お試しください。");
@@ -90,12 +87,33 @@ export default function PdfToImagePage() {
     }
   };
 
+  const handleCropped = (index: number, croppedDataUrl: string) => {
+    setPageImages((prev) => {
+      const next = [...prev];
+      next[index] = croppedDataUrl;
+      return next;
+    });
+  };
+
+  const handleDownload = async () => {
+    const zip = new JSZip();
+    for (let i = 0; i < pageImages.length; i++) {
+      const base64 = pageImages[i].split(",")[1];
+      const ext = format === "jpeg" ? "jpg" : format;
+      zip.file(`page_${i + 1}.${ext}`, base64, { base64: true });
+    }
+    const zipBlob = await zip.generateAsync({ type: "blob" });
+    saveAs(zipBlob, "pdf_images.zip");
+  };
+
   const reset = () => {
     setFiles([]);
-    setDone(false);
+    setPageImages([]);
     setProgress(0);
     setTotalPages(0);
   };
+
+  const mimeType = format === "jpeg" ? "image/jpeg" : `image/${format}`;
 
   return (
     <div className="mx-auto max-w-screen-xl px-6 lg:px-10 py-8">
@@ -111,10 +129,10 @@ export default function PdfToImagePage() {
         <h1 className="text-xl font-semibold tracking-tight">PDF → 画像</h1>
       </div>
       <p className="text-sm text-muted-foreground mb-8">
-        PDFの各ページをJPG・PNG・WebP画像に変換します。すべての処理はブラウザ内で完結します。
+        PDFの各ページをJPG・PNG・WebP画像に変換します。変換後にトリミングも可能。すべての処理はブラウザ内で完結します。
       </p>
 
-      {!done ? (
+      {pageImages.length === 0 ? (
         <div className="space-y-6">
           <FileDropzone
             accept=".pdf,application/pdf"
@@ -183,14 +201,32 @@ export default function PdfToImagePage() {
           </Button>
         </div>
       ) : (
-        <div className="text-center space-y-4">
-          <div className="rounded-xl border bg-card p-8">
-            <p className="text-lg font-medium mb-2">変換が完了しました！</p>
-            <p className="text-sm text-muted-foreground">
-              ZIPファイルがダウンロードされました。
-            </p>
+        <div className="space-y-6">
+          <p className="text-sm text-muted-foreground">
+            {pageImages.length}ページの変換が完了。画像にホバーして「トリミング」で切り抜きできます。
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {pageImages.map((img, i) => (
+              <div key={i}>
+                <p className="text-xs text-muted-foreground mb-1">ページ {i + 1}</p>
+                <CroppableImage
+                  src={img}
+                  index={i}
+                  onCropped={handleCropped}
+                  mimeType={mimeType}
+                  quality={format === "jpeg" ? 0.92 : undefined}
+                />
+              </div>
+            ))}
           </div>
-          <Button variant="outline" onClick={reset}>
+
+          <Button onClick={handleDownload} size="lg" className="w-full gap-2">
+            <Download className="h-5 w-5" />
+            ZIPでダウンロード
+          </Button>
+
+          <Button variant="outline" onClick={reset} className="w-full">
             他のファイルを変換する
           </Button>
         </div>
