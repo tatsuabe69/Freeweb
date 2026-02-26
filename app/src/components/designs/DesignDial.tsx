@@ -2,8 +2,10 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
-import { Shield, Zap, Globe } from "lucide-react";
+import { Shield, Zap, Globe, Star, Clock } from "lucide-react";
 import { tools, getCategoryTools } from "@/lib/tools";
+import { useFavorites } from "@/hooks/use-favorites";
+import { useHistory } from "@/hooks/use-history";
 
 const ARC_RADIUS = 320;
 const ITEM_SPACING = 26;
@@ -117,6 +119,14 @@ export default function DesignDial() {
     setScrollOffset(idx * ITEM_SPACING);
     setVelocity(0);
   };
+
+  const { favorites, toggle: toggleFav, isFavorite } = useFavorites();
+  const { history, record } = useHistory();
+
+  const favTools = tools.filter((t) => favorites.includes(t.href));
+  const histTools = history
+    .map((h) => tools.find((t) => t.href === h.href))
+    .filter(Boolean) as typeof tools;
 
   const CenterIcon = centerItem.icon;
 
@@ -307,14 +317,24 @@ export default function DesignDial() {
               {centerItem.description}
             </p>
 
-            <Link
-              href={centerItem.href}
-              className="inline-flex items-center gap-2 px-5 sm:px-6 py-2.5 rounded-lg text-sm font-medium text-white transition-all duration-300 hover:opacity-90 hover:-translate-y-0.5"
-              style={{ backgroundColor: centerItem.color }}
-            >
-              <CenterIcon className="h-4 w-4" />
-              使ってみる
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link
+                href={centerItem.href}
+                onClick={() => record(centerItem.href)}
+                className="inline-flex items-center gap-2 px-5 sm:px-6 py-2.5 rounded-lg text-sm font-medium text-white transition-all duration-300 hover:opacity-90 hover:-translate-y-0.5"
+                style={{ backgroundColor: centerItem.color }}
+              >
+                <CenterIcon className="h-4 w-4" />
+                使ってみる
+              </Link>
+              <button
+                onClick={() => toggleFav(centerItem.href)}
+                className="p-2 rounded-lg hover:bg-muted/30 transition-colors"
+                title={isFavorite(centerItem.href) ? "お気に入り解除" : "お気に入り登録"}
+              >
+                <Star className={`h-5 w-5 transition-colors ${isFavorite(centerItem.href) ? "text-amber-500 fill-amber-500" : "text-muted-foreground/40 hover:text-amber-500/60"}`} />
+              </button>
+            </div>
           </div>
 
           {/* ── 中段: 使い方 + 関連ツール ── */}
@@ -408,6 +428,42 @@ export default function DesignDial() {
               })}
             </div>
           </div>
+
+          {/* Favorites & History */}
+          {(favTools.length > 0 || histTools.length > 0) && (
+            <div className="mt-4 sm:mt-6 flex flex-col gap-2">
+              {favTools.length > 0 && (
+                <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+                  <Star className="h-3 w-3 text-amber-500 fill-amber-500 shrink-0" />
+                  {favTools.map((tool) => {
+                    const FIcon = tool.icon;
+                    return (
+                      <Link key={tool.href} href={tool.href} onClick={() => record(tool.href)}
+                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 transition-all duration-200 shrink-0">
+                        <FIcon className="h-3 w-3" style={{ color: tool.color }} />
+                        <span className="text-[11px] font-medium text-muted-foreground whitespace-nowrap">{tool.title}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+              {histTools.length > 0 && (
+                <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+                  <Clock className="h-3 w-3 text-muted-foreground/50 shrink-0" />
+                  {histTools.map((tool) => {
+                    const HIcon = tool.icon;
+                    return (
+                      <Link key={tool.href} href={tool.href} onClick={() => record(tool.href)}
+                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border/20 bg-card/20 hover:bg-card/50 transition-all duration-200 shrink-0">
+                        <HIcon className="h-3 w-3" style={{ color: tool.color }} />
+                        <span className="text-[11px] font-medium text-muted-foreground whitespace-nowrap">{tool.title}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="mt-4 sm:mt-6 flex flex-wrap items-center gap-4 sm:gap-6">
             <div className="flex items-center gap-1.5 text-muted-foreground/50">

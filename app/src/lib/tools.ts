@@ -20,6 +20,7 @@ import {
   MonitorPlay,
   Eraser,
   UserRoundX,
+  QrCode,
   type LucideIcon,
 } from "lucide-react";
 
@@ -54,10 +55,11 @@ export const tools: ToolItem[] = [
   { title: "Instagram音源取得", href: "/video/instagram-sound", icon: Instagram, color: "#e1306c", category: "動画", description: "Instagramリール・動画投稿のURLから音源を取得・保存。", related: [14, 15], steps: ["InstagramのURLを貼り付け", "音源を自動取得", "MP4でダウンロード"] },
   { title: "H.264変換", href: "/video/h264", icon: MonitorPlay, color: "#7c3aed", category: "動画", description: "動画をH.264（MP4）に変換。Zoom画面共有やプレゼン用途に最適。", related: [7, 9], steps: ["動画をアップロード", "プロファイル・画質を選択", "H.264に変換"] },
   { title: "AI背景削除", href: "/image/bg-remove", icon: Eraser, color: "#ec4899", category: "画像", description: "ブラウザ内AIが画像の背景を自動削除。サーバー送信なし、完全ローカル処理。", related: [4, 5], steps: ["画像をアップロード", "AIが自動処理", "PNG画像をダウンロード"] },
+  { title: "QRコード生成", href: "/image/qr-code", icon: QrCode, color: "#2563eb", category: "画像", description: "URL・テキストからQRコードを即座に生成。クリップボードにコピーしてそのまま貼り付け。", related: [18, 4], steps: ["テキストやURLを入力", "QRコードを自動生成", "画像をコピー"] },
   { title: "動画背景透過", href: "/video/bg-remove", icon: UserRoundX, color: "#8b5cf6", category: "動画", description: "ブラウザ内AIが動画の人物を自動検出し、背景を透過・グリーンバック化。サーバー送信なし、完全ローカル処理。", related: [7, 10], steps: ["動画をアップロード", "背景モードを選択", "WebM動画をダウンロード"] },
-  { title: "スライド複製", href: "/google/slides-copy", icon: Copy, color: "#fbbc04", category: "Google", description: "テンプレートのGoogleスライドを複数チーム分まとめてコピー。研修準備を効率化。", related: [21, 22], steps: ["スライドURLを入力", "チーム名を設定", "まとめてコピー作成"] },
-  { title: "スプレッドシート複製", href: "/google/sheets-copy", icon: FileSpreadsheet, color: "#0f9d58", category: "Google", description: "テンプレートのGoogleスプレッドシートを複数チーム分まとめてコピー。研修準備を効率化。", related: [20, 22], steps: ["スプレッドシートURLを入力", "チーム名を設定", "まとめてコピー作成"] },
-  { title: "ドキュメント複製", href: "/google/docs-copy", icon: FileText, color: "#4285f4", category: "Google", description: "テンプレートのGoogleドキュメントを複数チーム分まとめてコピー。研修準備を効率化。", related: [20, 21], steps: ["ドキュメントURLを入力", "チーム名を設定", "まとめてコピー作成"] },
+  { title: "スライド複製", href: "/google/slides-copy", icon: Copy, color: "#fbbc04", category: "Google", description: "テンプレートのGoogleスライドを複数チーム分まとめてコピー。研修準備を効率化。", related: [22, 23], steps: ["スライドURLを入力", "チーム名を設定", "まとめてコピー作成"] },
+  { title: "スプレッドシート複製", href: "/google/sheets-copy", icon: FileSpreadsheet, color: "#0f9d58", category: "Google", description: "テンプレートのGoogleスプレッドシートを複数チーム分まとめてコピー。研修準備を効率化。", related: [21, 23], steps: ["スプレッドシートURLを入力", "チーム名を設定", "まとめてコピー作成"] },
+  { title: "ドキュメント複製", href: "/google/docs-copy", icon: FileText, color: "#4285f4", category: "Google", description: "テンプレートのGoogleドキュメントを複数チーム分まとめてコピー。研修準備を効率化。", related: [21, 22], steps: ["ドキュメントURLを入力", "チーム名を設定", "まとめてコピー作成"] },
 ];
 
 export function getCategoryTools(category: string) {
