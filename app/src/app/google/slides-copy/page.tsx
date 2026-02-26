@@ -44,6 +44,7 @@ export default function SlidesCopyPage() {
   const [error, setError] = useState<string | null>(null);
   const [showSetup, setShowSetup] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+  const [codeCopied, setCodeCopied] = useState(false);
 
   const extractSlideId = (url: string): string | null => {
     const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
@@ -359,7 +360,29 @@ export default function SlidesCopyPage() {
                 <div>
                   <p className="font-medium text-foreground mb-1">Step 2: コードを貼り付け</p>
                   <p className="mb-2">既存のコードを全て消して、以下をコピー&ペースト：</p>
-                  <pre className="bg-background border rounded-lg p-3 text-xs overflow-x-auto whitespace-pre">{`function doGet(e) {
+                  <div className="relative group">
+                    <button
+                      onClick={() => {
+                        const code = document.getElementById("gas-code-slides")?.textContent ?? "";
+                        navigator.clipboard.writeText(code);
+                        setCodeCopied(true);
+                        setTimeout(() => setCodeCopied(false), 2000);
+                      }}
+                      className="absolute top-2 right-2 z-10 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium bg-muted/80 hover:bg-muted border border-border/50 backdrop-blur-sm transition-all"
+                    >
+                      {codeCopied ? (
+                        <>
+                          <Check className="h-3.5 w-3.5 text-green-500" />
+                          <span className="text-green-600">コピー済み</span>
+                        </>
+                      ) : (
+                        <>
+                          <ClipboardCopy className="h-3.5 w-3.5" />
+                          コードをコピー
+                        </>
+                      )}
+                    </button>
+                    <pre id="gas-code-slides" className="bg-background border rounded-lg p-3 pt-10 text-xs overflow-x-auto whitespace-pre">{`function doGet(e) {
   var params = e.parameter;
   var callback = params.callback || "";
 
@@ -411,6 +434,7 @@ export default function SlidesCopyPage() {
 
   return jsonResp({ error: "Invalid action" });
 }`}</pre>
+                  </div>
                 </div>
 
                 <div>
