@@ -100,23 +100,23 @@ export default function DesignCarousel() {
       </div>
 
       {/* Carousel area */}
-      <div className="flex-1 flex flex-col items-center justify-center relative px-4">
+      <div className="flex-1 flex flex-col items-center justify-center relative px-2 sm:px-4">
         {/* Navigation arrows */}
         <button
           onClick={prev}
-          className="absolute left-4 md:left-12 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full border border-border/30 bg-card/60 backdrop-blur-xl shadow-lg flex items-center justify-center hover:bg-muted/50 transition-all"
+          className="absolute left-1 sm:left-4 md:left-12 top-1/2 -translate-y-1/2 z-30 w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-border/30 bg-card/60 backdrop-blur-xl shadow-lg flex items-center justify-center hover:bg-muted/50 transition-all"
         >
-          <ChevronLeft className="h-5 w-5 text-muted-foreground" />
+          <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
         </button>
         <button
           onClick={next}
-          className="absolute right-4 md:right-12 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full border border-border/30 bg-card/60 backdrop-blur-xl shadow-lg flex items-center justify-center hover:bg-muted/50 transition-all"
+          className="absolute right-1 sm:right-4 md:right-12 top-1/2 -translate-y-1/2 z-30 w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-border/30 bg-card/60 backdrop-blur-xl shadow-lg flex items-center justify-center hover:bg-muted/50 transition-all"
         >
-          <ChevronRight className="h-5 w-5 text-muted-foreground" />
+          <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
         </button>
 
         {/* 3D Card stack */}
-        <div className="relative w-full max-w-4xl h-[280px] sm:h-[320px]" style={{ perspective: "1200px" }}>
+        <div className="relative w-full max-w-4xl h-[320px] sm:h-[320px]" style={{ perspective: "1200px" }}>
           {tools.map((tool, idx) => {
             const offset = getOffset(idx);
             if (Math.abs(offset) > 3) return null;
@@ -124,9 +124,9 @@ export default function DesignCarousel() {
             const isActive = offset === 0;
             const ToolIcon = tool.icon;
 
-            const cardWidth = isMobile ? 200 : 260;
-            const cardHeight = isMobile ? 240 : 300;
-            const spacing = isMobile ? 140 : 220;
+            const cardWidth = isMobile ? 260 : 260;
+            const cardHeight = isMobile ? 300 : 300;
+            const spacing = isMobile ? 180 : 220;
 
             const translateX = offset * spacing;
             const translateZ = isActive ? 0 : -120 - Math.abs(offset) * 60;
