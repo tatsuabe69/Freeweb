@@ -103,7 +103,7 @@ export default function VideoToGifPage() {
   };
 
   return (
-    <div className="mx-auto max-w-screen-xl px-6 lg:px-10 py-8">
+    <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-10 py-6 sm:py-8">
       <Link
         href="/"
         className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-8"
@@ -139,7 +139,7 @@ export default function VideoToGifPage() {
 
           {files.length > 0 && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium mb-1 block">
                     開始時間（秒）
@@ -189,7 +189,7 @@ export default function VideoToGifPage() {
 
               <div>
                 <label className="text-sm font-medium mb-2 block">幅</label>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {widthOptions.map((opt) => (
                     <button
                       key={opt.value}
@@ -230,7 +230,7 @@ export default function VideoToGifPage() {
 
       {result && (
         <div className="text-center space-y-4">
-          <div className="rounded-xl border bg-card p-8">
+          <div className="rounded-xl border bg-card p-4 sm:p-6 lg:p-8">
             <p className="text-lg font-medium mb-4">GIFが作成されました！</p>
             <Button onClick={handleDownload} size="lg" className="gap-2">
               <Download className="h-5 w-5" />

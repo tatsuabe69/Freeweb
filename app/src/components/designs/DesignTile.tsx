@@ -20,9 +20,9 @@ export default function DesignTile() {
       </div>
 
       {/* ── Header ── */}
-      <div className="px-6 lg:px-12 pt-10 pb-2">
+      <div className="px-4 sm:px-6 lg:px-12 pt-6 sm:pt-10 pb-2">
         <div className="max-w-6xl mx-auto">
-          <h1 className="text-3xl lg:text-4xl font-light tracking-tight mb-1 text-foreground">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-light tracking-tight mb-1 text-foreground">
             ツール一覧
           </h1>
           <p className="text-sm text-muted-foreground font-light mb-6">
@@ -58,7 +58,7 @@ export default function DesignTile() {
       </div>
 
       {/* ── Tile Grid ── */}
-      <div className="flex-1 px-6 lg:px-12 py-8">
+      <div className="flex-1 px-4 sm:px-6 lg:px-12 py-6 sm:py-8">
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {filtered.map((tool) => {
@@ -67,7 +67,7 @@ export default function DesignTile() {
                 <Link
                   key={tool.href}
                   href={tool.href}
-                  className="group rounded-xl border border-border/30 bg-card/40 hover:bg-card/70 hover:border-border/60 hover:shadow-lg p-5 flex flex-col items-center gap-3 text-center transition-all duration-300 hover:-translate-y-1"
+                  className="group rounded-xl border border-border/30 bg-card/40 hover:bg-card/70 hover:border-border/60 hover:shadow-lg p-4 sm:p-5 flex flex-col items-center gap-2 sm:gap-3 text-center transition-all duration-300 hover:-translate-y-1"
                 >
                   <div
                     className="w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110"
@@ -99,7 +99,7 @@ export default function DesignTile() {
       </div>
 
       {/* ── Footer ── */}
-      <div className="flex justify-center gap-8 pb-6 pt-2">
+      <div className="flex flex-wrap justify-center gap-4 sm:gap-8 pb-6 pt-2">
         <div className="flex items-center gap-1.5 text-muted-foreground/50">
           <Shield className="h-3.5 w-3.5" />
           <span className="text-[10px] font-light tracking-wide">データ送信なし</span>

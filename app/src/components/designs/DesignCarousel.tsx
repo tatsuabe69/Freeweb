@@ -10,6 +10,14 @@ const STORAGE_KEY = "freeweb-tool-index";
 export default function DesignCarousel() {
   const [activeIdx, setActiveIdx] = useState(0);
   const [direction, setDirection] = useState(0); // -1 left, 1 right, 0 initial
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -98,7 +106,7 @@ export default function DesignCarousel() {
         </button>
 
         {/* 3D Card stack */}
-        <div className="relative w-full max-w-4xl h-[320px]" style={{ perspective: "1200px" }}>
+        <div className="relative w-full max-w-4xl h-[280px] sm:h-[320px]" style={{ perspective: "1200px" }}>
           {tools.map((tool, idx) => {
             const offset = getOffset(idx);
             if (Math.abs(offset) > 3) return null;
@@ -106,7 +114,11 @@ export default function DesignCarousel() {
             const isActive = offset === 0;
             const ToolIcon = tool.icon;
 
-            const translateX = offset * 220;
+            const cardWidth = isMobile ? 200 : 260;
+            const cardHeight = isMobile ? 240 : 300;
+            const spacing = isMobile ? 140 : 220;
+
+            const translateX = offset * spacing;
             const translateZ = isActive ? 0 : -120 - Math.abs(offset) * 60;
             const rotateY = offset * -8;
             const opacity = isActive ? 1 : Math.max(0, 1 - Math.abs(offset) * 0.3);
@@ -117,10 +129,10 @@ export default function DesignCarousel() {
                 key={tool.href}
                 className="absolute left-1/2 top-1/2 transition-all duration-500 ease-out cursor-pointer"
                 style={{
-                  width: 260,
-                  height: 300,
-                  marginLeft: -130,
-                  marginTop: -150,
+                  width: cardWidth,
+                  height: cardHeight,
+                  marginLeft: -cardWidth / 2,
+                  marginTop: -cardHeight / 2,
                   transform: `translateX(${translateX}px) translateZ(${translateZ}px) rotateY(${rotateY}deg) scale(${scale})`,
                   opacity,
                   zIndex: isActive ? 20 : 10 - Math.abs(offset),
@@ -131,7 +143,7 @@ export default function DesignCarousel() {
                 }}
               >
                 <div
-                  className={`w-full h-full rounded-2xl border backdrop-blur-xl backdrop-saturate-150 p-6 flex flex-col items-center justify-center gap-4 transition-all duration-500 ${
+                  className={`w-full h-full rounded-2xl border backdrop-blur-xl backdrop-saturate-150 p-4 sm:p-6 flex flex-col items-center justify-center gap-3 sm:gap-4 transition-all duration-500 ${
                     isActive
                       ? "border-border/60 bg-card shadow-2xl"
                       : "border-border/20 bg-card/25"
@@ -140,7 +152,7 @@ export default function DesignCarousel() {
                 >
                   {/* Icon */}
                   <div
-                    className="w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500"
+                    className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center transition-all duration-500"
                     style={{
                       backgroundColor: isActive ? tool.color : tool.color + "20",
                       boxShadow: isActive ? `0 8px 30px ${tool.color}40` : "none",
@@ -161,7 +173,7 @@ export default function DesignCarousel() {
                   </span>
 
                   {/* Title */}
-                  <h3 className={`text-lg font-medium tracking-tight text-center transition-all duration-300 ${
+                  <h3 className={`text-base sm:text-lg font-medium tracking-tight text-center transition-all duration-300 ${
                     isActive ? "text-foreground" : "text-muted-foreground"
                   }`}>
                     {tool.title}
@@ -191,7 +203,7 @@ export default function DesignCarousel() {
         </div>
 
         {/* Steps */}
-        <div className="mt-6 flex items-center gap-8 justify-center">
+        <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row items-center gap-3 sm:gap-6 justify-center">
           {item.steps.map((step, idx) => (
             <div key={idx} className="flex items-center gap-2">
               <span
@@ -224,7 +236,7 @@ export default function DesignCarousel() {
       </div>
 
       {/* Footer features */}
-      <div className="flex justify-center gap-8 pb-6 pt-4">
+      <div className="flex flex-wrap justify-center gap-4 sm:gap-8 pb-6 pt-4">
         <div className="flex items-center gap-1.5 text-muted-foreground/50">
           <Shield className="h-3.5 w-3.5" />
           <span className="text-[10px] font-light tracking-wide">データ送信なし</span>

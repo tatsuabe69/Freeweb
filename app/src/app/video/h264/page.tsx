@@ -109,7 +109,7 @@ export default function H264ConvertPage() {
   };
 
   return (
-    <div className="mx-auto max-w-screen-xl px-6 lg:px-10 py-8">
+    <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-10 py-6 sm:py-8">
       <Link
         href="/"
         className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-8"
@@ -148,7 +148,7 @@ export default function H264ConvertPage() {
               {/* Profile */}
               <div>
                 <label className="text-sm font-medium mb-2 block">H.264プロファイル</label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   {profiles.map((p) => (
                     <button
                       key={p.value}
@@ -169,7 +169,7 @@ export default function H264ConvertPage() {
               {/* Quality */}
               <div>
                 <label className="text-sm font-medium mb-2 block">画質</label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   {qualityPresets.map((q) => (
                     <button
                       key={q.id}
@@ -190,7 +190,7 @@ export default function H264ConvertPage() {
               {/* Speed */}
               <div>
                 <label className="text-sm font-medium mb-2 block">エンコード速度</label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   {speedPresets.map((s) => (
                     <button
                       key={s.value}
@@ -231,7 +231,7 @@ export default function H264ConvertPage() {
 
       {result && (
         <div className="text-center space-y-4">
-          <div className="rounded-xl border bg-card p-8">
+          <div className="rounded-xl border bg-card p-4 sm:p-6 lg:p-8">
             <p className="text-lg font-medium mb-2">変換が完了しました！</p>
             <div className="text-sm text-muted-foreground mb-4 space-y-1">
               <p>元のサイズ: {formatFileSize(originalSize)}</p>

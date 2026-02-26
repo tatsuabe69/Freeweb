@@ -20,6 +20,7 @@ export default function DesignDial() {
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef<{ startY: number; startOffset: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const mobileScrollRef = useRef<HTMLDivElement>(null);
   const animRef = useRef<number>(0);
 
   const totalItems = tools.length;
@@ -32,6 +33,15 @@ export default function DesignDial() {
   // Persist selected tool index
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, String(centerIdx));
+  }, [centerIdx]);
+
+  // Scroll active mobile item into view
+  useEffect(() => {
+    if (!mobileScrollRef.current) return;
+    const activeEl = mobileScrollRef.current.querySelector('[data-active="true"]');
+    if (activeEl) {
+      activeEl.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    }
   }, [centerIdx]);
 
   // Snap animation
@@ -103,21 +113,70 @@ export default function DesignDial() {
     dragRef.current = null;
   };
 
+  const handleMobileSelect = (idx: number) => {
+    setScrollOffset(idx * ITEM_SPACING);
+    setVelocity(0);
+  };
+
   const CenterIcon = centerItem.icon;
 
   return (
-    <div className="min-h-[calc(100vh-60px)] flex justify-center overflow-hidden relative">
+    <div className="min-h-[calc(100vh-60px)] flex flex-col md:flex-row md:justify-center overflow-hidden relative">
       {/* ── Background ── */}
       <div className="design-bg dbg-dial" aria-hidden="true">
         <div className="design-orb" />
         <div className="design-orb design-orb-2" />
       </div>
 
+      {/* ── Mobile: Horizontal scrollable tool bar ── */}
+      <div className="md:hidden px-4 pt-6 pb-2">
+        <div
+          ref={mobileScrollRef}
+          className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory"
+          style={{ WebkitOverflowScrolling: "touch" }}
+        >
+          {tools.map((item, i) => {
+            const Icon = item.icon;
+            const isActive = i === centerIdx;
+            return (
+              <button
+                key={item.href + i}
+                data-active={isActive}
+                onClick={() => handleMobileSelect(i)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg border shrink-0 snap-center transition-all duration-200 ${
+                  isActive
+                    ? "border-border/60 bg-card/80 shadow-md"
+                    : "border-border/20 bg-card/30"
+                }`}
+                style={isActive ? { borderColor: item.color + "50" } : undefined}
+              >
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                  style={{
+                    backgroundColor: isActive ? item.color : item.color + "15",
+                  }}
+                >
+                  <Icon
+                    className="h-4 w-4"
+                    style={{ color: isActive ? "#fff" : item.color }}
+                  />
+                </div>
+                <span className={`text-xs font-medium whitespace-nowrap ${
+                  isActive ? "text-foreground" : "text-muted-foreground"
+                }`}>
+                  {item.title}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="flex items-stretch w-full max-w-6xl">
-        {/* ── Left: Half-circle dial ── */}
+        {/* ── Desktop: Half-circle dial (hidden on mobile) ── */}
         <div
           ref={containerRef}
-          className="relative select-none touch-none cursor-grab active:cursor-grabbing shrink-0"
+          className="relative select-none touch-none cursor-grab active:cursor-grabbing shrink-0 hidden md:block"
           style={{ width: ARC_RADIUS + 80 }}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
@@ -219,9 +278,9 @@ export default function DesignDial() {
           </p>
         </div>
 
-        {/* ── Right: Content area ── */}
-        <div className="flex-1 flex flex-col justify-center px-6 lg:px-10 py-10 min-w-0">
-          <div className="h-px w-full mb-6 transition-colors duration-500" style={{ backgroundColor: centerItem.color + "25" }} />
+        {/* ── Content area ── */}
+        <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-10 py-6 md:py-10 min-w-0">
+          <div className="h-px w-full mb-4 md:mb-6 transition-colors duration-500" style={{ backgroundColor: centerItem.color + "25" }} />
 
           {/* ── 上段: タイトル ── */}
           <div className="transition-all duration-300">
@@ -238,7 +297,7 @@ export default function DesignDial() {
             </div>
 
             <h2
-              className="text-2xl lg:text-3xl font-light tracking-tight mb-3 transition-colors duration-300 whitespace-nowrap"
+              className="text-xl sm:text-2xl lg:text-3xl font-light tracking-tight mb-3 transition-colors duration-300"
               style={{ color: centerItem.color }}
             >
               {centerItem.title}
@@ -250,7 +309,7 @@ export default function DesignDial() {
 
             <Link
               href={centerItem.href}
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium text-white transition-all duration-300 hover:opacity-90 hover:-translate-y-0.5"
+              className="inline-flex items-center gap-2 px-5 sm:px-6 py-2.5 rounded-lg text-sm font-medium text-white transition-all duration-300 hover:opacity-90 hover:-translate-y-0.5"
               style={{ backgroundColor: centerItem.color }}
             >
               <CenterIcon className="h-4 w-4" />
@@ -259,12 +318,12 @@ export default function DesignDial() {
           </div>
 
           {/* ── 中段: 使い方 + 関連ツール ── */}
-          <div className="mt-6 flex flex-col lg:flex-row lg:items-start gap-6 lg:gap-10 transition-all duration-300">
+          <div className="mt-4 sm:mt-6 flex flex-col lg:flex-row lg:items-start gap-4 sm:gap-6 lg:gap-10 transition-all duration-300">
             <div className="flex-1 min-w-0">
               <p className="text-[11px] text-muted-foreground/50 uppercase tracking-widest font-medium mb-3">
                 使い方
               </p>
-              <div className="flex gap-4">
+              <div className="flex gap-2 sm:gap-4">
                 {centerItem.steps.map((step, idx) => (
                   <div key={idx} className="flex flex-col items-center gap-1.5 flex-1 min-w-0">
                     <span
@@ -273,7 +332,7 @@ export default function DesignDial() {
                     >
                       {idx + 1}
                     </span>
-                    <span className="text-[11px] text-muted-foreground font-light leading-snug text-center">
+                    <span className="text-[10px] sm:text-[11px] text-muted-foreground font-light leading-snug text-center">
                       {step}
                     </span>
                   </div>
@@ -314,7 +373,7 @@ export default function DesignDial() {
             )}
           </div>
 
-          <div className="mt-8">
+          <div className="mt-6 sm:mt-8">
             <p className="text-[11px] text-muted-foreground/50 uppercase tracking-widest font-medium mb-3">
               {centerItem.category}ツール一覧
             </p>
@@ -350,7 +409,7 @@ export default function DesignDial() {
             </div>
           </div>
 
-          <div className="mt-6 flex items-center gap-6">
+          <div className="mt-4 sm:mt-6 flex flex-wrap items-center gap-4 sm:gap-6">
             <div className="flex items-center gap-1.5 text-muted-foreground/50">
               <Shield className="h-3.5 w-3.5" />
               <span className="text-[10px] font-light tracking-wide">データ送信なし</span>

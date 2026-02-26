@@ -105,7 +105,7 @@ export default function VideoCompressPage() {
   };
 
   return (
-    <div className="mx-auto max-w-screen-xl px-6 lg:px-10 py-8">
+    <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-10 py-6 sm:py-8">
       <Link
         href="/"
         className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-8"
@@ -145,7 +145,7 @@ export default function VideoCompressPage() {
                 <label className="text-sm font-medium mb-2 block">
                   目標サイズプリセット
                 </label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {presets.map((p) => (
                     <button
                       key={p.id}
@@ -204,7 +204,7 @@ export default function VideoCompressPage() {
 
       {result && (
         <div className="text-center space-y-4">
-          <div className="rounded-xl border bg-card p-8">
+          <div className="rounded-xl border bg-card p-4 sm:p-6 lg:p-8">
             <p className="text-lg font-medium mb-2">圧縮が完了しました！</p>
             <div className="text-sm text-muted-foreground mb-4 space-y-1">
               <p>元のサイズ: {formatFileSize(originalSize)}</p>

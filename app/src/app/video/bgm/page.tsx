@@ -97,7 +97,7 @@ export default function BgmPage() {
   };
 
   return (
-    <div className="mx-auto max-w-screen-xl px-6 lg:px-10 py-8">
+    <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-10 py-6 sm:py-8">
       <Link
         href="/"
         className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-8"
@@ -149,7 +149,7 @@ export default function BgmPage() {
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium mb-2 block">オーディオモード</label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   {audioModes.map((mode) => (
                     <button
                       key={mode.value}
@@ -226,7 +226,7 @@ export default function BgmPage() {
 
       {result && (
         <div className="text-center space-y-4">
-          <div className="rounded-xl border bg-card p-8">
+          <div className="rounded-xl border bg-card p-4 sm:p-6 lg:p-8">
             <p className="text-lg font-medium mb-4">BGMの追加が完了しました！</p>
             <Button onClick={handleDownload} size="lg" className="gap-2">
               <Download className="h-5 w-5" />

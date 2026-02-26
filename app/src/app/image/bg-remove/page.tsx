@@ -84,7 +84,7 @@ export default function BgRemovePage() {
   };
 
   return (
-    <div className="mx-auto max-w-screen-xl px-6 lg:px-10 py-8">
+    <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-10 py-6 sm:py-8">
       <Link
         href="/"
         className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-8"
@@ -148,7 +148,7 @@ export default function BgRemovePage() {
             <p className="text-lg font-medium text-center mb-4">背景削除が完了しました！</p>
 
             {/* Before/After */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
               <div>
                 <p className="text-xs text-muted-foreground mb-2 text-center">元画像</p>
                 <div className="rounded-lg border overflow-hidden bg-muted/30">

@@ -198,7 +198,7 @@ export default function PdfMergePage() {
   };
 
   return (
-    <div className="mx-auto max-w-screen-xl px-6 lg:px-10 py-8">
+    <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-10 py-6 sm:py-8">
       <Link
         href="/"
         className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-8"
@@ -285,7 +285,7 @@ export default function PdfMergePage() {
         </div>
       ) : (
         <div className="text-center space-y-4">
-          <div className="rounded-xl border bg-card p-8">
+          <div className="rounded-xl border bg-card p-4 sm:p-6 lg:p-8">
             <p className="text-lg font-medium mb-4">結合が完了しました！</p>
             <Button onClick={handleDownload} size="lg" className="gap-2">
               <Download className="h-5 w-5" />

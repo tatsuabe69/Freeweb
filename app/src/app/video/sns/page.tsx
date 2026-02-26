@@ -1737,7 +1737,7 @@ export default function SnsCreatorPage() {
       {result && (
         <div className="flex-1 flex items-center justify-center p-8">
           <div className="text-center space-y-4 max-w-md">
-            <div className="rounded-xl border bg-card p-8">
+            <div className="rounded-xl border bg-card p-4 sm:p-6 lg:p-8">
               <p className="text-lg font-medium mb-1">書き出し完了</p>
               <p className="text-sm text-muted-foreground mb-6">
                 {plat.label}用の動画 ({fmt(totalDuration)})

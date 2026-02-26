@@ -239,7 +239,7 @@ export default function PdfReorderPage() {
   const activeCount = pages.filter((p) => !p.deleted).length;
 
   return (
-    <div className="mx-auto max-w-screen-xl px-6 lg:px-10 py-8">
+    <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-10 py-6 sm:py-8">
       <Link
         href="/"
         className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-8"
@@ -290,7 +290,7 @@ export default function PdfReorderPage() {
                   items={pages.map((p) => p.id)}
                   strategy={rectSortingStrategy}
                 >
-                  <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-3">
                     {pages.map((page, idx) => (
                       <SortablePageCard
                         key={page.id}
@@ -329,7 +329,7 @@ export default function PdfReorderPage() {
         </div>
       ) : (
         <div className="text-center space-y-4">
-          <div className="rounded-xl border bg-card p-8">
+          <div className="rounded-xl border bg-card p-4 sm:p-6 lg:p-8">
             <p className="text-lg font-medium mb-4">
               並び替えが完了しました！
             </p>

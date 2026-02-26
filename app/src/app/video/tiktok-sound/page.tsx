@@ -89,7 +89,7 @@ export default function TikTokSoundPage() {
   };
 
   return (
-    <div className="mx-auto max-w-screen-xl px-6 lg:px-10 py-8">
+    <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-10 py-6 sm:py-8">
       <Link
         href="/"
         className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-8"
@@ -110,7 +110,7 @@ export default function TikTokSoundPage() {
         <div className="space-y-4">
           <div>
             <label className="text-sm font-medium mb-2 block">TikTok動画のURL</label>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <input
                 type="url"
                 value={url}
@@ -122,7 +122,7 @@ export default function TikTokSoundPage() {
                 className="flex-1 rounded-lg border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground/60"
                 disabled={loading}
               />
-              <Button onClick={handleSearch} disabled={!url.trim() || loading} className="gap-2">
+              <Button onClick={handleSearch} disabled={!url.trim() || loading} className="gap-2 shrink-0">
                 <Search className="h-4 w-4" />
                 {loading ? "検索中..." : "音源を検索"}
               </Button>

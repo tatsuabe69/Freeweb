@@ -48,15 +48,15 @@ export default function DesignBento() {
       </div>
 
       {/* Header */}
-      <div className="px-6 lg:px-12 pt-8 pb-2">
+      <div className="px-4 sm:px-6 lg:px-12 pt-6 sm:pt-8 pb-2">
         <div className="flex items-baseline justify-end max-w-6xl mx-auto">
           {/* Category tabs */}
-          <div className="flex gap-1 bg-muted/30 rounded-lg p-1">
+          <div className="flex gap-1 bg-muted/30 rounded-lg p-1 overflow-x-auto">
             {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => handleCatChange(cat)}
-                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                className={`px-3 sm:px-4 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap ${
                   activeCat === cat
                     ? "bg-background shadow-sm text-foreground"
                     : "text-muted-foreground hover:text-foreground"
@@ -70,11 +70,11 @@ export default function DesignBento() {
       </div>
 
       {/* Bento grid */}
-      <div className="flex-1 px-6 lg:px-12 py-6">
-        <div className="max-w-6xl mx-auto grid grid-cols-4 grid-rows-3 gap-3 h-full" style={{ minHeight: "calc(100vh - 240px)" }}>
-          {/* Featured card (spans 2 cols, 3 rows) */}
+      <div className="flex-1 px-4 sm:px-6 lg:px-12 py-4 sm:py-6">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 sm:grid-rows-3 gap-3 h-full" style={{ minHeight: "calc(100vh - 240px)" }}>
+          {/* Featured card (spans 2 cols, 3 rows on sm+) */}
           <div
-            className="col-span-2 row-span-3 rounded-2xl border p-8 flex flex-col justify-between relative overflow-hidden transition-all duration-500 group"
+            className="sm:col-span-2 lg:col-span-2 sm:row-span-3 rounded-2xl border p-5 sm:p-8 flex flex-col justify-between relative overflow-hidden transition-all duration-500 group"
             style={{
               background: `linear-gradient(135deg, ${item.color}12, ${item.color}06, transparent)`,
               borderColor: item.color + "30",
@@ -105,18 +105,18 @@ export default function DesignBento() {
                   >
                     {item.category}
                   </span>
-                  <h2 className="text-3xl font-light tracking-tight" style={{ color: item.color }}>
+                  <h2 className="text-xl sm:text-2xl lg:text-3xl font-light tracking-tight" style={{ color: item.color }}>
                     {item.title}
                   </h2>
                 </div>
               </div>
 
-              <p className="text-base text-muted-foreground font-light leading-relaxed mb-8 max-w-md">
+              <p className="text-sm sm:text-base text-muted-foreground font-light leading-relaxed mb-6 sm:mb-8 max-w-md">
                 {item.description}
               </p>
 
               {/* Steps */}
-              <div className="space-y-3 mb-8">
+              <div className="space-y-3 mb-6 sm:mb-8">
                 {item.steps.map((step, idx) => (
                   <div key={idx} className="flex items-center gap-3">
                     <span
@@ -212,7 +212,7 @@ export default function DesignBento() {
       </div>
 
       {/* Footer features */}
-      <div className="flex justify-center gap-8 pb-6 pt-2">
+      <div className="flex flex-wrap justify-center gap-4 sm:gap-8 pb-6 pt-2">
         <div className="flex items-center gap-1.5 text-muted-foreground/50">
           <Shield className="h-3.5 w-3.5" />
           <span className="text-[10px] font-light tracking-wide">データ送信なし</span>
