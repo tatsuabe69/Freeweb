@@ -9,6 +9,7 @@ const DesignDial = dynamic(() => import("@/components/designs/DesignDial"), { ss
 const DesignCarousel = dynamic(() => import("@/components/designs/DesignCarousel"), { ssr: false });
 const DesignBento = dynamic(() => import("@/components/designs/DesignBento"), { ssr: false });
 const DesignTile = dynamic(() => import("@/components/designs/DesignTile"), { ssr: false });
+const WireframeBg = dynamic(() => import("@/components/wireframe-bg").then((m) => ({ default: m.WireframeBg })), { ssr: false });
 
 const DESIGNS = [
   { id: "dial",      label: "Dial",      component: DesignDial },
@@ -41,6 +42,7 @@ export default function HomePage() {
 
   return (
     <div className="relative">
+      <WireframeBg />
       <DesignComponent />
 
       {/* Design switcher — bottom right */}
