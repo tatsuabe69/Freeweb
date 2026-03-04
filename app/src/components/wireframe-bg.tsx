@@ -26,7 +26,7 @@ export function WireframeBg() {
 
     // Camera
     const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
-    camera.position.set(0, 0, 6);
+    camera.position.set(0, 0, 8);
 
     // Renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -36,20 +36,20 @@ export function WireframeBg() {
     container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // Colors based on theme
+    // Colors based on theme — very subtle, background decoration only
     const wireColor = isDark ? 0x444466 : 0xccccdd;
     const accentColor = isDark ? 0x6366f1 : 0x8b5cf6;
     const material = new THREE.MeshBasicMaterial({
       color: wireColor,
       wireframe: true,
       transparent: true,
-      opacity: isDark ? 0.15 : 0.12,
+      opacity: isDark ? 0.06 : 0.05,
     });
     const accentMaterial = new THREE.MeshBasicMaterial({
       color: accentColor,
       wireframe: true,
       transparent: true,
-      opacity: isDark ? 0.2 : 0.15,
+      opacity: isDark ? 0.08 : 0.06,
     });
 
     // Geometries - multiple polyhedra at different positions
@@ -136,7 +136,7 @@ export function WireframeBg() {
   return (
     <div
       ref={containerRef}
-      className="fixed inset-0 pointer-events-none z-0"
+      className="fixed inset-0 pointer-events-none z-0 opacity-60"
       aria-hidden="true"
     />
   );
