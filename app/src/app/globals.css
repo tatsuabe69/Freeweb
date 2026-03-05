@@ -198,13 +198,13 @@
   width: min(550px, 80vw); height: min(550px, 80vw);
   top: -10%; right: -5%;
   background: radial-gradient(circle, oklch(0.85 0.10 260) 0%, transparent 70%);
-  opacity: 0.25;
+  opacity: 0;
 }
 .bg-orb-2 {
   width: min(450px, 70vw); height: min(450px, 70vw);
   bottom: -5%; left: -8%;
   background: radial-gradient(circle, oklch(0.88 0.08 200) 0%, transparent 70%);
-  opacity: 0.20;
+  opacity: 0;
   animation-delay: -8s;
   animation-duration: 26s;
 }
@@ -244,34 +244,34 @@
 }
 
 /* Dial – blue/teal */
-.dbg-dial { background: linear-gradient(135deg, oklch(0.96 0.015 210), oklch(0.97 0.01 240)); }
+.dbg-dial { background: oklch(1 0 0); }
 .dark .dbg-dial { background: linear-gradient(135deg, oklch(0.07 0.025 210), oklch(0.05 0.02 240)); }
-.dbg-dial .design-orb:first-child { width: min(500px, 80vw); height: min(500px, 80vw); top: -8%; right: -3%; background: radial-gradient(circle, oklch(0.82 0.10 200) 0%, transparent 70%); opacity: 0.20; }
-.dbg-dial .design-orb-2 { width: min(400px, 65vw); height: min(400px, 65vw); bottom: 8%; left: -5%; background: radial-gradient(circle, oklch(0.78 0.12 240) 0%, transparent 70%); opacity: 0.15; }
+.dbg-dial .design-orb:first-child { width: min(500px, 80vw); height: min(500px, 80vw); top: -8%; right: -3%; background: radial-gradient(circle, oklch(0.82 0.10 200) 0%, transparent 70%); opacity: 0; }
+.dbg-dial .design-orb-2 { width: min(400px, 65vw); height: min(400px, 65vw); bottom: 8%; left: -5%; background: radial-gradient(circle, oklch(0.78 0.12 240) 0%, transparent 70%); opacity: 0; }
 .dark .dbg-dial .design-orb:first-child { background: radial-gradient(circle, oklch(0.28 0.12 200) 0%, transparent 70%); opacity: 0.38; }
 .dark .dbg-dial .design-orb-2 { background: radial-gradient(circle, oklch(0.24 0.14 240) 0%, transparent 70%); opacity: 0.30; }
 
 /* Carousel – violet/purple */
-.dbg-carousel { background: linear-gradient(160deg, oklch(0.96 0.015 270), oklch(0.97 0.01 290)); }
+.dbg-carousel { background: oklch(1 0 0); }
 .dark .dbg-carousel { background: linear-gradient(160deg, oklch(0.06 0.025 270), oklch(0.05 0.02 290)); }
-.dbg-carousel .design-orb:first-child { width: min(500px, 80vw); height: min(500px, 80vw); top: 10%; left: -6%; background: radial-gradient(circle, oklch(0.82 0.10 270) 0%, transparent 70%); opacity: 0.18; }
-.dbg-carousel .design-orb-2 { width: min(420px, 65vw); height: min(420px, 65vw); bottom: -3%; right: 5%; background: radial-gradient(circle, oklch(0.78 0.12 300) 0%, transparent 70%); opacity: 0.14; }
+.dbg-carousel .design-orb:first-child { width: min(500px, 80vw); height: min(500px, 80vw); top: 10%; left: -6%; background: radial-gradient(circle, oklch(0.82 0.10 270) 0%, transparent 70%); opacity: 0; }
+.dbg-carousel .design-orb-2 { width: min(420px, 65vw); height: min(420px, 65vw); bottom: -3%; right: 5%; background: radial-gradient(circle, oklch(0.78 0.12 300) 0%, transparent 70%); opacity: 0; }
 .dark .dbg-carousel .design-orb:first-child { background: radial-gradient(circle, oklch(0.28 0.14 270) 0%, transparent 70%); opacity: 0.40; }
 .dark .dbg-carousel .design-orb-2 { background: radial-gradient(circle, oklch(0.24 0.15 300) 0%, transparent 70%); opacity: 0.32; }
 
 /* Grid – rose/warm */
-.dbg-grid { background: linear-gradient(145deg, oklch(0.96 0.015 340), oklch(0.97 0.01 10)); }
+.dbg-grid { background: oklch(1 0 0); }
 .dark .dbg-grid { background: linear-gradient(145deg, oklch(0.07 0.025 340), oklch(0.05 0.02 10)); }
-.dbg-grid .design-orb:first-child { width: min(480px, 80vw); height: min(480px, 80vw); top: -5%; right: 8%; background: radial-gradient(circle, oklch(0.82 0.10 350) 0%, transparent 70%); opacity: 0.18; }
-.dbg-grid .design-orb-2 { width: min(380px, 60vw); height: min(380px, 60vw); bottom: 10%; left: -3%; background: radial-gradient(circle, oklch(0.80 0.12 20) 0%, transparent 70%); opacity: 0.14; }
+.dbg-grid .design-orb:first-child { width: min(480px, 80vw); height: min(480px, 80vw); top: -5%; right: 8%; background: radial-gradient(circle, oklch(0.82 0.10 350) 0%, transparent 70%); opacity: 0; }
+.dbg-grid .design-orb-2 { width: min(380px, 60vw); height: min(380px, 60vw); bottom: 10%; left: -3%; background: radial-gradient(circle, oklch(0.80 0.12 20) 0%, transparent 70%); opacity: 0; }
 .dark .dbg-grid .design-orb:first-child { background: radial-gradient(circle, oklch(0.30 0.14 350) 0%, transparent 70%); opacity: 0.36; }
 .dark .dbg-grid .design-orb-2 { background: radial-gradient(circle, oklch(0.26 0.14 20) 0%, transparent 70%); opacity: 0.28; }
 
 /* Tile – teal/cyan */
-.dbg-tile { background: linear-gradient(180deg, oklch(0.96 0.02 180), oklch(0.97 0.015 210)); }
+.dbg-tile { background: oklch(1 0 0); }
 .dark .dbg-tile { background: linear-gradient(180deg, oklch(0.07 0.03 180), oklch(0.05 0.02 210)); }
-.dbg-tile .design-orb:first-child { width: min(520px, 80vw); height: min(520px, 80vw); top: -12%; left: 15%; background: radial-gradient(circle, oklch(0.85 0.08 190) 0%, transparent 70%); opacity: 0.22; }
-.dbg-tile .design-orb-2 { width: min(400px, 65vw); height: min(400px, 65vw); bottom: 5%; right: -3%; background: radial-gradient(circle, oklch(0.82 0.10 170) 0%, transparent 70%); opacity: 0.16; }
+.dbg-tile .design-orb:first-child { width: min(520px, 80vw); height: min(520px, 80vw); top: -12%; left: 15%; background: radial-gradient(circle, oklch(0.85 0.08 190) 0%, transparent 70%); opacity: 0; }
+.dbg-tile .design-orb-2 { width: min(400px, 65vw); height: min(400px, 65vw); bottom: 5%; right: -3%; background: radial-gradient(circle, oklch(0.82 0.10 170) 0%, transparent 70%); opacity: 0; }
 .dark .dbg-tile .design-orb:first-child { background: radial-gradient(circle, oklch(0.26 0.10 200) 0%, transparent 70%); opacity: 0.38; }
 .dark .dbg-tile .design-orb-2 { background: radial-gradient(circle, oklch(0.22 0.12 180) 0%, transparent 70%); opacity: 0.30; }
 
