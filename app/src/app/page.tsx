@@ -45,10 +45,10 @@ export default function HomePage() {
       <WireframeBg />
       <DesignComponent />
 
-      {/* Design switcher — bottom right */}
-      <div className="fixed bottom-4 right-4 z-50">
+      {/* Design switcher — top right */}
+      <div className="fixed top-4 right-4 z-50">
         {open && (
-          <div className="absolute bottom-12 right-0 bg-background/95 backdrop-blur-md border border-border/50 rounded-xl shadow-xl p-1.5 flex flex-col gap-0.5 min-w-[130px] animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <div className="absolute top-12 right-0 bg-background/95 backdrop-blur-md border border-border/50 rounded-xl shadow-xl p-1.5 flex flex-col gap-0.5 min-w-[130px] animate-in fade-in slide-in-from-top-2 duration-200">
             {DESIGNS.map((d) => (
               <button
                 key={d.id}
