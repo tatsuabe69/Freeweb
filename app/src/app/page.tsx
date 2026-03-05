@@ -7,21 +7,21 @@ import { Palette } from "lucide-react";
 /* Lazy-load each design to avoid bundling all at once */
 const DesignDial = dynamic(() => import("@/components/designs/DesignDial"), { ssr: false });
 const DesignCarousel = dynamic(() => import("@/components/designs/DesignCarousel"), { ssr: false });
-const DesignBento = dynamic(() => import("@/components/designs/DesignBento"), { ssr: false });
+const DesignKaruta = dynamic(() => import("@/components/designs/DesignKaruta"), { ssr: false });
 const DesignTile = dynamic(() => import("@/components/designs/DesignTile"), { ssr: false });
 const WireframeBg = dynamic(() => import("@/components/wireframe-bg").then((m) => ({ default: m.WireframeBg })), { ssr: false });
 
 const DESIGNS = [
+  { id: "tile",      label: "Tile",      component: DesignTile },
   { id: "dial",      label: "Dial",      component: DesignDial },
   { id: "carousel",  label: "Carousel",  component: DesignCarousel },
-  { id: "bento",     label: "Grid",      component: DesignBento },
-  { id: "tile",      label: "Tile",      component: DesignTile },
+  { id: "karuta",    label: "Karuta",    component: DesignKaruta },
 ] as const;
 
 const STORAGE_KEY = "freeweb-design";
 
 export default function HomePage() {
-  const [designId, setDesignId] = useState("dial");
+  const [designId, setDesignId] = useState("tile");
   const [open, setOpen] = useState(false);
 
   useEffect(() => {

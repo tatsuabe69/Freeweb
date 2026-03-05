@@ -94,7 +94,7 @@ export default function DesignCarousel() {
   return (
     <div className="min-h-[calc(100vh-60px)] flex flex-col relative">
       {/* ── Background ── */}
-      <div className="design-bg dbg-carousel" aria-hidden="true">
+      <div className="design-bg dbg-tile" aria-hidden="true">
         <div className="design-orb" />
         <div className="design-orb design-orb-2" />
       </div>

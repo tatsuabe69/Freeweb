@@ -133,7 +133,7 @@ export default function DesignDial() {
   return (
     <div className="min-h-[calc(100vh-60px)] flex flex-col md:flex-row md:justify-center overflow-hidden relative">
       {/* ── Background ── */}
-      <div className="design-bg dbg-dial" aria-hidden="true">
+      <div className="design-bg dbg-tile" aria-hidden="true">
         <div className="design-orb" />
         <div className="design-orb design-orb-2" />
       </div>
