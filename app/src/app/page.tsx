@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import { LayoutGrid, CircleDot, GalleryHorizontal, Layers } from "lucide-react";
+import { LayoutGrid, CircleDot, GalleryHorizontal, Layers, Orbit } from "lucide-react";
 
 /* Lazy-load each design to avoid bundling all at once */
 const DesignDial = dynamic(() => import("@/components/designs/DesignDial"), { ssr: false });
 const DesignCarousel = dynamic(() => import("@/components/designs/DesignCarousel"), { ssr: false });
 const DesignKaruta = dynamic(() => import("@/components/designs/DesignKaruta"), { ssr: false });
 const DesignTile = dynamic(() => import("@/components/designs/DesignTile"), { ssr: false });
+const DesignOrbit = dynamic(() => import("@/components/designs/DesignOrbit"), { ssr: false });
 const WireframeBg = dynamic(() => import("@/components/wireframe-bg").then((m) => ({ default: m.WireframeBg })), { ssr: false });
 
 const DESIGNS = [
@@ -16,6 +17,7 @@ const DESIGNS = [
   { id: "dial",      label: "Dial",      icon: CircleDot,           component: DesignDial },
   { id: "carousel",  label: "Carousel",  icon: GalleryHorizontal,   component: DesignCarousel },
   { id: "karuta",    label: "Karuta",    icon: Layers,              component: DesignKaruta },
+  { id: "orbit",     label: "Orbit",     icon: Orbit,               component: DesignOrbit },
 ] as const;
 
 const STORAGE_KEY = "freeweb-design";
