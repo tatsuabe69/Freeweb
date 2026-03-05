@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import { Palette } from "lucide-react";
+import { LayoutGrid, CircleDot, GalleryHorizontal, Layers } from "lucide-react";
 
 /* Lazy-load each design to avoid bundling all at once */
 const DesignDial = dynamic(() => import("@/components/designs/DesignDial"), { ssr: false });
@@ -12,17 +12,16 @@ const DesignTile = dynamic(() => import("@/components/designs/DesignTile"), { ss
 const WireframeBg = dynamic(() => import("@/components/wireframe-bg").then((m) => ({ default: m.WireframeBg })), { ssr: false });
 
 const DESIGNS = [
-  { id: "tile",      label: "Tile",      component: DesignTile },
-  { id: "dial",      label: "Dial",      component: DesignDial },
-  { id: "carousel",  label: "Carousel",  component: DesignCarousel },
-  { id: "karuta",    label: "Karuta",    component: DesignKaruta },
+  { id: "tile",      label: "Tile",      icon: LayoutGrid,          component: DesignTile },
+  { id: "dial",      label: "Dial",      icon: CircleDot,           component: DesignDial },
+  { id: "carousel",  label: "Carousel",  icon: GalleryHorizontal,   component: DesignCarousel },
+  { id: "karuta",    label: "Karuta",    icon: Layers,              component: DesignKaruta },
 ] as const;
 
 const STORAGE_KEY = "freeweb-design";
 
 export default function HomePage() {
   const [designId, setDesignId] = useState("tile");
-  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -34,7 +33,6 @@ export default function HomePage() {
   const handleChange = (id: string) => {
     setDesignId(id);
     localStorage.setItem(STORAGE_KEY, id);
-    setOpen(false);
   };
 
   const design = DESIGNS.find((d) => d.id === designId) ?? DESIGNS[0];
@@ -45,32 +43,26 @@ export default function HomePage() {
       <WireframeBg />
       <DesignComponent />
 
-      {/* Design switcher — top right */}
-      <div className="fixed top-4 right-4 z-50">
-        {open && (
-          <div className="absolute top-12 right-0 bg-background/95 backdrop-blur-md border border-border/50 rounded-xl shadow-xl p-1.5 flex flex-col gap-0.5 min-w-[130px] animate-in fade-in slide-in-from-top-2 duration-200">
-            {DESIGNS.map((d) => (
-              <button
-                key={d.id}
-                onClick={() => handleChange(d.id)}
-                className={`px-3 py-2 rounded-lg text-xs font-medium text-left transition-all ${
-                  designId === d.id
-                    ? "bg-foreground/10 text-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
-                }`}
-              >
-                {d.label}
-              </button>
-            ))}
-          </div>
-        )}
-        <button
-          onClick={() => setOpen(!open)}
-          className="w-9 h-9 rounded-full bg-background/80 backdrop-blur-sm border border-border/50 flex items-center justify-center hover:bg-muted/50 transition-all shadow-lg"
-          title="デザイン切替"
-        >
-          <Palette className="h-4 w-4 text-muted-foreground" />
-        </button>
+      {/* Design switcher — top right, horizontal icons */}
+      <div className="fixed top-4 right-4 z-50 flex gap-1 bg-background/80 backdrop-blur-sm border border-border/50 rounded-full px-1.5 py-1 shadow-lg">
+        {DESIGNS.map((d) => {
+          const Icon = d.icon;
+          const active = designId === d.id;
+          return (
+            <button
+              key={d.id}
+              onClick={() => handleChange(d.id)}
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                active
+                  ? "bg-foreground/10 text-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+              }`}
+              title={d.label}
+            >
+              <Icon className="h-4 w-4" />
+            </button>
+          );
+        })}
       </div>
     </div>
   );
