@@ -39,24 +39,46 @@ const CATEGORIES: Category[] = [
   },
 ];
 
-/* ---------- Fan geometry (5 o'clock → 7 o'clock) ---------- */
+/* ---------- Fan geometry (5 o'clock → 7 o'clock, multi-row) ---------- */
 // Angles in degrees, clockwise from 12 o'clock
-const ARC_START = 150; // 5 o'clock
-const ARC_END = 210; // 7 o'clock
-const FAN_RADIUS = 120; // px distance from center of category circle
+const ARC_START = 140; // ~4:40
+const ARC_END = 220;   // ~7:20
+const ROW_RADII = [90, 150, 210]; // px — inner, middle, outer rows
 
-function fanPosition(index: number, total: number) {
-  // distribute items evenly across the arc
-  const angle =
-    total === 1
-      ? (ARC_START + ARC_END) / 2
-      : ARC_START + (index / (total - 1)) * (ARC_END - ARC_START);
-  const rad = (angle * Math.PI) / 180;
-  // screen coords: x = sin(angle)*r, y = cos(angle)*r  (y positive = down)
-  return {
-    x: Math.sin(rad) * FAN_RADIUS,
-    y: Math.cos(rad) * FAN_RADIUS,
-  };
+/** Split items into rows: inner rows get fewer items (less arc space) */
+function splitIntoRows(total: number): number[] {
+  if (total <= 4) return [total];
+  if (total <= 8) {
+    const half = Math.ceil(total / 2);
+    return [half, total - half];           // e.g. 7 → [4, 3]
+  }
+  const row1 = Math.ceil(total / 3);
+  const row2 = Math.ceil((total - row1) / 2);
+  return [row1, row2, total - row1 - row2]; // e.g. 9 → [3, 3, 3]
+}
+
+interface FanPos { x: number; y: number }
+
+function fanPositions(total: number): FanPos[] {
+  const rows = splitIntoRows(total);
+  const positions: FanPos[] = [];
+
+  rows.forEach((count, rowIdx) => {
+    const radius = ROW_RADII[rowIdx] ?? ROW_RADII[ROW_RADII.length - 1];
+    for (let i = 0; i < count; i++) {
+      const angle =
+        count === 1
+          ? (ARC_START + ARC_END) / 2
+          : ARC_START + (i / (count - 1)) * (ARC_END - ARC_START);
+      const rad = (angle * Math.PI) / 180;
+      // clockwise from 12: x = sin(a)*r, y = -cos(a)*r  → positive y = down
+      positions.push({
+        x: Math.sin(rad) * radius,
+        y: -Math.cos(rad) * radius,
+      });
+    }
+  });
+  return positions;
 }
 
 /* ---------- CategoryOrb ---------- */
@@ -92,8 +114,10 @@ function CategoryOrb({ cat }: { cat: Category }) {
       </button>
 
       {/* Fan items */}
-      {items.map((tool, i) => {
-        const pos = fanPosition(i, items.length);
+      {(() => {
+        const positions = fanPositions(items.length);
+        return items.map((tool, i) => {
+        const pos = positions[i];
         const Icon = tool.icon;
         return (
           <Link
@@ -124,7 +148,8 @@ function CategoryOrb({ cat }: { cat: Category }) {
             </span>
           </Link>
         );
-      })}
+      });
+      })()}
     </div>
   );
 }
