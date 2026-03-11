@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { copyToClipboard } from "@/lib/utils";
 import {
@@ -30,6 +30,10 @@ interface ErrorResult {
 }
 
 export default function SlidesCopyPage() {
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   const [gasUrl, setGasUrl] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("freeweb-gas-url") ?? "";
