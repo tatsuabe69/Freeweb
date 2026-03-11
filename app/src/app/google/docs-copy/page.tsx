@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { copyToClipboard } from "@/lib/utils";
 import {
   Copy,
   ArrowLeft,
@@ -353,9 +354,10 @@ export default function DocsCopyPage() {
                   <p className="mb-2">既存のコードを全て消して、以下をコピー&ペースト：</p>
                   <div className="relative group">
                     <button
-                      onClick={() => {
+                      onClick={async () => {
                         const code = document.getElementById("gas-code-docs")?.textContent ?? "";
-                        navigator.clipboard.writeText(code);
+                        const ok = await copyToClipboard(code);
+                        if (!ok) return;
                         setCodeCopied(true);
                         setTimeout(() => setCodeCopied(false), 2000);
                       }}
@@ -489,8 +491,9 @@ export default function DocsCopyPage() {
                   variant="outline"
                   size="sm"
                   className="shrink-0 gap-1.5"
-                  onClick={() => {
-                    navigator.clipboard.writeText(r.url);
+                  onClick={async () => {
+                    const ok = await copyToClipboard(r.url);
+                    if (!ok) return;
                     setCopiedIdx(i);
                     setTimeout(() => setCopiedIdx(null), 2000);
                   }}
@@ -514,9 +517,10 @@ export default function DocsCopyPage() {
           <Button
             variant="outline"
             className="w-full gap-2"
-            onClick={() => {
+            onClick={async () => {
               const text = results.map((r) => `${r.title}\n${r.url}`).join("\n\n");
-              navigator.clipboard.writeText(text);
+              const ok = await copyToClipboard(text);
+              if (!ok) return;
               setCopiedIdx(-1);
               setTimeout(() => setCopiedIdx(null), 2000);
             }}
