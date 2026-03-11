@@ -48,25 +48,24 @@ export default function QrCodePage() {
           setTimeout(() => setCopied(false), 2000);
           return;
         } catch {
-          // fall through to data-URL fallback
+          // fall through to HTML fallback
         }
       }
 
-      // Fallback: copy data-URL as text
+      // Fallback: copy as HTML <img> via execCommand so paste targets receive an image
       const dataUrl = canvasRef.current!.toDataURL("image/png");
-      const textarea = document.createElement("textarea");
-      textarea.value = dataUrl;
-      textarea.style.position = "fixed";
-      textarea.style.opacity = "0";
-      document.body.appendChild(textarea);
-      textarea.select();
+      const listener = (e: ClipboardEvent) => {
+        e.preventDefault();
+        e.clipboardData?.setData("text/html", `<img src="${dataUrl}">`);
+        e.clipboardData?.setData("text/plain", dataUrl);
+      };
+      document.addEventListener("copy", listener);
       const ok = document.execCommand("copy");
-      document.body.removeChild(textarea);
+      document.removeEventListener("copy", listener);
       if (ok) {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       } else {
-        // Last resort: trigger download instead
         handleDownload();
       }
     } catch {
