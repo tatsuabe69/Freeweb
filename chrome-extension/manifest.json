@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Anything - ブラウザツール",
+  "version": "1.0.0",
+  "description": "PDF・動画・画像・QRコード・Google複製ツールをサイドパネルで。すべてブラウザ内で完結。",
+  "permissions": ["sidePanel", "storage"],
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": false
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Anything を開く",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

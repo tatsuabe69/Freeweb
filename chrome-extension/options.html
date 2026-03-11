@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>Anything - 設定</title>
+  <style>
+    :root {
+      --bg: #fafafa;
+      --card: #ffffff;
+      --border: #e5e7eb;
+      --text: #18181b;
+      --text-muted: #71717a;
+      --primary: #6366f1;
+      --success: #10b981;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #09090b;
+        --card: #18181b;
+        --border: #27272a;
+        --text: #fafafa;
+        --text-muted: #a1a1aa;
+      }
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 20px;
+      min-width: 400px;
+    }
+    h2 { font-size: 16px; margin-bottom: 16px; }
+    label { font-size: 13px; font-weight: 500; display: block; margin-bottom: 6px; }
+    .hint { font-size: 11px; color: var(--text-muted); margin-bottom: 8px; }
+    input[type="url"] {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--card);
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+    }
+    input[type="url"]:focus { border-color: var(--primary); }
+    button {
+      margin-top: 12px;
+      padding: 8px 20px;
+      border: none;
+      border-radius: 8px;
+      background: var(--primary);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover { opacity: 0.9; }
+    .saved {
+      display: inline-block;
+      margin-left: 10px;
+      font-size: 12px;
+      color: var(--success);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .saved.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <h2>Anything 拡張機能の設定</h2>
+
+  <label for="baseUrl">アプリのURL</label>
+  <p class="hint">デプロイ先のURL（例: https://anything.example.com）</p>
+  <input type="url" id="baseUrl" placeholder="https://anything.example.com" />
+
+  <button id="saveBtn">保存</button>
+  <span class="saved" id="savedMsg">✓ 保存しました</span>
+
+  <script>
+    const input = document.getElementById("baseUrl");
+    const saveBtn = document.getElementById("saveBtn");
+    const savedMsg = document.getElementById("savedMsg");
+
+    chrome.storage.sync.get("baseUrl", (data) => {
+      input.value = data.baseUrl || "";
+    });
+
+    saveBtn.addEventListener("click", () => {
+      const url = input.value.replace(/\/+$/, "");
+      chrome.storage.sync.set({ baseUrl: url }, () => {
+        savedMsg.classList.add("show");
+        setTimeout(() => savedMsg.classList.remove("show"), 2000);
+      });
+    });
+  </script>
+</body>
+</html>
