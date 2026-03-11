@@ -37,13 +37,40 @@ export default function QrCodePage() {
         canvasRef.current!.toBlob(resolve, "image/png")
       );
       if (!blob) return;
-      await navigator.clipboard.write([
-        new ClipboardItem({ "image/png": blob }),
-      ]);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+
+      // Try ClipboardItem API (image copy)
+      if (typeof ClipboardItem !== "undefined" && navigator.clipboard?.write) {
+        try {
+          await navigator.clipboard.write([
+            new ClipboardItem({ "image/png": blob }),
+          ]);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+          return;
+        } catch {
+          // fall through to data-URL fallback
+        }
+      }
+
+      // Fallback: copy data-URL as text
+      const dataUrl = canvasRef.current!.toDataURL("image/png");
+      const textarea = document.createElement("textarea");
+      textarea.value = dataUrl;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(textarea);
+      if (ok) {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } else {
+        // Last resort: trigger download instead
+        handleDownload();
+      }
     } catch {
-      alert("コピーに失敗しました。ブラウザの権限設定をご確認ください。");
+      handleDownload();
     }
   };
 
