@@ -70,7 +70,7 @@ export default function PdfRedactPage() {
         const container = containerRef.current;
         const maxWidth = container ? container.clientWidth : 800;
         const viewport = page.getViewport({ scale: 1 });
-        const scale = Math.min(maxWidth / viewport.width, 1.5);
+        const scale = maxWidth / viewport.width;
         const scaledViewport = page.getViewport({ scale });
 
         const canvas = canvasRef.current;
@@ -446,7 +446,7 @@ export default function PdfRedactPage() {
               {/* Canvas area */}
               <div
                 ref={containerRef}
-                className="relative mx-auto w-fit border rounded-lg overflow-hidden bg-muted"
+                className="relative mx-auto border rounded-lg overflow-hidden bg-muted"
               >
                 {pageRendering && (
                   <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-20">
@@ -455,7 +455,7 @@ export default function PdfRedactPage() {
                 )}
                 <canvas
                   ref={canvasRef}
-                  className="block max-w-full h-auto"
+                  className="block w-full h-auto"
                 />
                 <canvas
                   ref={overlayRef}
