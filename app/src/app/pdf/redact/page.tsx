@@ -175,9 +175,10 @@ export default function PdfRedactPage() {
   const getCanvasCoords = (
     e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>
   ) => {
-    const canvas = overlayRef.current;
-    if (!canvas) return null;
-    const rect = canvas.getBoundingClientRect();
+    const baseCanvas = canvasRef.current;
+    const overlay = overlayRef.current;
+    if (!baseCanvas || !overlay) return null;
+    const rect = baseCanvas.getBoundingClientRect();
     let clientX: number, clientY: number;
     if ("touches" in e) {
       if (e.touches.length === 0) return null;
@@ -187,9 +188,12 @@ export default function PdfRedactPage() {
       clientX = e.clientX;
       clientY = e.clientY;
     }
+    // Clamp to canvas bounds
+    const rx = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const ry = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
     return {
-      x: ((clientX - rect.left) / rect.width) * canvas.width,
-      y: ((clientY - rect.top) / rect.height) * canvas.height,
+      x: rx * overlay.width,
+      y: ry * overlay.height,
     };
   };
 
@@ -442,8 +446,7 @@ export default function PdfRedactPage() {
               {/* Canvas area */}
               <div
                 ref={containerRef}
-                className="relative mx-auto border rounded-lg overflow-hidden bg-muted"
-                style={{ maxWidth: "100%" }}
+                className="relative mx-auto w-fit border rounded-lg overflow-hidden bg-muted"
               >
                 {pageRendering && (
                   <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-20">
