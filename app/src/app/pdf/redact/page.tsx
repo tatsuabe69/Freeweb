@@ -17,12 +17,13 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+// Normalized coordinates (0–1 ratio relative to canvas display)
 interface RedactRect {
   pageIndex: number;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
+  nx: number;
+  ny: number;
+  nw: number;
+  nh: number;
 }
 
 export default function PdfRedactPage() {
@@ -51,7 +52,6 @@ export default function PdfRedactPage() {
   const pdfDocRef = useRef<Awaited<
     ReturnType<typeof import("pdfjs-dist")["getDocument"]>["promise"]
   > | null>(null);
-  const pageDimsRef = useRef<{ width: number; height: number }[]>([]);
 
   const loadPdfjs = useCallback(async () => {
     if (pdfjsRef.current) return pdfjsRef.current;
@@ -84,12 +84,6 @@ export default function PdfRedactPage() {
           canvas,
         } as Parameters<typeof page.render>[0]).promise;
 
-        // Store page dimensions for coordinate mapping
-        pageDimsRef.current[pageIndex] = {
-          width: viewport.width,
-          height: viewport.height,
-        };
-
         // Setup overlay canvas
         const overlay = overlayRef.current;
         if (overlay) {
@@ -115,28 +109,17 @@ export default function PdfRedactPage() {
     ctx.clearRect(0, 0, overlay.width, overlay.height);
 
     const pageRects = rects.filter((r) => r.pageIndex === currentPage);
-    const dims = pageDimsRef.current[currentPage];
-    if (!dims) return;
-
-    const scaleX = canvas.width / dims.width;
-    const scaleY = canvas.height / dims.height;
 
     for (const rect of pageRects) {
+      const px = rect.nx * overlay.width;
+      const py = rect.ny * overlay.height;
+      const pw = rect.nw * overlay.width;
+      const ph = rect.nh * overlay.height;
       ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
-      ctx.fillRect(
-        rect.x * scaleX,
-        rect.y * scaleY,
-        rect.w * scaleX,
-        rect.h * scaleY
-      );
+      ctx.fillRect(px, py, pw, ph);
       ctx.strokeStyle = "rgba(239, 68, 68, 0.8)";
       ctx.lineWidth = 2;
-      ctx.strokeRect(
-        rect.x * scaleX,
-        rect.y * scaleY,
-        rect.w * scaleX,
-        rect.h * scaleY
-      );
+      ctx.strokeRect(px, py, pw, ph);
     }
 
     // Draw current drawing rect
@@ -165,7 +148,6 @@ export default function PdfRedactPage() {
     setLoaded(false);
     setRects([]);
     setCurrentPage(0);
-    pageDimsRef.current = [];
     if (newFiles.length === 1) {
       try {
         const pdfjs = await loadPdfjs();
@@ -238,28 +220,30 @@ export default function PdfRedactPage() {
       return;
     }
 
-    const canvas = canvasRef.current;
-    const dims = pageDimsRef.current[currentPage];
-    if (!canvas || !dims) {
+    const overlay = overlayRef.current;
+    if (!overlay) {
       setDrawing(false);
       setDrawStart(null);
       setDrawCurrent(null);
       return;
     }
 
-    const scaleX = dims.width / canvas.width;
-    const scaleY = dims.height / canvas.height;
-
-    const x = Math.min(drawStart.x, drawCurrent.x) * scaleX;
-    const y = Math.min(drawStart.y, drawCurrent.y) * scaleY;
-    const w = Math.abs(drawCurrent.x - drawStart.x) * scaleX;
-    const h = Math.abs(drawCurrent.y - drawStart.y) * scaleY;
+    const x = Math.min(drawStart.x, drawCurrent.x);
+    const y = Math.min(drawStart.y, drawCurrent.y);
+    const w = Math.abs(drawCurrent.x - drawStart.x);
+    const h = Math.abs(drawCurrent.y - drawStart.y);
 
     // Ignore tiny rects (accidental clicks)
     if (w > 3 && h > 3) {
       setRects((prev) => [
         ...prev,
-        { pageIndex: currentPage, x, y, w, h },
+        {
+          pageIndex: currentPage,
+          nx: x / overlay.width,
+          ny: y / overlay.height,
+          nw: w / overlay.width,
+          nh: h / overlay.height,
+        },
       ]);
     }
 
@@ -305,15 +289,19 @@ export default function PdfRedactPage() {
       for (const [pageIndex, pageRects] of rectsByPage) {
         const page = pages[pageIndex];
         if (!page) continue;
-        const { height } = page.getSize();
+        const { width: pw, height: ph } = page.getSize();
 
         for (const rect of pageRects) {
-          // PDF coordinates: origin at bottom-left, pdfjs: origin at top-left
+          const rx = rect.nx * pw;
+          const ry = rect.ny * ph;
+          const rw = rect.nw * pw;
+          const rh = rect.nh * ph;
+          // PDF coordinates: origin at bottom-left, preview: origin at top-left
           page.drawRectangle({
-            x: rect.x,
-            y: height - rect.y - rect.h,
-            width: rect.w,
-            height: rect.h,
+            x: rx,
+            y: ph - ry - rh,
+            width: rw,
+            height: rh,
             color: rgb(0, 0, 0),
           });
         }
@@ -354,7 +342,6 @@ export default function PdfRedactPage() {
     setRects([]);
     setProgress(0);
     pdfDocRef.current = null;
-    pageDimsRef.current = [];
   };
 
   const currentPageRects = rects.filter((r) => r.pageIndex === currentPage);
