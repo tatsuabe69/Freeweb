@@ -1,33 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const UA =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
-
-/* ---------- Types ---------- */
-interface AudioResult {
-  url: string;
-  mimeType: string;
-  title: string;
-  author: string;
-}
-
-/* ---------- External API instances ---------- */
-
-const PIPED_INSTANCES = [
-  "https://pipedapi.kavin.rocks",
-  "https://pipedapi.adminforge.de",
-  "https://pipedapi.r4fo.com",
-];
-
-const INVIDIOUS_INSTANCES = [
-  "https://inv.nadeko.net",
-  "https://invidious.fdn.fr",
-  "https://invidious.privacyredirect.com",
-];
+import { Innertube } from "youtubei.js";
 
 /**
  * POST /api/youtube/download
  * YouTubeのURLから音声ストリームを取得してプロキシ
+ *
+ * youtubei.js を使用して YouTube の InnerTube API と直接通信。
+ * 署名の復号やクライアント切り替えをライブラリが処理する。
  */
 export async function POST(request: NextRequest) {
   try {
@@ -48,16 +27,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const canonicalUrl = `https://www.youtube.com/watch?v=${videoId}`;
+    // retrieve_player: true (default) enables signature deciphering
+    const yt = await Innertube.create({
+      generate_session_locally: true,
+    });
 
-    // Try multiple strategies — Innertube ANDROID_VR is most reliable
-    const result =
-      (await tryInnertubeApi(videoId)) ??
-      (await tryY2mateApi(videoId, canonicalUrl)) ??
-      (await tryPipedApi(videoId)) ??
-      (await tryInvidiousApi(videoId));
+    const info = await yt.getBasicInfo(videoId);
 
-    if (!result) {
+    if (!info.streaming_data) {
       return NextResponse.json(
         {
           error:
@@ -67,42 +44,46 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // If result URL is a direct download link (y2mate dlink), redirect
-    if (result.url.startsWith("http") && result.mimeType === "redirect") {
-      return NextResponse.json({
-        redirect: result.url,
-        title: result.title,
-        author: result.author,
-      });
+    const title = info.basic_info?.title ?? "YouTube音源";
+    const author = info.basic_info?.author ?? "不明";
+
+    // Use the library's built-in format selection and download
+    // This handles signature deciphering automatically
+    const stream = await info.download({ type: "audio", quality: "best" });
+
+    // Collect the stream into a buffer
+    const reader = stream.getReader();
+    const chunks: Uint8Array[] = [];
+    let totalLength = 0;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      totalLength += value.length;
     }
 
-    // Download the audio stream via proxy
-    const audioRes = await fetch(result.url, {
-      headers: {
-        "User-Agent": UA,
-        Referer: "https://www.youtube.com/",
-        Origin: "https://www.youtube.com",
-      },
-    });
-
-    if (!audioRes.ok) {
-      return NextResponse.json(
-        { error: `音声のダウンロードに失敗 (HTTP ${audioRes.status})` },
-        { status: 502 },
-      );
-    }
-
-    const buffer = await audioRes.arrayBuffer();
-    if (buffer.byteLength === 0) {
+    if (totalLength === 0) {
       return NextResponse.json(
         { error: "音声データが空です" },
         { status: 502 },
       );
     }
 
-    const contentType = result.mimeType.includes("webm")
+    // Merge chunks into a single buffer
+    const buffer = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const chunk of chunks) {
+      buffer.set(chunk, offset);
+      offset += chunk.length;
+    }
+
+    // Determine content type from the chosen format
+    const chosenFormat = info.chooseFormat({ type: "audio", quality: "best" });
+    const mimeType = chosenFormat?.mime_type ?? "audio/mp4";
+    const contentType = mimeType.includes("webm")
       ? "audio/webm"
-      : result.mimeType.includes("mp3") || result.mimeType.includes("mpeg")
+      : mimeType.includes("mp3") || mimeType.includes("mpeg")
         ? "audio/mpeg"
         : "audio/mp4";
     const fileExt =
@@ -112,8 +93,7 @@ export async function POST(request: NextRequest) {
           ? ".mp3"
           : ".m4a";
 
-    const safeName =
-      sanitizeFilename(`${result.title} - ${result.author}`) + fileExt;
+    const safeName = sanitizeFilename(`${title} - ${author}`) + fileExt;
     const encodedName = encodeURIComponent(safeName);
 
     return new NextResponse(buffer, {
@@ -121,8 +101,8 @@ export async function POST(request: NextRequest) {
         "Content-Type": contentType,
         "Content-Disposition": `attachment; filename="youtube_audio${fileExt}"; filename*=UTF-8''${encodedName}`,
         "Content-Length": String(buffer.byteLength),
-        "X-Music-Title": encodeURIComponent(result.title),
-        "X-Music-Author": encodeURIComponent(result.author),
+        "X-Music-Title": encodeURIComponent(title),
+        "X-Music-Author": encodeURIComponent(author),
         "Access-Control-Expose-Headers": "X-Music-Title, X-Music-Author",
       },
     });
@@ -135,332 +115,6 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
-
-/* ================================================================
- * Strategy 1: YouTube Innertube API — ANDROID_VR client
- * Returns direct audio URLs without signature decryption
- * ================================================================ */
-
-async function tryInnertubeApi(videoId: string): Promise<AudioResult | null> {
-  const endpoint =
-    "https://www.youtube.com/youtubei/v1/player?prettyPrint=false";
-
-  const clients = [
-    {
-      body: {
-        videoId,
-        context: {
-          client: {
-            clientName: "ANDROID_VR",
-            clientVersion: "1.60.19",
-            deviceMake: "Oculus",
-            deviceModel: "Quest 3",
-            androidSdkVersion: 32,
-            hl: "ja",
-            gl: "JP",
-          },
-        },
-        contentCheckOk: true,
-        racyCheckOk: true,
-      },
-      ua: "com.google.android.apps.youtube.vr.oculus/1.60.19 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip",
-    },
-    {
-      body: {
-        videoId,
-        context: {
-          client: {
-            clientName: "ANDROID_MUSIC",
-            clientVersion: "7.27.52",
-            androidSdkVersion: 34,
-            hl: "ja",
-            gl: "JP",
-          },
-        },
-        contentCheckOk: true,
-        racyCheckOk: true,
-      },
-      ua: "com.google.android.apps.youtube.music/7.27.52 (Linux; U; Android 14) gzip",
-    },
-    {
-      body: {
-        videoId,
-        context: {
-          client: {
-            clientName: "ANDROID_TESTSUITE",
-            clientVersion: "1.9",
-            androidSdkVersion: 34,
-            hl: "ja",
-            gl: "JP",
-          },
-        },
-        contentCheckOk: true,
-        racyCheckOk: true,
-      },
-      ua: "com.google.android.youtube/1.9 (Linux; U; Android 14) gzip",
-    },
-  ];
-
-  for (const client of clients) {
-    try {
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "User-Agent": client.ua,
-        },
-        body: JSON.stringify(client.body),
-        signal: AbortSignal.timeout(15000),
-      });
-
-      if (!res.ok) continue;
-
-      const data = (await res.json()) as Record<string, unknown>;
-
-      const playability = data.playabilityStatus as
-        | Record<string, unknown>
-        | undefined;
-      if (playability?.status !== "OK") continue;
-
-      const videoDetails = data.videoDetails as
-        | Record<string, unknown>
-        | undefined;
-      const title = (videoDetails?.title as string) ?? "YouTube音源";
-      const author = (videoDetails?.author as string) ?? "不明";
-
-      const streamingData = data.streamingData as
-        | Record<string, unknown>
-        | undefined;
-      if (!streamingData) continue;
-
-      const adaptiveFormats = (streamingData.adaptiveFormats ?? []) as Array<
-        Record<string, unknown>
-      >;
-
-      const audioFormats = adaptiveFormats
-        .filter((f) => {
-          const mime = (f.mimeType as string) ?? "";
-          return mime.startsWith("audio/");
-        })
-        .sort((a, b) => {
-          const aBit =
-            (a.averageBitrate as number) ?? (a.bitrate as number) ?? 0;
-          const bBit =
-            (b.averageBitrate as number) ?? (b.bitrate as number) ?? 0;
-          return bBit - aBit;
-        });
-
-      const usable = audioFormats.find((f) => f.url as string | undefined);
-      if (!usable?.url) continue;
-
-      return {
-        url: usable.url as string,
-        mimeType: (usable.mimeType as string) ?? "audio/mp4",
-        title,
-        author,
-      };
-    } catch {
-      continue;
-    }
-  }
-  return null;
-}
-
-/* ================================================================
- * Strategy 2: Y2mate API (two-step: analyze → convert)
- * ================================================================ */
-
-async function tryY2mateApi(
-  videoId: string,
-  canonicalUrl: string,
-): Promise<AudioResult | null> {
-  try {
-    const analyzeRes = await fetch(
-      "https://www.y2mate.com/mates/analyzeV2/ajax",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          "User-Agent": UA,
-          Referer: "https://www.y2mate.com/",
-          Origin: "https://www.y2mate.com",
-        },
-        body: new URLSearchParams({
-          k_query: canonicalUrl,
-          k_page: "home",
-          hl: "ja",
-          q_auto: "0",
-        }).toString(),
-        signal: AbortSignal.timeout(15000),
-      },
-    );
-
-    if (!analyzeRes.ok) return null;
-
-    const analyzeData = (await analyzeRes.json()) as Record<string, unknown>;
-    if (analyzeData.status !== "ok") return null;
-
-    const title = (analyzeData.title as string) ?? "YouTube音源";
-    const author = (analyzeData.a as string) ?? "不明";
-
-    const links = analyzeData.links as Record<string, unknown> | undefined;
-    if (!links) return null;
-
-    const mp3Links = links.mp3 as
-      | Record<string, Record<string, unknown>>
-      | undefined;
-
-    let bestKey: string | null = null;
-
-    if (mp3Links) {
-      const entries = Object.values(mp3Links);
-      const sorted = entries.sort((a, b) => {
-        const aQ = parseInt(String(a.q ?? "0"));
-        const bQ = parseInt(String(b.q ?? "0"));
-        return bQ - aQ;
-      });
-
-      for (const entry of sorted) {
-        if (entry.k) {
-          bestKey = entry.k as string;
-          break;
-        }
-      }
-    }
-
-    if (!bestKey) return null;
-
-    const convertRes = await fetch(
-      "https://www.y2mate.com/mates/convertV2/index",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          "User-Agent": UA,
-          Referer: "https://www.y2mate.com/",
-          Origin: "https://www.y2mate.com",
-        },
-        body: new URLSearchParams({
-          vid: videoId,
-          k: bestKey,
-        }).toString(),
-        signal: AbortSignal.timeout(30000),
-      },
-    );
-
-    if (!convertRes.ok) return null;
-
-    const convertData = (await convertRes.json()) as Record<string, unknown>;
-    if (convertData.status !== "ok") return null;
-
-    const dlink = convertData.dlink as string | undefined;
-    if (!dlink) return null;
-
-    return {
-      url: dlink,
-      mimeType: "redirect",
-      title,
-      author,
-    };
-  } catch {
-    return null;
-  }
-}
-
-/* ================================================================
- * Strategy 3: Piped API
- * ================================================================ */
-
-async function tryPipedApi(videoId: string): Promise<AudioResult | null> {
-  for (const instance of PIPED_INSTANCES) {
-    try {
-      const res = await fetch(`${instance}/streams/${videoId}`, {
-        headers: { "User-Agent": UA },
-        signal: AbortSignal.timeout(10000),
-      });
-      if (!res.ok) continue;
-
-      const data = (await res.json()) as Record<string, unknown>;
-
-      const audioStreams = (data.audioStreams ?? []) as Array<
-        Record<string, unknown>
-      >;
-      if (audioStreams.length === 0) continue;
-
-      const sorted = [...audioStreams].sort((a, b) => {
-        const aBit = (a.bitrate as number) ?? 0;
-        const bBit = (b.bitrate as number) ?? 0;
-        return bBit - aBit;
-      });
-
-      const best = sorted[0];
-      const streamUrl = best.url as string | undefined;
-      if (!streamUrl) continue;
-
-      return {
-        url: streamUrl,
-        mimeType: (best.mimeType as string) ?? "audio/mp4",
-        title: (data.title as string) ?? "YouTube音源",
-        author: (data.uploader as string) ?? "不明",
-      };
-    } catch {
-      continue;
-    }
-  }
-  return null;
-}
-
-/* ================================================================
- * Strategy 4: Invidious API
- * ================================================================ */
-
-async function tryInvidiousApi(videoId: string): Promise<AudioResult | null> {
-  for (const instance of INVIDIOUS_INSTANCES) {
-    try {
-      const res = await fetch(
-        `${instance}/api/v1/videos/${videoId}?fields=title,author,adaptiveFormats`,
-        {
-          headers: { "User-Agent": UA },
-          signal: AbortSignal.timeout(10000),
-        },
-      );
-      if (!res.ok) continue;
-
-      const data = (await res.json()) as Record<string, unknown>;
-
-      const formats = (data.adaptiveFormats ?? []) as Array<
-        Record<string, unknown>
-      >;
-
-      const audioFormats = formats
-        .filter((f) => {
-          const type = (f.type as string) ?? "";
-          return type.startsWith("audio/");
-        })
-        .sort((a, b) => {
-          const aBit = (a.bitrate as number) ?? 0;
-          const bBit = (b.bitrate as number) ?? 0;
-          return bBit - aBit;
-        });
-
-      if (audioFormats.length === 0) continue;
-
-      const best = audioFormats[0];
-      const streamUrl = best.url as string | undefined;
-      if (!streamUrl) continue;
-
-      return {
-        url: streamUrl,
-        mimeType: (best.type as string) ?? "audio/mp4",
-        title: (data.title as string) ?? "YouTube音源",
-        author: (data.author as string) ?? "不明",
-      };
-    } catch {
-      continue;
-    }
-  }
-  return null;
 }
 
 /* ---------- Helpers ---------- */
