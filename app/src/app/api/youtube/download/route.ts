@@ -17,12 +17,20 @@ const PIPED_INSTANCES = [
   "https://pipedapi.kavin.rocks",
   "https://pipedapi.adminforge.de",
   "https://pipedapi.r4fo.com",
+  "https://pipedapi.in.projectsegfau.lt",
+  "https://api.piped.yt",
 ];
 
 const INVIDIOUS_INSTANCES = [
   "https://inv.nadeko.net",
   "https://invidious.fdn.fr",
   "https://invidious.privacyredirect.com",
+  "https://vid.puffyan.us",
+  "https://invidious.nerdvpn.de",
+];
+
+const COBALT_INSTANCES = [
+  "https://api.cobalt.tools",
 ];
 
 /**
@@ -52,6 +60,7 @@ export async function POST(request: NextRequest) {
 
     // Try multiple strategies in order of reliability
     const result =
+      (await tryCobaltApi(canonicalUrl)) ??
       (await tryY2mateApi(videoId, canonicalUrl)) ??
       (await tryPipedApi(videoId)) ??
       (await tryInvidiousApi(videoId)) ??
@@ -67,7 +76,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // If result URL is a direct download link (y2mate dlink), redirect
+    // If result URL is a direct download link (y2mate/cobalt dlink), redirect
     if (result.url.startsWith("http") && result.mimeType === "redirect") {
       return NextResponse.json({
         redirect: result.url,
@@ -138,8 +147,62 @@ export async function POST(request: NextRequest) {
 }
 
 /* ================================================================
- * Strategy 1: Y2mate API (two-step: analyze → convert)
- * Most reliable — same approach used by y2mate.com
+ * Strategy 1: Cobalt API (open-source, reliable)
+ * https://github.com/imputnet/cobalt
+ * ================================================================ */
+
+async function tryCobaltApi(
+  videoUrl: string,
+): Promise<AudioResult | null> {
+  for (const instance of COBALT_INSTANCES) {
+    try {
+      const res = await fetch(instance, {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "User-Agent": UA,
+        },
+        body: JSON.stringify({
+          url: videoUrl,
+          downloadMode: "audio",
+          audioFormat: "mp3",
+        }),
+        signal: AbortSignal.timeout(30000),
+      });
+
+      if (!res.ok) continue;
+
+      const data = (await res.json()) as Record<string, unknown>;
+      const status = data.status as string | undefined;
+
+      if (status === "tunnel" || status === "redirect") {
+        const downloadUrl = data.url as string | undefined;
+        if (!downloadUrl) continue;
+
+        const filename = (data.filename as string) ?? "YouTube音源";
+        // Extract title/author from filename (format: "title - author.ext")
+        const baseName = filename.replace(/\.[^.]+$/, "");
+        const parts = baseName.split(" - ");
+        const title = parts[0] ?? "YouTube音源";
+        const author = parts.length > 1 ? parts.slice(1).join(" - ") : "不明";
+
+        return {
+          url: downloadUrl,
+          mimeType: "redirect",
+          title,
+          author,
+        };
+      }
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
+/* ================================================================
+ * Strategy 2: Y2mate API (two-step: analyze → convert)
  * ================================================================ */
 
 async function tryY2mateApi(
@@ -245,7 +308,7 @@ async function tryY2mateApi(
 }
 
 /* ================================================================
- * Strategy 2: Piped API
+ * Strategy 3: Piped API
  * https://github.com/TeamPiped/Piped
  * ================================================================ */
 
@@ -289,7 +352,7 @@ async function tryPipedApi(videoId: string): Promise<AudioResult | null> {
 }
 
 /* ================================================================
- * Strategy 3: Invidious API
+ * Strategy 4: Invidious API
  * https://github.com/iv-org/invidious
  * ================================================================ */
 
@@ -342,11 +405,63 @@ async function tryInvidiousApi(videoId: string): Promise<AudioResult | null> {
 }
 
 /* ================================================================
- * Strategy 4: YouTube Innertube API (last resort)
+ * Strategy 5: YouTube Innertube API (last resort)
  * ================================================================ */
 
 async function tryInnertubeApi(videoId: string): Promise<AudioResult | null> {
+  const API_KEY = "AIzaSyA8eiZmM1FaDVjRy-df2KTyQ_vz_yYM39w";
+  const endpoint = `https://www.youtube.com/youtubei/v1/player?key=${API_KEY}&prettyPrint=false`;
+
   const clients = [
+    {
+      body: {
+        videoId,
+        context: {
+          client: {
+            clientName: "IOS",
+            clientVersion: "19.45.4",
+            deviceMake: "Apple",
+            deviceModel: "iPhone16,2",
+            hl: "ja",
+            gl: "JP",
+            utcOffsetMinutes: 540,
+          },
+        },
+        contentCheckOk: true,
+        racyCheckOk: true,
+        playbackContext: {
+          contentPlaybackContext: {
+            html5Preference: "HTML5_PREF_WANTS",
+            signatureTimestamp: 20073,
+          },
+        },
+      },
+      ua: "com.google.ios.youtube/19.45.4 (iPhone16,2; U; CPU iOS 18_1_0 like Mac OS X;)",
+    },
+    {
+      body: {
+        videoId,
+        context: {
+          client: {
+            clientName: "ANDROID",
+            clientVersion: "19.44.38",
+            androidSdkVersion: 34,
+            hl: "ja",
+            gl: "JP",
+            utcOffsetMinutes: 540,
+          },
+        },
+        contentCheckOk: true,
+        racyCheckOk: true,
+        playbackContext: {
+          contentPlaybackContext: {
+            html5Preference: "HTML5_PREF_WANTS",
+            signatureTimestamp: 20073,
+          },
+        },
+      },
+      ua: "com.google.android.youtube/19.44.38 (Linux; U; Android 14) gzip",
+    },
     {
       body: {
         videoId,
@@ -362,39 +477,21 @@ async function tryInnertubeApi(videoId: string): Promise<AudioResult | null> {
       },
       ua: UA,
     },
-    {
-      body: {
-        videoId,
-        context: {
-          client: {
-            clientName: "ANDROID",
-            clientVersion: "19.09.37",
-            androidSdkVersion: 30,
-            hl: "ja",
-            gl: "JP",
-          },
-        },
-        contentCheckOk: true,
-        racyCheckOk: true,
-      },
-      ua: "com.google.android.youtube/19.09.37 (Linux; U; Android 11) gzip",
-    },
   ];
 
   for (const client of clients) {
     try {
-      const res = await fetch(
-        "https://www.youtube.com/youtubei/v1/player",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "User-Agent": client.ua,
-          },
-          body: JSON.stringify(client.body),
-          signal: AbortSignal.timeout(10000),
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "User-Agent": client.ua,
+          "X-Youtube-Client-Name": "85",
+          "X-Youtube-Client-Version": "2.0",
         },
-      );
+        body: JSON.stringify(client.body),
+        signal: AbortSignal.timeout(10000),
+      });
 
       if (!res.ok) continue;
 
