@@ -13,16 +13,23 @@ interface AudioResult {
 
 /* ---------- External API instances ---------- */
 
+const COBALT_INSTANCES = [
+  "https://api.cobalt.tools",
+  "https://cobalt-api.kwiatekmiki.com",
+  "https://cobalt.api.timelessnesses.me",
+];
+
 const PIPED_INSTANCES = [
-  "https://pipedapi.kavin.rocks",
-  "https://pipedapi.adminforge.de",
   "https://pipedapi.r4fo.com",
+  "https://pipedapi.adminforge.de",
+  "https://api.piped.yt",
 ];
 
 const INVIDIOUS_INSTANCES = [
   "https://inv.nadeko.net",
   "https://invidious.fdn.fr",
-  "https://invidious.privacyredirect.com",
+  "https://invidious.nerdvpn.de",
+  "https://iv.datura.network",
 ];
 
 /**
@@ -51,13 +58,15 @@ export async function POST(request: NextRequest) {
     const canonicalUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
     // Try multiple strategies in order of reliability
+    const errors: string[] = [];
     const result =
-      (await tryY2mateApi(videoId, canonicalUrl)) ??
-      (await tryPipedApi(videoId)) ??
-      (await tryInvidiousApi(videoId)) ??
-      (await tryInnertubeApi(videoId));
+      (await tryWithLog("Cobalt", () => tryCobaltApi(canonicalUrl), errors)) ??
+      (await tryWithLog("Piped", () => tryPipedApi(videoId), errors)) ??
+      (await tryWithLog("Invidious", () => tryInvidiousApi(videoId), errors)) ??
+      (await tryWithLog("Innertube", () => tryInnertubeApi(videoId), errors));
 
     if (!result) {
+      console.error("All strategies failed:", errors);
       return NextResponse.json(
         {
           error:
@@ -67,7 +76,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // If result URL is a direct download link (y2mate dlink), redirect
+    // If result URL is a direct download link, redirect
     if (result.url.startsWith("http") && result.mimeType === "redirect") {
       return NextResponse.json({
         redirect: result.url,
@@ -137,111 +146,90 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/* ================================================================
- * Strategy 1: Y2mate API (two-step: analyze → convert)
- * Most reliable — same approach used by y2mate.com
- * ================================================================ */
+/* ---------- Strategy helper with logging ---------- */
 
-async function tryY2mateApi(
-  videoId: string,
-  canonicalUrl: string,
+async function tryWithLog(
+  name: string,
+  fn: () => Promise<AudioResult | null>,
+  errors: string[],
 ): Promise<AudioResult | null> {
   try {
-    // Step 1: Analyze — get available formats
-    const analyzeRes = await fetch(
-      "https://www.y2mate.com/mates/analyzeV2/ajax",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          "User-Agent": UA,
-          Referer: "https://www.y2mate.com/",
-          Origin: "https://www.y2mate.com",
-        },
-        body: new URLSearchParams({
-          k_query: canonicalUrl,
-          k_page: "home",
-          hl: "ja",
-          q_auto: "0",
-        }).toString(),
-        signal: AbortSignal.timeout(15000),
-      },
-    );
-
-    if (!analyzeRes.ok) return null;
-
-    const analyzeData = (await analyzeRes.json()) as Record<string, unknown>;
-    if (analyzeData.status !== "ok") return null;
-
-    const title = (analyzeData.title as string) ?? "YouTube音源";
-    const author = (analyzeData.a as string) ?? "不明";
-
-    // Find the best MP3 link
-    const links = analyzeData.links as Record<string, unknown> | undefined;
-    if (!links) return null;
-
-    // Try mp3 first, then m4a
-    const mp3Links = links.mp3 as Record<string, Record<string, unknown>> | undefined;
-
-    let bestKey: string | null = null;
-
-    if (mp3Links) {
-      // Sort by quality (higher bitrate first)
-      const entries = Object.values(mp3Links);
-      // Prefer 128kbps mp3 (most reliable), then higher
-      const sorted = entries.sort((a, b) => {
-        const aQ = parseInt(String(a.q ?? "0"));
-        const bQ = parseInt(String(b.q ?? "0"));
-        return bQ - aQ;
-      });
-
-      for (const entry of sorted) {
-        if (entry.k) {
-          bestKey = entry.k as string;
-          break;
-        }
-      }
+    const result = await fn();
+    if (result) {
+      console.log(`[YouTube] ${name} succeeded`);
+    } else {
+      const msg = `${name}: returned null`;
+      console.log(`[YouTube] ${msg}`);
+      errors.push(msg);
     }
-
-    if (!bestKey) return null;
-
-    // Step 2: Convert — get download URL
-    const convertRes = await fetch(
-      "https://www.y2mate.com/mates/convertV2/index",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          "User-Agent": UA,
-          Referer: "https://www.y2mate.com/",
-          Origin: "https://www.y2mate.com",
-        },
-        body: new URLSearchParams({
-          vid: videoId,
-          k: bestKey,
-        }).toString(),
-        signal: AbortSignal.timeout(30000),
-      },
-    );
-
-    if (!convertRes.ok) return null;
-
-    const convertData = (await convertRes.json()) as Record<string, unknown>;
-    if (convertData.status !== "ok") return null;
-
-    const dlink = convertData.dlink as string | undefined;
-    if (!dlink) return null;
-
-    // y2mate returns a direct download link — use redirect mode
-    return {
-      url: dlink,
-      mimeType: "redirect",
-      title,
-      author,
-    };
-  } catch {
+    return result;
+  } catch (e) {
+    const msg = `${name}: ${String(e)}`;
+    console.error(`[YouTube] ${msg}`);
+    errors.push(msg);
     return null;
   }
+}
+
+/* ================================================================
+ * Strategy 1: Cobalt API (most reliable, actively maintained)
+ * https://github.com/imputnet/cobalt
+ * ================================================================ */
+
+async function tryCobaltApi(
+  videoUrl: string,
+): Promise<AudioResult | null> {
+  for (const instance of COBALT_INSTANCES) {
+    try {
+      const res = await fetch(`${instance}/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "User-Agent": UA,
+        },
+        body: JSON.stringify({
+          url: videoUrl,
+          downloadMode: "audio",
+          audioFormat: "mp3",
+        }),
+        signal: AbortSignal.timeout(15000),
+      });
+
+      if (!res.ok) {
+        console.log(`[Cobalt] ${instance} HTTP ${res.status}`);
+        continue;
+      }
+
+      const data = (await res.json()) as Record<string, unknown>;
+
+      // Cobalt returns status: "redirect" or "tunnel" with a download URL
+      if (data.status === "error") {
+        console.log(`[Cobalt] ${instance} error:`, data.error);
+        continue;
+      }
+
+      const downloadUrl = data.url as string | undefined;
+      if (!downloadUrl) continue;
+
+      // Extract title from the filename if available
+      const filename = (data.filename as string) ?? "";
+      const title = filename.replace(/\.[^.]+$/, "") || "YouTube音源";
+
+      if (data.status === "redirect" || data.status === "tunnel") {
+        return {
+          url: downloadUrl,
+          mimeType: "redirect",
+          title,
+          author: "",
+        };
+      }
+    } catch (e) {
+      console.log(`[Cobalt] ${instance} failed:`, String(e));
+      continue;
+    }
+  }
+  return null;
 }
 
 /* ================================================================
@@ -343,10 +331,48 @@ async function tryInvidiousApi(videoId: string): Promise<AudioResult | null> {
 
 /* ================================================================
  * Strategy 4: YouTube Innertube API (last resort)
+ * Uses IOS and MWEB clients which are more resilient
  * ================================================================ */
 
 async function tryInnertubeApi(videoId: string): Promise<AudioResult | null> {
   const clients = [
+    {
+      body: {
+        videoId,
+        context: {
+          client: {
+            clientName: "IOS",
+            clientVersion: "19.45.4",
+            deviceMake: "Apple",
+            deviceModel: "iPhone16,2",
+            hl: "ja",
+            gl: "JP",
+            osName: "iPhone",
+            osVersion: "17.5.1.21F90",
+          },
+        },
+        contentCheckOk: true,
+        racyCheckOk: true,
+      },
+      ua: "com.google.ios.youtube/19.45.4 (iPhone16,2; U; CPU iOS 17_5_1 like Mac OS X;)",
+    },
+    {
+      body: {
+        videoId,
+        context: {
+          client: {
+            clientName: "ANDROID_MUSIC",
+            clientVersion: "7.27.52",
+            androidSdkVersion: 30,
+            hl: "ja",
+            gl: "JP",
+          },
+        },
+        contentCheckOk: true,
+        racyCheckOk: true,
+      },
+      ua: "com.google.android.apps.youtube.music/7.27.52 (Linux; U; Android 11) gzip",
+    },
     {
       body: {
         videoId,
@@ -361,23 +387,6 @@ async function tryInnertubeApi(videoId: string): Promise<AudioResult | null> {
         racyCheckOk: true,
       },
       ua: UA,
-    },
-    {
-      body: {
-        videoId,
-        context: {
-          client: {
-            clientName: "ANDROID",
-            clientVersion: "19.09.37",
-            androidSdkVersion: 30,
-            hl: "ja",
-            gl: "JP",
-          },
-        },
-        contentCheckOk: true,
-        racyCheckOk: true,
-      },
-      ua: "com.google.android.youtube/19.09.37 (Linux; U; Android 11) gzip",
     },
   ];
 
