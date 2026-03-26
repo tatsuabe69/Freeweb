@@ -17,6 +17,7 @@ import {
   EyeOff,
   Eraser,
   QrCode,
+  Droplets,
   type LucideIcon,
 } from "lucide-react";
 
@@ -49,10 +50,11 @@ export const tools: ToolItem[] = [
   /* 14 */ { title: "音源取得",       href: "/video/sound",       icon: Music,        color: "#06b6d4", category: "動画", description: "TikTok・YouTube・Instagramの動画URLから音源（BGM・楽曲）を取得。プラットフォームを選んでURLを貼るだけ。", related: [12, 13], steps: ["プラットフォームを選択", "URLを貼り付け", "音源をダウンロード"] },
   /* 15 */ { title: "H.264変換",      href: "/video/h264",        icon: MonitorPlay,  color: "#7c3aed", category: "動画", description: "動画をH.264（MP4）に変換。Zoom画面共有やプレゼン用途に最適。", related: [9, 11], steps: ["動画をアップロード", "プロファイル・画質を選択", "H.264に変換"] },
   /* 16 */ { title: "AI背景透過",     href: "/tools/bg-remove",   icon: Eraser,       color: "#ec4899", category: "画像", description: "ブラウザ内AIが画像・動画の背景を自動削除。画像/動画を選んでアップロードするだけ。", related: [17, 4], steps: ["画像 or 動画を選択", "AIが自動処理", "結果をダウンロード"] },
-  /* 17 */ { title: "QRコード生成",   href: "/image/qr-code",     icon: QrCode,       color: "#2563eb", category: "画像", description: "URL・テキストからQRコードを即座に生成。クリップボードにコピーしてそのまま貼り付け。", related: [16, 4], steps: ["テキストやURLを入力", "QRコードを自動生成", "画像をコピー"] },
-  /* 18 */ { title: "スライド複製",   href: "/google/slides-copy", icon: Copy,        color: "#fbbc04", category: "Google", description: "テンプレートのGoogleスライドを複数チーム分まとめてコピー。研修準備を効率化。", related: [19, 20], steps: ["スライドURLを入力", "チーム名を設定", "まとめてコピー作成"] },
-  /* 19 */ { title: "スプレッドシート複製", href: "/google/sheets-copy", icon: FileSpreadsheet, color: "#0f9d58", category: "Google", description: "テンプレートのGoogleスプレッドシートを複数チーム分まとめてコピー。研修準備を効率化。", related: [18, 20], steps: ["スプレッドシートURLを入力", "チーム名を設定", "まとめてコピー作成"] },
-  /* 20 */ { title: "ドキュメント複製", href: "/google/docs-copy",  icon: FileText,    color: "#4285f4", category: "Google", description: "テンプレートのGoogleドキュメントを複数チーム分まとめてコピー。研修準備を効率化。", related: [18, 19], steps: ["ドキュメントURLを入力", "チーム名を設定", "まとめてコピー作成"] },
+  /* 17 */ { title: "QRコード生成",   href: "/image/qr-code",     icon: QrCode,       color: "#2563eb", category: "画像", description: "URL・テキストからQRコードを即座に生成。クリップボードにコピーしてそのまま貼り付け。", related: [16, 18], steps: ["テキストやURLを入力", "QRコードを自動生成", "画像をコピー"] },
+  /* 18 */ { title: "画像透明度調整", href: "/image/opacity",      icon: Droplets,    color: "#0891b2", category: "画像", description: "画像の透明度をスライダーで調整。PNG形式で出力するため透明度が保持されます。", related: [16, 17], steps: ["画像をアップロード", "スライダーで透明度を調整", "PNGでダウンロード"] },
+  /* 19 */ { title: "スライド複製",   href: "/google/slides-copy", icon: Copy,        color: "#fbbc04", category: "Google", description: "テンプレートのGoogleスライドを複数チーム分まとめてコピー。研修準備を効率化。", related: [20, 21], steps: ["スライドURLを入力", "チーム名を設定", "まとめてコピー作成"] },
+  /* 20 */ { title: "スプレッドシート複製", href: "/google/sheets-copy", icon: FileSpreadsheet, color: "#0f9d58", category: "Google", description: "テンプレートのGoogleスプレッドシートを複数チーム分まとめてコピー。研修準備を効率化。", related: [19, 21], steps: ["スプレッドシートURLを入力", "チーム名を設定", "まとめてコピー作成"] },
+  /* 21 */ { title: "ドキュメント複製", href: "/google/docs-copy",  icon: FileText,    color: "#4285f4", category: "Google", description: "テンプレートのGoogleドキュメントを複数チーム分まとめてコピー。研修準備を効率化。", related: [19, 20], steps: ["ドキュメントURLを入力", "チーム名を設定", "まとめてコピー作成"] },
 ];
 
 export function getCategoryTools(category: string) {
