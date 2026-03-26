@@ -10,17 +10,18 @@ export default function OpacityPage() {
   const [files, setFiles] = useState<File[]>([]);
   const [preview, setPreview] = useState<string | null>(null);
   const [opacity, setOpacity] = useState(100);
+  const [loadedImg, setLoadedImg] = useState<HTMLImageElement | null>(null);
   const [result, setResult] = useState<{ url: string; name: string } | null>(
     null,
   );
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const imgRef = useRef<HTMLImageElement | null>(null);
   const resultUrlRef = useRef<string | null>(null);
 
   const handleFilesChange = (f: File[]) => {
     setFiles(f);
     setResult(null);
     setOpacity(100);
+    setLoadedImg(null);
     if (resultUrlRef.current) {
       URL.revokeObjectURL(resultUrlRef.current);
       resultUrlRef.current = null;
@@ -31,18 +32,17 @@ export default function OpacityPage() {
 
       const img = new Image();
       img.onload = () => {
-        imgRef.current = img;
+        setLoadedImg(img);
       };
       img.src = url;
     } else {
       setPreview(null);
-      imgRef.current = null;
     }
   };
 
   const renderCanvas = useCallback(() => {
     const canvas = canvasRef.current;
-    const img = imgRef.current;
+    const img = loadedImg;
     if (!canvas || !img) return;
 
     canvas.width = img.naturalWidth;
@@ -58,7 +58,7 @@ export default function OpacityPage() {
     ctx.globalAlpha = opacity / 100;
     ctx.drawImage(img, 0, 0);
     ctx.globalAlpha = 1;
-  }, [opacity]);
+  }, [opacity, loadedImg]);
 
   useEffect(() => {
     renderCanvas();
@@ -95,7 +95,7 @@ export default function OpacityPage() {
     setResult(null);
     setPreview(null);
     setOpacity(100);
-    imgRef.current = null;
+    setLoadedImg(null);
     if (resultUrlRef.current) {
       URL.revokeObjectURL(resultUrlRef.current);
       resultUrlRef.current = null;
@@ -129,7 +129,7 @@ export default function OpacityPage() {
             description="PNG・JPG・WebP・BMP・GIFに対応（出力はPNG）"
           />
 
-          {preview && imgRef.current && (
+          {preview && loadedImg && (
             <>
               {/* Opacity slider */}
               <div className="rounded-xl border bg-card p-4 space-y-3">
